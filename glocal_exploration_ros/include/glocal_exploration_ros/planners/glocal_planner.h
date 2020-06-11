@@ -1,7 +1,11 @@
 #ifndef GLOCAL_EXPLORATION_PLANNERS_GLOCAL_PLANNER_H_
 #define GLOCAL_EXPLORATION_PLANNERS_GLOCAL_PLANNER_H_
 
+#include <memory>
+
 #include <ros/ros.h>
+
+#include "glocal_exploration/mapping/map_interface.h"
 
 namespace glocal_exploration {
 
@@ -16,6 +20,9 @@ class GlocalPlanner {
  protected:
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
+
+  /* components */
+  std::unique_ptr<MapInterface> map_;
 };
 
 } // namespace glocal_exploration
