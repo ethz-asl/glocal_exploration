@@ -5,10 +5,6 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
-        - /Status1
-        - /VoxbloxMesh1
-        - /Drone_gt1
-        - /Axes1
       Splitter Ratio: 0.5
     Tree Height: 549
   - Class: rviz/Selection
@@ -67,13 +63,6 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
-    - Class: voxblox_rviz_plugin/VoxbloxMesh
-      Enabled: true
-      Name: VoxbloxMesh
-      Reset Mesh: false
-      Topic: /planner/planner/mapping/voxblox/mesh
-      Unreliable: false
-      Value: true
     - Class: rviz/Axes
       Enabled: true
       Length: 0.5
@@ -88,9 +77,16 @@ Visualization Manager:
       Radius: 0.05000000074505806
       Reference Frame: <Fixed Frame>
       Value: true
+    - Class: voxblox_rviz_plugin/VoxbloxMesh
+      Enabled: true
+      Name: VoxbloxMesh
+      Reset Mesh: false
+      Topic: /planner/glocal_planner/mapping/voxblox/mesh
+      Unreliable: false
+      Value: true
   Enabled: true
   Global Options:
-    Background Color: 48; 48; 48
+    Background Color: 255; 255; 255
     Default Light: true
     Fixed Frame: odom
     Frame Rate: 30
@@ -131,10 +127,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.2553982138633728
+      Pitch: 1.2053974866867065
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.0953938961029053
+      Yaw: 3.0653929710388184
     Saved: ~
 Window Geometry:
   Displays:

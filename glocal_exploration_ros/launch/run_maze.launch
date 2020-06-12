@@ -5,9 +5,9 @@
   <!-- Airsim argument -->
   <arg name="airsim_config" default="maze_airsim.yaml"/>
   <arg name="use_airsim_time" default="true"/>
+  <arg name="mav_name" default="airsim_drone"/>
 
   <!--  Experiment arguments -->  
-  <arg name="experiment_config" default="Maze.yaml"/>
 <!--  <arg name="record_data" default="false"/>-->
 <!--  <arg name="record_visualization" default="true"/>-->
 <!--  <arg name="data_directory" default="/home/davide/data/experiment_evaluation"/> -->
@@ -15,10 +15,13 @@
 <!--  <arg name="time_limit" default="30" />-->
 
 
-  <!-- *** Runs the Simulation *** -->
+
+
+
   
-  <!-- Load experiment config (TODO: Update)-->
-  <rosparam command="load" file="$(find active_3d_planning_app_reconstruction)/cfg/experiments/$(arg experiment_config)"/> 
+  <!-- Setup the experiment -->
+  <param name="/use_sim_time" value="true" if="$(arg use_airsim_time)"/>
+  <node name="experiment_manager" pkg="glocal_exploration_ros" type="experiment_manager.py" output="screen"/>
   
   <!-- airsim client -->
   <node name="airsim_simulator" pkg="unreal_airsim" type="airsim_simulator_node" required="true" output="screen" args="-alsologtostderr">
@@ -28,15 +31,15 @@
   <group ns="planner">
     <!-- Planner -->
     <node name="glocal_planner" pkg="glocal_exploration_ros" type="glocal_planner_node" output="screen">
-          <remap from="mapping/voxblox/pointcloud" to="/airsim_drone/Lidar" />
-<!--      <remap from="odometry" to="/$(arg mav_name)/simulated_odometry" />-->
+      <rosparam command="load" file="$(find glocal_exploration_ros)/config/$(arg planner_config)"/>
+      <remap from="~mapping/pointcloud" to="/$(arg mav_name)/Lidar" />
+      <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
 <!--      <remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />-->
 <!--      <remap from="global_trajectory" to="mav_local_planner/full_trajectory" />-->
 <!--	  <remap from="planner_node/plan" to="cblox_skeleton_planner/plan" />-->
 <!--	  <remap from="planner_node/publish_path" to="cblox_skeleton_planner/publish_path" />-->
 <!--      <remap from="planner_node/path_length" to="cblox_skeleton_planner/path_length" />-->
 
-      <rosparam command="load" file="$(find glocal_exploration_ros)/config/$(arg planner_config)"/>
     </node>  
 
     <!-- Global planner node -->
