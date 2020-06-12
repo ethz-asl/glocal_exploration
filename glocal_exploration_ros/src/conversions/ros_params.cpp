@@ -9,4 +9,9 @@ VoxbloxMap::Config getVoxbloxMapConfigFromRos(const ros::NodeHandle &nh) {
   return config;
 }
 
+RHRRTStar::Config getRHRRTStarConfigFromRos(const ros::NodeHandle &nh){
+  RHRRTStar::Config config;
+  return config;
+}
+
 } // namespace glocal_exploration
