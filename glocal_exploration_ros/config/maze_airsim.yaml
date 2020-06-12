@@ -1,0 +1,22 @@
+vehicle_name: airsim_drone
+state_refresh_rate: 100
+ViewMode: Manual
+ClockSpeed: 1.0
+ 
+sensors:   
+  Lidar:
+    sensor_type: Lidar
+    rate: 10
+    T_B_S:
+      - [1,0,0,0]
+      - [0,1,0,0]
+      - [0,0,1,0]
+      - [0,0,0,1]
+    NumberOfChannels: 64
+    Range: 50  # m
+    PointsPerSecond: 655360 # this should lead to 1024 horizontal res
+    RotationsPerSecond: 10
+    HorizontalFOVStart: 0  # deg
+    HorizontalFOVEnd: 360  # deg
+    VerticalFOVUpper: 22.5  # deg
+    VerticalFOVLower: 22.5  # deg

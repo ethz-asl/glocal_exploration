@@ -1,0 +1,112 @@
+<launch>  
+  <!-- Planner arguments -->
+  <arg name="planner_config" default="glocal_planner.yaml"/>
+  
+  <!-- Airsim argument -->
+  <arg name="airsim_config" default="maze_airsim.yaml"/>
+  <arg name="use_airsim_time" default="true"/>
+
+  <!--  Experiment arguments -->  
+  <arg name="experiment_config" default="Maze.yaml"/>
+<!--  <arg name="record_data" default="false"/>-->
+<!--  <arg name="record_visualization" default="true"/>-->
+<!--  <arg name="data_directory" default="/home/davide/data/experiment_evaluation"/> -->
+<!--  <arg name="data_frequency" default="30.0" />-->
+<!--  <arg name="time_limit" default="30" />-->
+
+
+  <!-- *** Runs the Simulation *** -->
+  
+  <!-- Load experiment config (TODO: Update)-->
+  <rosparam command="load" file="$(find active_3d_planning_app_reconstruction)/cfg/experiments/$(arg experiment_config)"/> 
+  
+  <!-- airsim client -->
+  <node name="airsim_simulator" pkg="unreal_airsim" type="airsim_simulator_node" required="true" output="screen" args="-alsologtostderr">
+     <rosparam file="$(find glocal_exploration_ros)/config/$(arg airsim_config)"/>
+  </node>
+
+  <group ns="planner">
+    <!-- Planner -->
+    <node name="glocal_planner" pkg="glocal_exploration_ros" type="glocal_planner_node" output="screen">
+          <remap from="mapping/voxblox/pointcloud" to="/airsim_drone/Lidar" />
+<!--      <remap from="odometry" to="/$(arg mav_name)/simulated_odometry" />-->
+<!--      <remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />-->
+<!--      <remap from="global_trajectory" to="mav_local_planner/full_trajectory" />-->
+<!--	  <remap from="planner_node/plan" to="cblox_skeleton_planner/plan" />-->
+<!--	  <remap from="planner_node/publish_path" to="cblox_skeleton_planner/publish_path" />-->
+<!--      <remap from="planner_node/path_length" to="cblox_skeleton_planner/path_length" />-->
+
+      <rosparam command="load" file="$(find glocal_exploration_ros)/config/$(arg planner_config)"/>
+    </node>  
+
+    <!-- Global planner node -->
+<!--    <node name="cblox_skeleton_planner" pkg="cblox_planning_ros"-->
+<!--          type="cblox_skeleton_server" output="screen"-->
+<!--          args="-alsologtostderr" clear_params="true" required="false">-->
+<!--      <remap from="tsdf_submap_in" to="planner_node/submap_esdfs" />-->
+<!--      <remap from="submap_pose_in" to="planner_node/submap_poses" />-->
+<!--	  <param name="verbose" value="false" />-->
+<!--      <param name="active_submap_service_topic"-->
+<!--          value="/planner/planner_node/publish_active_submap1"/>   --> 
+<!--the name must be wrong if Voxgraph map is in the same node of the planner, otherwise deadlock!-->
+
+<!--      <param name="visualize" value="true"/>-->
+<!--      <param name="robot_radius" value="$(arg robot_radius)"/>-->
+<!--      <param name="do_smoothing" value="false"/>-->
+<!--      <param name="path_shortening" value="false"/>-->
+<!--      <param name="simplify solution" value="false"/>-->
+<!--      <param name="min_value" value="true"/>-->
+
+<!--      <param name="num_seconds_to_plan" value="3"/>-->
+<!--      <param name="grow_time" value="3"/>-->
+<!--      <param name="edge_density" value="1.5"/>-->
+
+<!--      <param name="frame_id" value="mission"/> -->
+<!--      <param name="world_frame" value="mission"/> -->
+<!--      <param name="mission_frame" value="mission"/> -->
+<!--      <param name="odom_frame" value="world"/> -->
+
+<!--      <param name="tsdf_voxel_size" value="$(arg voxel_size)" />-->
+<!--      <param name="tsdf_voxels_per_side" value="16" />-->
+<!--      <param name="esdf_voxel_size" value="0.20" />-->
+<!--      <param name="esdf_voxels_per_side" value="16" />-->
+<!--      <param name="truncation_distance" value="$(arg truncation_distance)"/>-->
+<!--    </node>  -->
+	
+	<!-- Global trajectory smoother -->
+<!--    <node name="mav_local_planner" pkg="mav_local_planner" type="mav_local_planner_node" args="-alsologtostderr" output="screen" clear_params="true">-->
+<!--      <remap from="odometry" to="/$(arg mav_name)/simulated_odometry" />-->
+<!--	  <remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />-->
+<!--	  <param name="smoother_name" value="polynomial" />-->
+<!--      <param name="tsdf_voxel_size" value="$(arg voxel_size)" />-->
+<!--      <param name="tsdf_voxels_per_side" value="16" />-->
+<!--      <param name="esdf_max_distance_m" value="$(arg truncation_distance)" />-->
+<!--      <param name="update_mesh_every_n_sec" value="5.0" />-->
+<!--      <param name="publish_traversable" value="true" />-->
+<!--      <param name="slice_level" value="1.0" />-->
+<!--      <param name="publish_slices" value="true" />-->
+<!--      <param name="autostart" value="false" />-->
+
+      <!--param name="local_frame_id" value="$(arg frame_id)" /-->
+<!--      <param name="local_frame_id" value="$(arg frame_id)" />-->
+<!--      <param name="world_frame" value="$(arg frame_id)" />-->
+<!--      <param name="replan_dt" value="10000" />-->
+<!--      <param name="command_publishing_dt" value="10000" />-->
+<!--      <param name="replan_lookahead_sec" value="1.0" />-->
+<!--      <param name="mpc_prediction_horizon" value="300" />-->
+
+<!--      <param name="robot_radius" value="$(arg robot_radius)" />-->
+<!--      <param name="planning_horizon_m" value="20.0" />-->
+<!--      <param name="verbose" value="true" />-->
+<!--      <param name="v_max" value="2" />-->
+<!--      <param name="a_max" value="1.5" />-->
+<!--      <param name="avoid_collisions" value="false" />-->
+
+      <!-- What to do in case of failure. -->
+<!--      <param name="goal_selector_strategy" value="none" />-->
+<!--    </node>-->
+  </group>
+
+  <!-- Visualization -->
+  <node type="rviz" name="rviz" pkg="rviz" args="-d $(find glocal_exploration_ros)/config/maze_visualization.rviz"/>
+</launch>

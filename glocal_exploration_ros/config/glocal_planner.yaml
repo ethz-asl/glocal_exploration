@@ -1,0 +1,16 @@
+#Config for the Planner
+# General params
+replan_pos_threshold: 0.15
+replan_yaw_threshold: 0.15
+
+mapping:
+  collision_radius: 0.5
+  map_type: voxblox
+  voxblox:
+    # This namespace contains params specifically for voxblox
+    tsdf_voxel_size: 0.2
+    tsdf_voxels_per_side: 16
+    method: fast
+    max_ray_length_m: 5
+    verbose: false
+    
