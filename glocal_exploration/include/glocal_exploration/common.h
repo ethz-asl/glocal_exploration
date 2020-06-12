@@ -2,6 +2,7 @@
 #define GLOCAL_EXPLORATION_COMMON_H_
 
 #include <Eigen/Geometry>
+#include <glog/logging.h>
 
 namespace glocal_exploration {
 
