@@ -1,6 +1,7 @@
 <launch>  
   <!-- Planner arguments -->
   <arg name="planner_config" default="glocal_planner.yaml"/>
+  <arg name="verbosity" default="3"/>
   
   <!-- Airsim argument -->
   <arg name="airsim_config" default="maze_airsim.yaml"/>
@@ -23,6 +24,9 @@
   <param name="/use_sim_time" value="true" if="$(arg use_airsim_time)"/>
   <node name="experiment_manager" pkg="glocal_exploration_ros" type="experiment_manager.py" output="screen"/>
   
+  <!-- tf -->
+  <node pkg="tf" type="static_transform_publisher" name="static_tf" args="0 0 0 0 0 0 1 /odom /world 100"/>
+  
   <!-- airsim client -->
   <node name="airsim_simulator" pkg="unreal_airsim" type="airsim_simulator_node" required="true" output="screen" args="-alsologtostderr">
      <rosparam file="$(find glocal_exploration_ros)/config/$(arg airsim_config)"/>
@@ -30,7 +34,7 @@
 
   <group ns="planner">
     <!-- Planner -->
-    <node name="glocal_planner" pkg="glocal_exploration_ros" type="glocal_planner_node" output="screen">
+    <node name="glocal_planner" pkg="glocal_exploration_ros" type="glocal_planner_node" output="screen" args="--v $(arg verbosity)">
       <rosparam command="load" file="$(find glocal_exploration_ros)/config/$(arg planner_config)"/>
       <remap from="~mapping/pointcloud" to="/$(arg mav_name)/Lidar" />
       <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />

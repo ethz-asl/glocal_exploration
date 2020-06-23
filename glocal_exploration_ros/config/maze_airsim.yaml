@@ -2,21 +2,20 @@ vehicle_name: airsim_drone
 state_refresh_rate: 100
 ViewMode: Manual
 ClockSpeed: 1.0
+publish_sensor_transforms: true # this uses gt transform
  
 sensors:   
   Lidar:
     sensor_type: Lidar
-    rate: 10
+    rate: 3
     T_B_S:
-      - [1,0,0,0]
-      - [0,1,0,0]
-      - [0,0,1,0]
+      - [0.9063078,  0.0000000, 0.4226183, 0]
+      - [0.0000000,  1.0000000, 0.0000000, 0]
+      - [-0.4226183, 0.0000000, 0.9063078, 0]
       - [0,0,0,1]
-    NumberOfChannels: 64
-    Range: 50  # m
-    PointsPerSecond: 655360 # this should lead to 1024 horizontal res
+    NumberOfChannels: 32
+    Range: 5.5  # m
+    PointsPerSecond: 64000 # this should lead to 200 horizontal res (65536=1hz at 1024)
     RotationsPerSecond: 10
-    HorizontalFOVStart: 0  # deg
-    HorizontalFOVEnd: 360  # deg
-    VerticalFOVUpper: 22.5  # deg
-    VerticalFOVLower: 22.5  # deg
+    VerticalFOVUpper: 22.5  # deg 
+    VerticalFOVLower: -22.5  # deg

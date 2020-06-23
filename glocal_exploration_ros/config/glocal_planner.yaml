@@ -13,7 +13,29 @@ mapping:
     method: fast
     max_ray_length_m: 5
     verbose: false
+    # VoxbloxMap params
+    clearing_radius: 0.5
+    collision_radius: 0.3
     
 local_planner:
   type: rh_rrt_star
+  # RH-RRT-Star params
+  local_sampling_radius: 1.5  # m
+  global_sampling_radius: 100 # m
+  min_local_points: 5
+  min_path_length: 0.5  # m
+  max_path_length: 2.0  # m
+  path_cropping_length: 0.3 # m
+  max_number_of_neighbors: 20
+  maximum_rewiring_iterations: 100
+  
+  # Lidar Model
+  ray_length: 5  # m
+  vertical_fov: 45  # deg
+  horizontal_fov: 360 # deg
+  vertical_resolution: 32 # 64
+  horizontal_resolution: 200 # 1024
+  ray_step: 0 # m
+  downsampling_factor: 2
+ 
     
