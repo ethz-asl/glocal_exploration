@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "glocal_exploration/common.h"
-#include "glocal_exploration/mapping/map_interface.h"
+#include "glocal_exploration/mapping/map_base.h"
 #include "glocal_exploration/planning/state_machine.h"
 
 namespace glocal_exploration {
@@ -17,7 +17,8 @@ class LocalPlannerBase {
   struct Config {
     virtual ~Config() = default;
   };
-  explicit LocalPlannerBase(std::shared_ptr<MapInterface> map) : map_(std::move(map)) {};
+  LocalPlannerBase(std::shared_ptr<MapBase> map, std::shared_ptr<StateMachine> state_machine)
+      : map_(std::move(map)), state_machine_(std::move(state_machine)) {};
   virtual ~LocalPlannerBase() = default;
 
   /* Setup */
@@ -25,10 +26,11 @@ class LocalPlannerBase {
   virtual bool setupFromConfig(Config *config) = 0;
 
   /* General and Accessors */
-  virtual void planningIteration(const StateMachine &state_machine) = 0;
+  virtual void planningIteration() = 0;
 
  protected:
-  std::shared_ptr<MapInterface> map_;
+  const std::shared_ptr<MapBase> map_;
+  const std::shared_ptr<StateMachine> state_machine_;
 };
 
 } // namespace glocal_exploration

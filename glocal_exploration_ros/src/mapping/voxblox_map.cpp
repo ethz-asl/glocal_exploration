@@ -2,7 +2,9 @@
 
 namespace glocal_exploration {
 
-bool VoxbloxMap::setupFromConfig(MapInterface::Config *config) {
+VoxbloxMap::VoxbloxMap(const std::shared_ptr<StateMachine> &state_machine) : MapBase(state_machine) {};
+
+bool VoxbloxMap::setupFromConfig(MapBase::Config *config) {
   CHECK_NOTNULL(config);
   auto cfg = dynamic_cast<Config *>(config);
   if (!cfg) {
@@ -26,6 +28,8 @@ bool VoxbloxMap::isTraversableInActiveSubmap(const Eigen::Vector3d &position, co
   if (server_->getEsdfMapPtr()->getDistanceAtPosition(position, &distance)) {
     // This means the voxel is observed
     return (distance > config_.collision_radius);
+  } else if ((position - state_machine_->currentPose().position()).norm() < config_.clearing_radius) {
+    return true;
   }
   return false;
 }
@@ -40,8 +44,16 @@ bool VoxbloxMap::getVoxelCenterInLocalArea(Eigen::Vector3d *center, const Eigen:
   return true;
 }
 
-bool VoxbloxMap::isObservedInLocalArea(const Eigen::Vector3d &point) {
-  return server_->getEsdfMapPtr()->isObserved(point);
+MapBase::VoxelState VoxbloxMap::getVoxelStateInLocalArea(const Eigen::Vector3d &point) {
+  double distance = 0.0;
+  if (server_->getEsdfMapPtr()->getDistanceAtPosition(point, &distance)) {
+    // This means the voxel is observed
+    if (distance > c_voxel_size_) {
+      return VoxelState::Free;
+    }
+    return VoxelState::Occupied;
+  }
+  return VoxelState::Unknown;
 }
 
 } // namespace glocal_exploration {

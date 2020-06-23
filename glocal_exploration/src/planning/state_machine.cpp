@@ -28,11 +28,24 @@ void StateMachine::signalGlobalPlanning() {
   }
 }
 
-void StateMachine::setState(State state) {
-  if (state_ != state) {
-    previous_state_ = state_;
-    state_ = state;
+void StateMachine::requestWayPoint(const WayPoint &way_point) {
+  new_waypoint_requested_ = true;
+  target_way_point_ = way_point;
+}
+
+bool StateMachine::getNewWayPointIfRequested(WayPoint *way_point) {
+  if (!new_waypoint_requested_) {
+    return false;
   }
+  CHECK_NOTNULL(way_point);
+  *way_point = target_way_point_;
+  new_waypoint_requested_ = false;
+  return true;
+}
+
+void StateMachine::setState(State state) {
+  previous_state_ = state_;
+  state_ = state;
 }
 
 std::string StateMachine::stateToString(State state) {
