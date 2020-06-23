@@ -10,10 +10,11 @@ std::string ComponentFactoryROS::getType(const ros::NodeHandle &nh) {
   return type;
 }
 
-std::shared_ptr<MapInterface> ComponentFactoryROS::createMap(const ros::NodeHandle &nh) {
+std::shared_ptr<MapBase> ComponentFactoryROS::createMap(const ros::NodeHandle &nh,
+                                                             std::shared_ptr<StateMachine> state_machine) {
   std::string type = getType(nh);
   if (type == "voxblox") {
-    auto map = std::make_shared<VoxbloxMap>();
+    auto map = std::make_shared<VoxbloxMap>(state_machine);
     VoxbloxMap::Config cfg = getVoxbloxMapConfigFromRos(nh);
     map->setupFromConfig(&cfg);
     return map;
@@ -24,10 +25,11 @@ std::shared_ptr<MapInterface> ComponentFactoryROS::createMap(const ros::NodeHand
 }
 
 std::unique_ptr<LocalPlannerBase> ComponentFactoryROS::createLocalPlanner(const ros::NodeHandle &nh,
-                                                                          const std::shared_ptr<MapInterface> &map) {
+                                                                          std::shared_ptr<MapBase> map,
+                                                                          std::shared_ptr<StateMachine> state_machine) {
   std::string type = getType(nh);
   if (type == "rh_rrt_star") {
-    auto planner = std::make_unique<RHRRTStar>(map);
+    auto planner = std::make_unique<RHRRTStar>(map, state_machine);
     RHRRTStar::Config cfg = getRHRRTStarConfigFromRos(nh);
     planner->setupFromConfig(&cfg);
     return planner;

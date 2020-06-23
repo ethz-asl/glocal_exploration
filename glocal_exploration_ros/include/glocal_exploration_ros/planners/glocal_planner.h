@@ -8,7 +8,7 @@
 #include <std_srvs/SetBool.h>
 
 #include "glocal_exploration/planning/state_machine.h"
-#include "glocal_exploration/mapping/map_interface.h"
+#include "glocal_exploration/mapping/map_base.h"
 #include "glocal_exploration/planning/local_planner/local_planner_base.h"
 
 namespace glocal_exploration {
@@ -43,18 +43,19 @@ class GlocalPlanner {
 
   // Components
   Config config_;
-  StateMachine state_machine_;    // the state machine is allocated here to allow only conforming behavior
-  std::shared_ptr<MapInterface> map_;
+  const std::shared_ptr<StateMachine> state_machine_;
+  std::shared_ptr<MapBase> map_;
   std::unique_ptr<LocalPlannerBase> local_planner_;
+
+  // methods
+  void loopIteration();
+  void readParamsFromRos();
 
   // variables
   Eigen::Vector3d current_position_;    // current and goal poses are in odom frame
   Eigen::Quaterniond current_orientation_;
   Eigen::Vector3d target_position_;
   double target_yaw_;   // rad
-
-  // methods
-  void loopIteration();
 };
 
 } // namespace glocal_exploration
