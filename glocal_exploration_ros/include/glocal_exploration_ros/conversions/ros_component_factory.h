@@ -9,6 +9,7 @@
 #include "glocal_exploration/mapping/map_base.h"
 #include "glocal_exploration/planning/local_planner/local_planner_base.h"
 #include "glocal_exploration/planning/state_machine.h"
+#include "glocal_exploration_ros/visualization/local_planner_visualizer_base.h"
 
 namespace glocal_exploration {
 
@@ -18,9 +19,12 @@ class ComponentFactoryROS {
 
   static std::shared_ptr<MapBase> createMap(const ros::NodeHandle &nh, std::shared_ptr<StateMachine> state_machine);
 
-  static std::unique_ptr<LocalPlannerBase> createLocalPlanner(const ros::NodeHandle &nh,
+  static std::shared_ptr<LocalPlannerBase> createLocalPlanner(const ros::NodeHandle &nh,
                                                               std::shared_ptr<MapBase> map,
                                                               std::shared_ptr<StateMachine> state_machine);
+
+  static std::shared_ptr<LocalPlannerVisualizerBase> createLocalPlannerVisualizer(const ros::NodeHandle &nh,
+                                                              const std::shared_ptr<LocalPlannerBase> &planner);
 
  private:
   ComponentFactoryROS() = default;

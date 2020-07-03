@@ -2,7 +2,7 @@
 
 namespace glocal_exploration {
 
-StateMachine::StateMachine() : state_(SettingUp), previous_state_(SettingUp), target_reached_(false) {}
+StateMachine::StateMachine() : state_(SettingUp), previous_state_(SettingUp), target_reached_(false), new_waypoint_requested_(false) {}
 
 void StateMachine::signalReady() {
   if (state_ != State::SettingUp) {
@@ -54,6 +54,7 @@ std::string StateMachine::stateToString(State state) {
     case Ready  : return "Ready";
     case LocalPlanning  : return "LocalPlanning";
     case GlobalPlanning  : return "GlobalPlanning";
+    case Finished  : return "Finished";
     default: return "UnknownState";
   }
 }

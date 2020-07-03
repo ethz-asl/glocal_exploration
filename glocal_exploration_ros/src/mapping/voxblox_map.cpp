@@ -28,10 +28,8 @@ bool VoxbloxMap::isTraversableInActiveSubmap(const Eigen::Vector3d &position, co
   if (server_->getEsdfMapPtr()->getDistanceAtPosition(position, &distance)) {
     // This means the voxel is observed
     return (distance > config_.collision_radius);
-  } else if ((position - state_machine_->currentPose().position()).norm() < config_.clearing_radius) {
-    return true;
   }
-  return false;
+  return (position - state_machine_->currentPose().position()).norm() < config_.clearing_radius;
 }
 
 bool VoxbloxMap::getVoxelCenterInLocalArea(Eigen::Vector3d *center, const Eigen::Vector3d &point) {

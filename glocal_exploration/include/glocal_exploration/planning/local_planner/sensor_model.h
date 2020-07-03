@@ -23,7 +23,7 @@ class SensorModel {
     double mounting_orientation_w = 1;
   };
 
-  explicit SensorModel(std::shared_ptr<MapBase> map) : map_(std::move(map)) {}
+  explicit SensorModel(std::shared_ptr<MapBase> map) : map_(std::move(map)){}
   virtual ~SensorModel() = default;
 
   // Return the voxel centers of all visible voxels for that viewpoint

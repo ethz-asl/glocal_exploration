@@ -34,6 +34,8 @@ class LidarModel : public SensorModel {
   int c_n_sections_;                      // number of ray duplications
   std::vector<double> c_split_distances_; // distances where rays are duplicated
   std::vector<int> c_split_widths_; // number of max distance rays that are covered per split
+  Eigen::Vector3d mounting_position_;
+  Eigen::Quaterniond mounting_orientation_;
 
   // variables
   Eigen::ArrayXXi ray_table_;

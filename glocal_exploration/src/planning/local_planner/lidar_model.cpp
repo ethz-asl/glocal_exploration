@@ -31,6 +31,12 @@ bool LidarModel::setupFromConfig(SensorModel::Config *config) {
   c_res_y_ = std::min((int) ceil(config_.ray_length * c_fov_y_ / (map_->getVoxelSize() * config_.downsampling_factor)),
                       config_.horizontal_resolution);
   ray_table_ = Eigen::ArrayXXi::Zero(c_res_x_, c_res_y_);
+  mounting_position_ =
+      Eigen::Vector3d(config_.mounting_position_x, config_.mounting_position_y, config_.mounting_position_z);
+  mounting_orientation_ = Eigen::Quaterniond(config_.mounting_orientation_w,
+                                             config_.mounting_orientation_x,
+                                             config_.mounting_orientation_y,
+                                             config_.mounting_orientation_z);
 
   // Determine number of splits + split distances
   c_n_sections_ = (int) std::floor(std::log2(std::min((double) c_res_x_, (double) c_res_y_)));
@@ -50,9 +56,8 @@ bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d> *result, const Wa
   ray_table_.setZero();
 
   // Ray-casting
-  Eigen::Quaterniond orientation;
-  orientation = Eigen::AngleAxisd(waypoint.yaw, Eigen::Vector3d::UnitZ());
-  Eigen::Vector3d position(waypoint.x, waypoint.y, waypoint.z);
+  Eigen::Quaterniond orientation = mounting_orientation_ * Eigen::AngleAxisd(waypoint.yaw, Eigen::Vector3d::UnitZ());
+  Eigen::Vector3d position = waypoint.position() + mounting_position_;
   Eigen::Vector3d camera_direction;
   Eigen::Vector3d direction;
   Eigen::Vector3d current_position;
@@ -77,8 +82,9 @@ bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d> *result, const Wa
           current_position = position + distance * direction;
           distance += config_.ray_step;
 
+          // TODO(schmluk): the z>3 is a hacked in bounding box, remove for proper implementation!
           // Check voxel occupied
-          if (map_->getVoxelStateInLocalArea(current_position) == MapBase::Occupied) {
+          if (map_->getVoxelStateInLocalArea(current_position) == MapBase::Occupied || current_position.z() > 1.5) {
             // Occlusion, mark neighboring rays as occluded
             markNeighboringRays(i, j, current_segment, -1);
             cast_ray = false;
@@ -102,7 +108,7 @@ bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d> *result, const Wa
     }
   }
   // remove duplicates (faster than looking these up during ray casting)
-  result->erase(std::unique( result->begin(), result->end() ), result->end());
+  result->erase(std::unique(result->begin(), result->end()), result->end());
   return true;
 }
 

@@ -12,7 +12,7 @@ namespace glocal_exploration {
  */
 class StateMachine {
  public:
-  enum State { SettingUp, Ready, LocalPlanning, GlobalPlanning };
+  enum State { SettingUp, Ready, LocalPlanning, GlobalPlanning, Finished };
 
   StateMachine();
   virtual ~StateMachine() = default;

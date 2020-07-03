@@ -10,6 +10,7 @@
 #include "glocal_exploration/planning/state_machine.h"
 #include "glocal_exploration/mapping/map_base.h"
 #include "glocal_exploration/planning/local_planner/local_planner_base.h"
+#include "glocal_exploration_ros/visualization/local_planner_visualizer_base.h"
 
 namespace glocal_exploration {
 
@@ -18,6 +19,7 @@ class GlocalPlanner {
   struct Config{
     double replan_position_threshold = 0.2;   // m
     double replan_yaw_threshold = 10;  // deg
+    bool republish_waypoints = false;
   };
 
   // Constructor
@@ -45,17 +47,22 @@ class GlocalPlanner {
   Config config_;
   const std::shared_ptr<StateMachine> state_machine_;
   std::shared_ptr<MapBase> map_;
-  std::unique_ptr<LocalPlannerBase> local_planner_;
+  std::shared_ptr<LocalPlannerBase> local_planner_;
+  std::shared_ptr<LocalPlannerVisualizerBase> local_planner_visualizer_;
 
   // methods
   void loopIteration();
   void readParamsFromRos();
+  void publishTargetPose();
 
   // variables
   Eigen::Vector3d current_position_;    // current and goal poses are in odom frame
   Eigen::Quaterniond current_orientation_;
   Eigen::Vector3d target_position_;
   double target_yaw_;   // rad
+  Eigen::Vector3d previous_position_;   // to track whether the drone is moving
+  double previous_yaw_;
+  ros::Time previous_time_;
 };
 
 } // namespace glocal_exploration

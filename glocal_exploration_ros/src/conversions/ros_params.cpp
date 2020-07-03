@@ -19,6 +19,15 @@ LidarModel::Config getLidarModelConfigFromRos(const ros::NodeHandle &nh){
   nh.param("horizontal_resolution", config.horizontal_resolution, config.horizontal_resolution);
   nh.param("ray_step", config.ray_step, config.ray_step);
   nh.param("downsampling_factor", config.downsampling_factor, config.downsampling_factor);
+
+  // sensor model base
+  nh.param("mounting_position_x", config.mounting_position_x, config.mounting_position_x);
+  nh.param("mounting_position_y", config.mounting_position_y, config.mounting_position_y);
+  nh.param("mounting_position_z", config.mounting_position_z, config.mounting_position_z);
+  nh.param("mounting_orientation_x", config.mounting_orientation_x, config.mounting_orientation_x);
+  nh.param("mounting_orientation_y", config.mounting_orientation_y, config.mounting_orientation_y);
+  nh.param("mounting_orientation_z", config.mounting_orientation_z, config.mounting_orientation_z);
+  nh.param("mounting_orientation_w", config.mounting_orientation_w, config.mounting_orientation_w);
   return config;
 }
 
@@ -31,6 +40,7 @@ RHRRTStar::Config getRHRRTStarConfigFromRos(const ros::NodeHandle &nh){
   nh.param("max_path_length", config.max_path_length, config.max_path_length);
   nh.param("path_cropping_length", config.path_cropping_length, config.path_cropping_length);
   nh.param("max_number_of_neighbors", config.max_number_of_neighbors, config.max_number_of_neighbors);
+  nh.param("maximum_rewiring_iterations", config.maximum_rewiring_iterations, config.maximum_rewiring_iterations);
   config.lidar_config = getLidarModelConfigFromRos(nh);
   return config;
 }

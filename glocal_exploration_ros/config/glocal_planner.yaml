@@ -1,41 +1,48 @@
 #Config for the Planner
 # General params
-replan_position_threshold: 0.15
-replan_yaw_threshold: 5
+replan_position_threshold: 0.35  # m
+replan_yaw_threshold: 5   # deg
+republish_waypoints: true
 
 mapping:
-  collision_radius: 0.5
   type: voxblox
   voxblox:
     # This namespace contains params specifically for voxblox
     tsdf_voxel_size: 0.2
     tsdf_voxels_per_side: 16
     method: fast
-    max_ray_length_m: 5
+    max_ray_length_m: 10
     verbose: false
+    color_mode: normals
     # VoxbloxMap params
-    clearing_radius: 0.5
-    collision_radius: 0.3
+    clearing_radius: 1.0
+    collision_radius: 1.5
+    # Visualization
+    publish_traversable: true
+    traversability_radius: 1.5
+    publish_pointclouds: true
     
 local_planner:
   type: rh_rrt_star
   # RH-RRT-Star params
-  local_sampling_radius: 1.5  # m
+  local_sampling_radius: 5.0  # m
   global_sampling_radius: 100 # m
-  min_local_points: 5
-  min_path_length: 0.5  # m
+  min_local_points: 10
+  min_path_length: 0.8  # m
   max_path_length: 2.0  # m
-  path_cropping_length: 0.3 # m
+  path_cropping_length: 0.5 # m
   max_number_of_neighbors: 20
   maximum_rewiring_iterations: 100
+  maximum_root_search_iterations: 100
   
   # Lidar Model
-  ray_length: 5  # m
+  ray_length: 10  # m
   vertical_fov: 45  # deg
   horizontal_fov: 360 # deg
   vertical_resolution: 32 # 64
   horizontal_resolution: 200 # 1024
   ray_step: 0 # m
   downsampling_factor: 2
- 
+  mounting_orientation_y: 0.2164396
+  mounting_orientation_w: 0.976296
     

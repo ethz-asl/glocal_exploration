@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include <3rd_party/nanoflann.hpp>
 
@@ -42,7 +43,6 @@ class RHRRTStar : public LocalPlannerBase {
   // planning
   void planningIteration() override;
 
- protected:
   struct Connection;
   // View points are the vertices in the tree
   struct ViewPoint {
@@ -50,13 +50,15 @@ class RHRRTStar : public LocalPlannerBase {
     double gain = 0;
     double value = 0;
     bool is_root = false;
+    bool is_connected_to_root = false;
     std::vector<std::pair<bool, std::shared_ptr<Connection>>> connections;   // true: this ViewPoint is the parent
-    size_t active_connection;
+    size_t active_connection = 0;
 
     // helper methods
     bool tryAddConnection(ViewPoint *target, const std::shared_ptr<MapBase> &map);
-    Connection* getActiveConnection();
-    ViewPoint* getConnectedViewPoint(size_t index);
+    Connection *getActiveConnection();
+    Connection const *getActiveConnection() const;
+    ViewPoint *getConnectedViewPoint(size_t index);
   };
 
   // connections are the edges in the tree
@@ -69,18 +71,18 @@ class RHRRTStar : public LocalPlannerBase {
 
   // Nanoflann KD-tree implementation
   struct TreeData {
-    std::vector<ViewPoint> points;
+    std::vector<std::unique_ptr<ViewPoint>> points;
 
     // nanoflann functionality (This is required s.t. nanoflann can run)
     inline std::size_t kdtree_get_point_count() const { return points.size(); }
 
     inline double kdtree_get_pt(const size_t idx, const size_t dim) const {
       if (dim == 0)
-        return points[idx].pose.x;
+        return points[idx]->pose.x;
       else if (dim == 1)
-        return points[idx].pose.y;
+        return points[idx]->pose.y;
       else
-        return points[idx].pose.z;
+        return points[idx]->pose.z;
     }
 
     template<class BBOX>
@@ -91,6 +93,11 @@ class RHRRTStar : public LocalPlannerBase {
   typedef nanoflann::KDTreeSingleIndexDynamicAdaptor<nanoflann::L2_Simple_Adaptor<double, TreeData>, TreeData, 3>
       KDTree;
 
+  // accessors for visualization
+  const Config &getConfig() const { return config_; }
+  const TreeData &getTreeData() const { return tree_data_; }
+
+ protected:
   /* components */
   Config config_;
   TreeData tree_data_;
@@ -100,7 +107,7 @@ class RHRRTStar : public LocalPlannerBase {
   /* methods */
   // general
   void resetPlanner(const WayPoint &origin);
-  bool findNearestNeighbors(Eigen::Vector3d position, std::vector<ViewPoint *> *result, int n_neighbors = 1);
+  bool findNearestNeighbors(Eigen::Vector3d position, std::vector<size_t> *result, int n_neighbors = 1);
 
   // tree building
   void expandTree();
@@ -109,18 +116,22 @@ class RHRRTStar : public LocalPlannerBase {
   bool connectViewPoint(ViewPoint *view_point);
 
   // extract best viewpoint
-  void selectNextBestWayPoint(WayPoint *way_point);
+  bool selectNextBestWayPoint(WayPoint *next_waypoint);
   bool selectBestConnection(ViewPoint *view_point);
   void computeValue(ViewPoint *view_point);
-  double computeGNVStep(ViewPoint* view_point, double gain, double cost);
+  static double computeGNVStep(ViewPoint *view_point, double gain, double cost);
 
   // updating
   void updateTree();
   void updateCollision();
   void updateGains();
+  void computePointsConnectedToRoot(bool count_only_active_connections);
 
   /* variables */
   int local_sampled_points_;
+  int num_previous_points_;
+  int next_root_index_; // -1 if there is no next root, >=0 if tree should update
+  ViewPoint* root_;   // root pointer so it does not need to be searched for all the time
 
 };
 

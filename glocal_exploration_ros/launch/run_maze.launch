@@ -34,11 +34,11 @@
 
   <group ns="planner">
     <!-- Planner -->
-    <node name="glocal_planner" pkg="glocal_exploration_ros" type="glocal_planner_node" output="screen" args="--v $(arg verbosity)">
+    <node name="glocal_planner" pkg="glocal_exploration_ros" type="glocal_planner_node" output="screen" args="--v $(arg verbosity) --alsologtostderr">
       <rosparam command="load" file="$(find glocal_exploration_ros)/config/$(arg planner_config)"/>
       <remap from="~mapping/pointcloud" to="/$(arg mav_name)/Lidar" />
       <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
-<!--      <remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />-->
+      <remap from="command/pose" to="/$(arg mav_name)/command/pose" />
 <!--      <remap from="global_trajectory" to="mav_local_planner/full_trajectory" />-->
 <!--	  <remap from="planner_node/plan" to="cblox_skeleton_planner/plan" />-->
 <!--	  <remap from="planner_node/publish_path" to="cblox_skeleton_planner/publish_path" />-->
