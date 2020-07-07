@@ -17,7 +17,7 @@ class VoxbloxMap : public MapBase {
   struct Config : MapBase::Config {
     // Since this is a ros-class anyways we make it easy and just get the nh.
     std::string nh_private_namespace = "~";
-    double collision_radius = 0.3;  // m
+    double traversability_radius = 0.3;  // m
     double clearing_radius = 0.5;   // m
   };
   explicit VoxbloxMap(const std::shared_ptr<StateMachine> &state_machine);

@@ -7,15 +7,12 @@ republish_waypoints: true
 mapping:
   type: voxblox
 
-  # VoxbloxMap params
-  clearing_radius: 1.0
-  # TODO(victorr): Perhaps it'd be better to unify collision_radius and
-  #                voxblox's traversability_radius param, assuming we'd always
-  #                want them to be consistent
-  collision_radius: 1.5
 
   voxblox:
     # This namespace contains params specifically for voxblox
+    # VoxbloxMap params
+    clearing_radius: 1.0
+    traversability_radius: 1.5
     # Grid settings
     tsdf_voxel_size: 0.2
     tsdf_voxels_per_side: 16
@@ -31,7 +28,6 @@ mapping:
     pointcloud_queue_size: 2
     # Visualization
     verbose: false
-    traversability_radius: 1.5
     color_mode: "normals"
     slice_level: -0.5
     publish_tsdf_map: true
