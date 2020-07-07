@@ -1,4 +1,17 @@
-<launch>  
+<launch>
+  <!-- General arguments -->
+  <arg name="debug_mode"
+       default="false"
+       doc="Run the mapper in debug mode." />
+  <arg name="show_rviz"
+       default="true"
+       doc="Automatically launch Rviz." />
+
+  <!-- Automatically generated arguments -->
+  <arg unless="$(arg debug_mode)" name="launch_prefix" value="" />
+  <arg if="$(arg debug_mode)" name="launch_prefix" value="gdb -ex run --args" />
+
+
   <!-- Planner arguments -->
   <arg name="planner_config" default="glocal_planner.yaml"/>
   <arg name="verbosity" default="3"/>
@@ -34,7 +47,9 @@
 
   <group ns="planner">
     <!-- Planner -->
-    <node name="glocal_planner" pkg="glocal_exploration_ros" type="glocal_planner_node" output="screen" args="--v $(arg verbosity) --alsologtostderr">
+    <node name="glocal_planner" pkg="glocal_exploration_ros" type="glocal_planner_node"
+          output="screen" args="--v $(arg verbosity) --alsologtostderr"
+          launch-prefix="$(arg launch_prefix)">
       <rosparam command="load" file="$(find glocal_exploration_ros)/config/$(arg planner_config)"/>
       <remap from="~mapping/pointcloud" to="/$(arg mav_name)/Lidar" />
       <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
@@ -115,5 +130,8 @@
   </group>
 
   <!-- Visualization -->
-  <node type="rviz" name="rviz" pkg="rviz" args="-d $(find glocal_exploration_ros)/config/maze_visualization.rviz"/>
+  <group if="$(arg show_rviz)">
+    <arg name="rviz_file" default="$(find glocal_exploration_ros)/config/maze_visualization.rviz" />
+    <node type="rviz" name="rviz" pkg="rviz" args="-d $(arg rviz_file)"/>
+  </group>
 </launch>
