@@ -6,22 +6,40 @@ republish_waypoints: true
 
 mapping:
   type: voxblox
+
+  # VoxbloxMap params
+  clearing_radius: 1.0
+  # TODO(victorr): Perhaps it'd be better to unify collision_radius and
+  #                voxblox's traversability_radius param, assuming we'd always
+  #                want them to be consistent
+  collision_radius: 1.5
+
   voxblox:
     # This namespace contains params specifically for voxblox
+    # Grid settings
     tsdf_voxel_size: 0.2
     tsdf_voxels_per_side: 16
-    method: fast
+    # Integrator settings: general
+    method: "fast"
+    truncation_distance: 0.60
+    min_ray_length_m: 1.0
     max_ray_length_m: 10
-    verbose: false
-    color_mode: normals
-    # VoxbloxMap params
-    clearing_radius: 1.0
-    collision_radius: 1.5
+    max_weight: 1000
+    use_const_weight: true
+    use_weight_dropoff: false
+    max_consecutive_ray_collisions: 1  # Only affects the fast integrator
+    pointcloud_queue_size: 2
     # Visualization
-    publish_traversable: true
+    verbose: false
     traversability_radius: 1.5
+    color_mode: "normals"
+    slice_level: -0.5
+    publish_tsdf_map: true
     publish_pointclouds: true
-    
+    publish_traversable: true
+    publish_slices: true
+    publish_pointclouds_on_update: true
+
 local_planner:
   type: rh_rrt_star
   # RH-RRT-Star params
