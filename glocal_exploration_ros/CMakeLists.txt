@@ -11,7 +11,8 @@ catkin_package()
 #############
 
 cs_add_library(${PROJECT_NAME}
-        src/planners/glocal_planner.cpp
+        src/planning/glocal_planner.cpp
+        src/planning/global_planner/skeleton_planner.cpp
         src/mapping/voxblox_map.cpp
         src/conversions/ros_params.cpp
         src/conversions/ros_component_factory.cpp
