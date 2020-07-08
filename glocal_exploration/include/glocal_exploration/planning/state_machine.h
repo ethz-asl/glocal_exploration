@@ -1,8 +1,9 @@
 #ifndef GLOCAL_EXPLORATION_PLANNING_STATE_MACHINE_H_
 #define GLOCAL_EXPLORATION_PLANNING_STATE_MACHINE_H_
 
-#include <boost/shared_ptr.hpp>
 #include <string>
+
+#include <boost/shared_ptr.hpp>
 
 #include "glocal_exploration/common.h"
 #include "glocal_exploration/planning/region_of_interest.h"
