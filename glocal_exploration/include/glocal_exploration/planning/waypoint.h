@@ -18,9 +18,8 @@ struct WayPoint {
 
   // utilities
   Eigen::Vector3d position() const { return Eigen::Vector3d(x, y, z); }
-
 };
 
-} // namespace glocal_exploration
+}  // namespace glocal_exploration
 
-#endif //GLOCAL_EXPLORATION_COMMON_H_
+#endif  // GLOCAL_EXPLORATION_COMMON_H_

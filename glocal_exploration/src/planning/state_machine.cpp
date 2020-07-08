@@ -2,9 +2,13 @@
 
 namespace glocal_exploration {
 
-StateMachine::StateMachine() : state_(SettingUp), previous_state_(SettingUp), target_reached_(false), new_waypoint_requested_(false) {}
+StateMachine::StateMachine()
+    : state_(SettingUp),
+      previous_state_(SettingUp),
+      target_reached_(false),
+      new_waypoint_requested_(false) {}
 
-bool StateMachine::pointInROI(const Eigen::Vector3d &point){
+bool StateMachine::pointInROI(const Eigen::Vector3d& point) {
   if (roi_) {
     return roi_->contains(point);
   }
@@ -12,13 +16,14 @@ bool StateMachine::pointInROI(const Eigen::Vector3d &point){
   return true;
 }
 
-void StateMachine::setROI(const std::shared_ptr<RegionOfInterest> &roi) {
+void StateMachine::setROI(const std::shared_ptr<RegionOfInterest>& roi) {
   roi_ = roi;
 }
 
 void StateMachine::signalFinished() {
   if (state_ == State::SettingUp) {
-    LOG(WARNING) << "Can not transition from '" << stateToString(state_) << " to 'Finished'.";
+    LOG(WARNING) << "Can not transition from '" << stateToString(state_)
+                 << " to 'Finished'.";
   } else {
     setState(Finished);
   }
@@ -26,7 +31,8 @@ void StateMachine::signalFinished() {
 
 void StateMachine::signalReady() {
   if (state_ != State::SettingUp) {
-    LOG(WARNING) << "Can not transition from '" << stateToString(state_) << " to 'Ready'.";
+    LOG(WARNING) << "Can not transition from '" << stateToString(state_)
+                 << " to 'Ready'.";
   } else {
     setState(Ready);
   }
@@ -34,7 +40,8 @@ void StateMachine::signalReady() {
 
 void StateMachine::signalLocalPlanning() {
   if (state_ == State::SettingUp || state_ == Finished) {
-    LOG(WARNING) << "Can not transition from '" << stateToString(state_) << " to 'LocalPlanning'.";
+    LOG(WARNING) << "Can not transition from '" << stateToString(state_)
+                 << " to 'LocalPlanning'.";
   } else {
     setState(LocalPlanning);
   }
@@ -42,18 +49,19 @@ void StateMachine::signalLocalPlanning() {
 
 void StateMachine::signalGlobalPlanning() {
   if (state_ == State::SettingUp || state_ == Finished) {
-    LOG(WARNING) << "Can not transition from '" << stateToString(state_) << " to 'GlobalPlanning'.";
+    LOG(WARNING) << "Can not transition from '" << stateToString(state_)
+                 << " to 'GlobalPlanning'.";
   } else {
     setState(GlobalPlanning);
   }
 }
 
-void StateMachine::requestWayPoint(const WayPoint &way_point) {
+void StateMachine::requestWayPoint(const WayPoint& way_point) {
   new_waypoint_requested_ = true;
   target_way_point_ = way_point;
 }
 
-bool StateMachine::getNewWayPointIfRequested(WayPoint *way_point) {
+bool StateMachine::getNewWayPointIfRequested(WayPoint* way_point) {
   if (!new_waypoint_requested_) {
     return false;
   }
@@ -70,14 +78,19 @@ void StateMachine::setState(State state) {
 
 std::string StateMachine::stateToString(State state) {
   switch (state) {
-    case SettingUp  : return "SettingUp";
-    case Ready  : return "Ready";
-    case LocalPlanning  : return "LocalPlanning";
-    case GlobalPlanning  : return "GlobalPlanning";
-    case Finished  : return "Finished";
-    default: return "UnknownState";
+    case SettingUp:
+      return "SettingUp";
+    case Ready:
+      return "Ready";
+    case LocalPlanning:
+      return "LocalPlanning";
+    case GlobalPlanning:
+      return "GlobalPlanning";
+    case Finished:
+      return "Finished";
+    default:
+      return "UnknownState";
   }
 }
 
-} // namespace glocal_exploration
-
+}  // namespace glocal_exploration

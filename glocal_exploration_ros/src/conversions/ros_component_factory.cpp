@@ -5,14 +5,14 @@
 
 namespace glocal_exploration {
 
-std::string ComponentFactoryROS::getType(const ros::NodeHandle &nh) {
+std::string ComponentFactoryROS::getType(const ros::NodeHandle& nh) {
   std::string type;
   nh.param("type", type, std::string("type param is not set"));
   return type;
 }
 
-std::shared_ptr<MapBase> ComponentFactoryROS::createMap(const ros::NodeHandle &nh,
-                                                        std::shared_ptr<StateMachine> state_machine) {
+std::shared_ptr<MapBase> ComponentFactoryROS::createMap(
+    const ros::NodeHandle& nh, std::shared_ptr<StateMachine> state_machine) {
   std::string type = getType(nh);
   if (type == "voxblox") {
     auto map = std::make_shared<VoxbloxMap>(state_machine);
@@ -25,9 +25,9 @@ std::shared_ptr<MapBase> ComponentFactoryROS::createMap(const ros::NodeHandle &n
   }
 }
 
-std::shared_ptr<LocalPlannerBase> ComponentFactoryROS::createLocalPlanner(const ros::NodeHandle &nh,
-                                                                          std::shared_ptr<MapBase> map,
-                                                                          std::shared_ptr<StateMachine> state_machine) {
+std::shared_ptr<LocalPlannerBase> ComponentFactoryROS::createLocalPlanner(
+    const ros::NodeHandle& nh, std::shared_ptr<MapBase> map,
+    std::shared_ptr<StateMachine> state_machine) {
   std::string type = getType(nh);
   if (type == "rh_rrt_star") {
     auto planner = std::make_shared<RHRRTStar>(map, state_machine);
@@ -40,19 +40,22 @@ std::shared_ptr<LocalPlannerBase> ComponentFactoryROS::createLocalPlanner(const 
   }
 }
 
-std::shared_ptr<LocalPlannerVisualizerBase> ComponentFactoryROS::createLocalPlannerVisualizer(const ros::NodeHandle &nh,
-                                                                                                     const std::shared_ptr<
-                                                                                                         LocalPlannerBase> &planner) {
+std::shared_ptr<LocalPlannerVisualizerBase>
+ComponentFactoryROS::createLocalPlannerVisualizer(
+    const ros::NodeHandle& nh,
+    const std::shared_ptr<LocalPlannerBase>& planner) {
   std::string type = getType(nh);
   if (type == "rh_rrt_star") {
     return std::make_shared<RHRRTStarVisualizer>(nh, planner);
   } else {
-    LOG(WARNING) << "Did not find a visualizer for local planner '" << type << "'.";
+    LOG(WARNING) << "Did not find a visualizer for local planner '" << type
+                 << "'.";
     return std::make_shared<LocalPlannerVisualizerBase>(nh, planner);
   }
 }
 
-std::shared_ptr<RegionOfInterest> ComponentFactoryROS::createRegionOfInterest(const ros::NodeHandle &nh) {
+std::shared_ptr<RegionOfInterest> ComponentFactoryROS::createRegionOfInterest(
+    const ros::NodeHandle& nh) {
   std::string type = getType(nh);
   if (type == "bounding_box") {
     auto roi = std::make_shared<BoundingBox>();
@@ -65,5 +68,4 @@ std::shared_ptr<RegionOfInterest> ComponentFactoryROS::createRegionOfInterest(co
   }
 }
 
-
-} // namespace glocal_exploration
+}  // namespace glocal_exploration

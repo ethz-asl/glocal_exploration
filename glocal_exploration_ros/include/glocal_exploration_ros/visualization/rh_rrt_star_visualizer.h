@@ -1,15 +1,15 @@
 #ifndef GLOCAL_EXPLORATION_VISUALIZATION_RH_RRT_STAR_VISUALIZER_
 #define GLOCAL_EXPLORATION_VISUALIZATION_RH_RRT_STAR_VISUALIZER_
 
-#include "glocal_exploration_ros/visualization/local_planner_visualizer_base.h"
 #include "glocal_exploration/planning/local_planner/rh_rrt_star.h"
+#include "glocal_exploration_ros/visualization/local_planner_visualizer_base.h"
 
 namespace glocal_exploration {
 
 class RHRRTStarVisualizer : public LocalPlannerVisualizerBase {
  public:
-
-  RHRRTStarVisualizer(const ros::NodeHandle& nh, const std::shared_ptr<LocalPlannerBase> &planner);
+  RHRRTStarVisualizer(const ros::NodeHandle& nh,
+                      const std::shared_ptr<LocalPlannerBase>& planner);
 
   void visualize() override;
 
@@ -28,6 +28,6 @@ class RHRRTStarVisualizer : public LocalPlannerVisualizerBase {
   int num_previous_visible_voxels_;
 };
 
-} // namespace glocal_exploration
+}  // namespace glocal_exploration
 
-#endif // GLOCAL_EXPLORATION_VISUALIZATION_RH_RRT_STAR_VISUALIZER_
+#endif  // GLOCAL_EXPLORATION_VISUALIZATION_RH_RRT_STAR_VISUALIZER_

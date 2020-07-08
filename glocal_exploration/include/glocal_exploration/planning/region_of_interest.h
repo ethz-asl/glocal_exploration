@@ -16,9 +16,9 @@ class RegionOfInterest {
   RegionOfInterest() = default;
   virtual ~RegionOfInterest() = default;
 
-  virtual bool contains(const Eigen::Vector3d &point) = 0;
+  virtual bool contains(const Eigen::Vector3d& point) = 0;
 
-  virtual bool setupFromConfig(Config *config) = 0;
+  virtual bool setupFromConfig(Config* config) = 0;
 };
 
 /**
@@ -35,14 +35,14 @@ class BoundingBox : public RegionOfInterest {
     double z_max = 0;
   };
 
-  bool contains(const Eigen::Vector3d &point) override;
+  bool contains(const Eigen::Vector3d& point) override;
 
-  bool setupFromConfig(RegionOfInterest::Config *config) override;
+  bool setupFromConfig(RegionOfInterest::Config* config) override;
 
  protected:
   Config config_;
 };
 
-} // namespace glocal_exploration
+}  // namespace glocal_exploration
 
-#endif //GLOCAL_EXPLORATION_PLANNING_REGION_OF_INTEREST_H_
+#endif  // GLOCAL_EXPLORATION_PLANNING_REGION_OF_INTEREST_H_

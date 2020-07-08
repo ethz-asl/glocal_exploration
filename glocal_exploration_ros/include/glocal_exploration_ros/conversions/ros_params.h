@@ -9,14 +9,16 @@
 
 namespace glocal_exploration {
 
-VoxbloxMap::Config getVoxbloxMapConfigFromRos(const ros::NodeHandle &nh);
+VoxbloxMap::Config getVoxbloxMapConfigFromRos(const ros::NodeHandle& nh);
 
 VoxgraphMap::Config getVoxgraphMapConfigFromRos(const ros::NodeHandle& nh);
 
-LidarModel::Config getLidarModelConfigFromRos(const ros::NodeHandle &nh);
+RHRRTStar::Config getRHRRTStarConfigFromRos(const ros::NodeHandle& nh);
 
-BoundingBox::Config getBoundingBoxConfigFromRos(const ros::NodeHandle &nh);
+LidarModel::Config getLidarModelConfigFromRos(const ros::NodeHandle& nh);
 
-} // namespace glocal_exploration
+BoundingBox::Config getBoundingBoxConfigFromRos(const ros::NodeHandle& nh);
 
-#endif // GLOCAL_EXPLORATION_ROS_CONVERSIONS_ROS_PARAMS_H_
+}  // namespace glocal_exploration
+
+#endif  // GLOCAL_EXPLORATION_ROS_CONVERSIONS_ROS_PARAMS_H_
