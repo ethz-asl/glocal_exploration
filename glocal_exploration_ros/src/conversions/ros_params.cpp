@@ -11,7 +11,17 @@ VoxbloxMap::Config getVoxbloxMapConfigFromRos(const ros::NodeHandle &nh) {
   return config;
 }
 
-LidarModel::Config getLidarModelConfigFromRos(const ros::NodeHandle &nh){
+VoxgraphMap::Config getVoxgraphMapConfigFromRos(const ros::NodeHandle& nh) {
+  VoxgraphMap::Config config;
+  ros::NodeHandle nh_mapping(nh, "voxgraph");
+  config.nh_private_namespace = nh_mapping.getNamespace();
+  nh_mapping.param("traversability_radius", config.traversability_radius,
+                   config.traversability_radius);
+  nh_mapping.param("clearing_radius", config.clearing_radius,
+                   config.clearing_radius);
+  return config;
+}
+
   LidarModel::Config config;
   nh.param("ray_length", config.ray_length, config.ray_length);
   nh.param("vertical_fov", config.vertical_fov, config.vertical_fov);

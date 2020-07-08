@@ -25,7 +25,7 @@ mapping:
     tsdf_voxel_size: 0.2
     tsdf_voxels_per_side: 16
     # Integrator settings general
-    method: "fast"
+    method: "projective"
     truncation_distance: 0.60
     min_ray_length_m: 1.0
     max_ray_length_m: 10
@@ -34,6 +34,16 @@ mapping:
     use_weight_dropoff: false
     max_consecutive_ray_collisions: 1  # Only affects the fast integrator
     pointcloud_queue_size: 2
+    # Integrator settings: projective integrator
+    sensor_horizontal_resolution: 200
+    sensor_vertical_resolution: 32
+    sensor_vertical_field_of_view_degrees: 45
+    integrator_threads: 4
+    use_missing_points_for_clearing: true
+    # Integrator settings: temporal window (for compatibility with voxgraph)
+    #    pointcloud_deintegration_queue_length: 100
+    #    publish_map_every_n_sec: 6.0
+    #    publish_map_with_trajectory: true
     # Visualization
     verbose: false
     color_mode: "normals"

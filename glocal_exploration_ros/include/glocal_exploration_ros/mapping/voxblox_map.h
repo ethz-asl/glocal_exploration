@@ -38,7 +38,7 @@ class VoxbloxMap : public MapBase {
   double c_voxel_size_;
 };
 
-} // namespace glocal_exploration {
+}  // namespace glocal_exploration
 
 
 #endif //GLOCAL_EXPLORATION_ROS_MAPPING_VOXBLOX_MAP_H_
