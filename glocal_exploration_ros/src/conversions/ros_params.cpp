@@ -4,9 +4,10 @@ namespace glocal_exploration {
 
 VoxbloxMap::Config getVoxbloxMapConfigFromRos(const ros::NodeHandle &nh) {
   VoxbloxMap::Config config;
-  config.nh_private_namespace = nh.getNamespace() + "/voxblox";
-  nh.param("collision_radius", config.collision_radius, config.collision_radius);
-  nh.param("clearing_radius", config.clearing_radius, config.clearing_radius);
+  ros::NodeHandle nh_mapping(nh, "voxblox");
+  config.nh_private_namespace = nh_mapping.getNamespace();
+  nh_mapping.param("traversability_radius", config.traversability_radius, config.traversability_radius);
+  nh_mapping.param("clearing_radius", config.clearing_radius, config.clearing_radius);
   return config;
 }
 
@@ -37,11 +38,23 @@ RHRRTStar::Config getRHRRTStarConfigFromRos(const ros::NodeHandle &nh){
   nh.param("global_sampling_radius", config.global_sampling_radius, config.global_sampling_radius);
   nh.param("min_local_points", config.min_local_points, config.min_local_points);
   nh.param("min_path_length", config.min_path_length, config.min_path_length);
+  nh.param("min_sampling_distance", config.min_sampling_distance, config.min_sampling_distance);
   nh.param("max_path_length", config.max_path_length, config.max_path_length);
   nh.param("path_cropping_length", config.path_cropping_length, config.path_cropping_length);
   nh.param("max_number_of_neighbors", config.max_number_of_neighbors, config.max_number_of_neighbors);
   nh.param("maximum_rewiring_iterations", config.maximum_rewiring_iterations, config.maximum_rewiring_iterations);
   config.lidar_config = getLidarModelConfigFromRos(nh);
+  return config;
+}
+
+BoundingBox::Config getBoundingBoxConfigFromRos(const ros::NodeHandle &nh) {
+  BoundingBox::Config config;
+  nh.param("x_min", config.x_min, config.x_min);
+  nh.param("y_min", config.y_min, config.y_min);
+  nh.param("z_min", config.z_min, config.z_min);
+  nh.param("x_max", config.x_max, config.x_max);
+  nh.param("y_max", config.y_max, config.y_max);
+  nh.param("z_max", config.z_max, config.z_max);
   return config;
 }
 

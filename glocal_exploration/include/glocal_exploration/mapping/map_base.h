@@ -10,6 +10,7 @@ namespace glocal_exploration {
 /**
  * Defines the interface of a map module that is needed by the planner.
  */
+
 class MapBase {
  public:
   // Defines a baseclass for map configurations

@@ -2,9 +2,11 @@
 #define GLOCAL_EXPLORATION_PLANNING_STATE_MACHINE_H_
 
 #include <string>
+#include <boost/shared_ptr.hpp>
 
 #include "glocal_exploration/common.h"
 #include "glocal_exploration/planning/waypoint.h"
+#include "glocal_exploration/planning/region_of_interest.h"
 
 namespace glocal_exploration {
 /**
@@ -22,17 +24,20 @@ class StateMachine {
   const State &previousState() const { return previous_state_; }
   bool targetIsReached() const { return target_reached_; }
   const WayPoint& currentPose() const { return current_pose_; }
+  bool pointInROI(const Eigen::Vector3d &point);
 
   // interactions
   void signalReady();
   void signalLocalPlanning();
   void signalGlobalPlanning();
+  void signalFinished();
   void requestWayPoint(const WayPoint& way_point);
 
   // interface for the main node to manage the State machine
   void setTargetReached(bool target_reached) { target_reached_ = target_reached; }
   void setCurrentPose(const WayPoint &pose) { current_pose_ = pose; }
   bool getNewWayPointIfRequested(WayPoint * way_point);
+  void setROI(const std::shared_ptr<RegionOfInterest> &roi);
 
   // utilities
   static std::string stateToString(State state);
@@ -44,6 +49,9 @@ class StateMachine {
   WayPoint current_pose_;
   WayPoint target_way_point_;
   bool new_waypoint_requested_;
+
+  // members
+  std::shared_ptr<RegionOfInterest> roi_;
 
   // methods
   void setState(State state);

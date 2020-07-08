@@ -2,7 +2,8 @@
 
 namespace glocal_exploration {
 
-LidarModel::LidarModel(std::shared_ptr<MapBase> map) : SensorModel(std::move(map)) {}
+LidarModel::LidarModel(std::shared_ptr<MapBase> map, std::shared_ptr<StateMachine> state_machine)
+    : SensorModel(std::move(map), std::move(state_machine)) {}
 
 bool LidarModel::setupFromConfig(SensorModel::Config *config) {
   CHECK_NOTNULL(config);
@@ -24,8 +25,8 @@ bool LidarModel::setupFromConfig(SensorModel::Config *config) {
   }
 
   // Downsample to voxel size resolution at max range
-  c_fov_x_ = config_.vertical_fov / 180.0 * M_PI;
-  c_fov_y_ = config_.horizontal_fov / 180.0 * M_PI;
+  c_fov_x_ = config_.horizontal_fov / 180.0 * M_PI;
+  c_fov_y_ = config_.vertical_fov / 180.0 * M_PI;
   c_res_x_ = std::min((int) ceil(config_.ray_length * c_fov_x_ / (map_->getVoxelSize() * config_.downsampling_factor)),
                       config_.vertical_resolution);
   c_res_y_ = std::min((int) ceil(config_.ray_length * c_fov_y_ / (map_->getVoxelSize() * config_.downsampling_factor)),
@@ -56,7 +57,7 @@ bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d> *result, const Wa
   ray_table_.setZero();
 
   // Ray-casting
-  Eigen::Quaterniond orientation = mounting_orientation_ * Eigen::AngleAxisd(waypoint.yaw, Eigen::Vector3d::UnitZ());
+  Eigen::Quaterniond orientation = Eigen::AngleAxisd(waypoint.yaw, Eigen::Vector3d::UnitZ()) * mounting_orientation_;
   Eigen::Vector3d position = waypoint.position() + mounting_position_;
   Eigen::Vector3d camera_direction;
   Eigen::Vector3d direction;
@@ -82,9 +83,9 @@ bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d> *result, const Wa
           current_position = position + distance * direction;
           distance += config_.ray_step;
 
-          // TODO(schmluk): the z>3 is a hacked in bounding box, remove for proper implementation!
           // Check voxel occupied
-          if (map_->getVoxelStateInLocalArea(current_position) == MapBase::Occupied || current_position.z() > 1.5) {
+          if (map_->getVoxelStateInLocalArea(current_position) == MapBase::Occupied
+              || !state_machine_->pointInROI(current_position)) {
             // Occlusion, mark neighboring rays as occluded
             markNeighboringRays(i, j, current_segment, -1);
             cast_ray = false;

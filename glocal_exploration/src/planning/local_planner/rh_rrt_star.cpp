@@ -22,7 +22,7 @@ bool RHRRTStar::setupFromConfig(LocalPlannerBase::Config *config) {
   config_ = *cfg;
 
   // setup the sensor
-  sensor_model_ = std::make_unique<LidarModel>(map_);
+  sensor_model_ = std::make_unique<LidarModel>(map_, state_machine_);
   sensor_model_->setupFromConfig(&(config_.lidar_config));
   return true;
 }
@@ -37,6 +37,7 @@ void RHRRTStar::planningIteration() {
   // Requested a view point so update
   if (next_root_index_ > -1) {
     updateTree();
+    next_root_index_ = -1;
   }
 
   // expansion step
@@ -101,14 +102,14 @@ bool RHRRTStar::selectNextBestWayPoint(WayPoint *next_waypoint) {
 
   // Connect every viewpoint to form a tree (this is needed for the value computation)
   computePointsConnectedToRoot(true);
-  std::queue<ViewPoint*> not_connected;
-  for (auto & vp: tree_data_.points) {
+  std::queue<ViewPoint *> not_connected;
+  for (auto &vp: tree_data_.points) {
     if (!vp->is_connected_to_root) {
       not_connected.push(vp.get());
     }
   }
   while (!not_connected.empty()) {
-    ViewPoint* current = not_connected.front();
+    ViewPoint *current = not_connected.front();
     not_connected.pop();
     for (size_t i = 0; i < current->connections.size(); ++i) {
       if (current->getConnectedViewPoint(i)->is_connected_to_root) {
@@ -166,6 +167,7 @@ bool RHRRTStar::selectNextBestWayPoint(WayPoint *next_waypoint) {
 }
 
 void RHRRTStar::updateTree() {
+  // NOTE: this method requires the next_root_index_ to be computed by selectNextBestWayPoint() previously.
   // counting
   int points_before_update = tree_data_.points.size();
   auto t_start = std::chrono::high_resolution_clock::now();
@@ -199,17 +201,16 @@ void RHRRTStar::updateTree() {
   // logging
   auto t_end = std::chrono::high_resolution_clock::now();
   VLOG(2)
-  << "Updated the tree in " << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count()
+  << "Update took " << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count()
   << "ms: " << points_before_update - num_previous_points_ << " new, "
-  << tree_data_.points.size() - points_before_update
-  << " killed.";
+  << points_before_update - tree_data_.points.size() << " killed, " << tree_data_.points.size() << " total.";
   num_previous_points_ = tree_data_.points.size();
-
-  // finish
-  next_root_index_ = -1;    // this signifies no updating
 }
 
 void RHRRTStar::updateCollision() {
+  // cache the next connection so the index can be corrected after pruning
+  Connection *next_connection = root_->connections[next_root_index_].second.get();
+
   // update all connections
   for (auto &viewpoint : tree_data_.points) {
     int offset = 0;
@@ -220,13 +221,9 @@ void RHRRTStar::updateCollision() {
       if (viewpoint->connections[i].first) {
         Connection *connection = viewpoint->connections[i].second.get();
         ViewPoint *target = connection->target;
-        if (target->is_root) {
-          if (target->connections.size() > next_root_index_) {
-            if (target->connections[next_root_index_].second.get() == connection) {
-              // don't update the currently executed connection, this always allows backtracking as well.
-              continue;
-            }
-          }
+        if (connection == next_connection) {
+          // don't update the currently executed connection, this always allows backtracking as well.
+          continue;
         }
 
         // check collision
@@ -261,6 +258,14 @@ void RHRRTStar::updateCollision() {
   // reset the kdtree
   kdtree_ = std::make_unique<KDTree>(3, tree_data_);
   kdtree_->addPoints(0, tree_data_.points.size() - 1);
+
+  // adjust the next_root index
+  for (size_t i = 0; i < root_->connections.size(); ++i) {
+    if (root_->connections[i].second.get() == next_connection) {
+      next_root_index_ = i;
+      break;
+    }
+  }
 }
 
 void RHRRTStar::computePointsConnectedToRoot(bool count_only_active_connections) {
@@ -268,7 +273,7 @@ void RHRRTStar::computePointsConnectedToRoot(bool count_only_active_connections)
   std::queue<ViewPoint *> points_to_check;
 
   // setup
-  for (auto & vp: tree_data_.points) {
+  for (auto &vp: tree_data_.points) {
     if (vp->is_root) {
       points_to_check.push(vp.get());
       vp->is_connected_to_root = true;
@@ -279,18 +284,21 @@ void RHRRTStar::computePointsConnectedToRoot(bool count_only_active_connections)
 
   // breadth first search
   while (!points_to_check.empty()) {
-      for (size_t i = 0; i < points_to_check.front()->connections.size(); ++i) {
-        ViewPoint *connected_vp = points_to_check.front()->getConnectedViewPoint(i);
-        if (count_only_active_connections) {
-          if (connected_vp->getConnectedViewPoint(connected_vp->active_connection) != points_to_check.front()) {
-            continue;
-          }
-        }
-        if (!connected_vp->is_connected_to_root) {
-          points_to_check.push(connected_vp);
-          connected_vp->is_connected_to_root = true;
+    for (size_t i = 0; i < points_to_check.front()->connections.size(); ++i) {
+      ViewPoint *connected_vp = points_to_check.front()->getConnectedViewPoint(i);
+      if (count_only_active_connections) {
+        if (connected_vp->active_connection >= connected_vp->connections.size()
+            || connected_vp->active_connection < 0) {
+          continue;
+        } else if (connected_vp->getConnectedViewPoint(connected_vp->active_connection) != points_to_check.front()) {
+          continue;
         }
       }
+      if (!connected_vp->is_connected_to_root) {
+        points_to_check.push(connected_vp);
+        connected_vp->is_connected_to_root = true;
+      }
+    }
     points_to_check.pop();
   }
 }
@@ -317,6 +325,7 @@ bool RHRRTStar::connectViewPoint(ViewPoint *view_point) {
     double distance = (view_point->pose.position() - tree_data_.points[index]->pose.position()).norm();
     if (distance > config_.max_path_length || distance < config_.min_path_length) { continue; }
     if (view_point->tryAddConnection(tree_data_.points[index].get(), map_)) {
+      view_point->connections.back().second->cost = computeCost(*view_point->connections.back().second.get());
       connection_found = true;
     }
   }
@@ -361,6 +370,21 @@ bool RHRRTStar::selectBestConnection(ViewPoint *view_point) {
   view_point->value = best_value;
   view_point->active_connection = best_connection;
   return true;
+}
+
+double RHRRTStar::computeGain(const std::vector<Eigen::Vector3d> &visible_voxels) {
+  double gain = 0.0;
+  for (auto &point : visible_voxels) {
+    if (map_->getVoxelStateInLocalArea(point) == MapBase::Unknown) {
+      gain += 1.0;
+    }
+  }
+  return gain;
+}
+
+double RHRRTStar::computeCost(const Connection &connection) {
+  // just use distance
+  return (connection.path_points.front() - connection.path_points.back()).norm();
 }
 
 void RHRRTStar::computeValue(ViewPoint *view_point) {
@@ -417,7 +441,8 @@ bool RHRRTStar::sampleNewPoint(ViewPoint *point) {
   std::vector<size_t> nearest_viewpoint;
   if (!findNearestNeighbors(goal, &nearest_viewpoint)) { return false; }
   Eigen::Vector3d origin = tree_data_.points[nearest_viewpoint.front()]->pose.position();
-  double distance_max = std::min(std::max((goal - origin).norm(), config_.min_path_length), config_.max_path_length)
+  double
+      distance_max = std::min(std::max((goal - origin).norm(), config_.min_sampling_distance), config_.max_path_length)
       + config_.path_cropping_length;
 
   // verify and crop the sampled path
@@ -430,7 +455,7 @@ bool RHRRTStar::sampleNewPoint(ViewPoint *point) {
     range += range_increment;
   }
   range = range - config_.path_cropping_length - range_increment;
-  if (range < config_.min_path_length) {
+  if (range < config_.min_sampling_distance) {
     return false;
   }
 
@@ -464,7 +489,29 @@ bool RHRRTStar::findNearestNeighbors(Eigen::Vector3d position, std::vector<size_
 void RHRRTStar::evaluateViewPoint(ViewPoint *view_point) {
   std::vector<Eigen::Vector3d> visible_voxels;
   sensor_model_->getVisibleVoxels(&visible_voxels, view_point->pose);
-  view_point->gain = visible_voxels.size();
+  view_point->gain = computeGain(visible_voxels);
+}
+
+void RHRRTStar::visualizeGain(std::vector<Eigen::Vector3d> *voxels,
+                              std::vector<Eigen::Vector3d> *colors,
+                              double *scale,
+                              const WayPoint &pose) const {
+  CHECK_NOTNULL(voxels);
+  CHECK_NOTNULL(colors);
+  CHECK_NOTNULL(scale);
+  // get voxels
+  sensor_model_->getVisibleVoxels(voxels, pose);
+  voxels->erase(std::remove_if(voxels->begin(),
+                               voxels->end(),
+                               [this](const Eigen::Vector3d &pt) {
+                                 return map_->getVoxelStateInLocalArea(pt) != MapBase::Unknown;
+                               }), voxels->end());
+
+  // uniform coloring [0, 1]
+  colors->assign(voxels->size(), Eigen::Vector3d(1, 0.8, 0));
+
+  // voxel size
+  *scale = map_->getVoxelSize();
 }
 
 bool RHRRTStar::ViewPoint::tryAddConnection(ViewPoint *target, const std::shared_ptr<MapBase> &map) {
@@ -489,9 +536,6 @@ bool RHRRTStar::ViewPoint::tryAddConnection(ViewPoint *target, const std::shared
   connections.emplace_back(std::make_pair(true, connection));
   target->connections.emplace_back(std::make_pair(false, connection));
   connection->path_points = std::move(path_points);
-
-  // at the moment just use length as the cost
-  connection->cost = (origin - target->pose.position()).norm();
   return true;
 }
 

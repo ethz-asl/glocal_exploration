@@ -24,10 +24,13 @@ double VoxbloxMap::getVoxelSize() {
 }
 
 bool VoxbloxMap::isTraversableInActiveSubmap(const Eigen::Vector3d &position, const Eigen::Quaterniond &orientation) {
+  if (!state_machine_->pointInROI(position)) {
+    return false;
+  }
   double distance = 0.0;
   if (server_->getEsdfMapPtr()->getDistanceAtPosition(position, &distance)) {
     // This means the voxel is observed
-    return (distance > config_.collision_radius);
+    return (distance > config_.traversability_radius);
   }
   return (position - state_machine_->currentPose().position()).norm() < config_.clearing_radius;
 }

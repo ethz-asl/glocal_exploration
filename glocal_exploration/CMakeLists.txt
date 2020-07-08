@@ -14,6 +14,7 @@ cs_add_library(${PROJECT_NAME}
         src/planning/state_machine.cpp
         src/planning/local_planner/rh_rrt_star.cpp
         src/planning/local_planner/lidar_model.cpp
+        src/planning/region_of_interest.cpp
         )
 
 ##########

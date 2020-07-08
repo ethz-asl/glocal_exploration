@@ -26,6 +26,8 @@ class ComponentFactoryROS {
   static std::shared_ptr<LocalPlannerVisualizerBase> createLocalPlannerVisualizer(const ros::NodeHandle &nh,
                                                               const std::shared_ptr<LocalPlannerBase> &planner);
 
+  static std::shared_ptr<RegionOfInterest> createRegionOfInterest(const ros::NodeHandle &nh);
+
  private:
   ComponentFactoryROS() = default;
   static std::string getType(const ros::NodeHandle &nh);

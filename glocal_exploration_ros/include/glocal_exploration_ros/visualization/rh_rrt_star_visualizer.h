@@ -19,10 +19,13 @@ class RHRRTStarVisualizer : public LocalPlannerVisualizerBase {
 
   // params
   bool visualize_gain_;
+  bool visualize_text_;
+  bool visualize_visible_voxels_;
   bool visualize_value_;
 
   // variables
   int num_previous_msgs_;
+  int num_previous_visible_voxels_;
 };
 
 } // namespace glocal_exploration

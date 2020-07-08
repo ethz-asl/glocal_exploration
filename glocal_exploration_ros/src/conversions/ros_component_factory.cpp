@@ -52,4 +52,18 @@ std::shared_ptr<LocalPlannerVisualizerBase> ComponentFactoryROS::createLocalPlan
   }
 }
 
+std::shared_ptr<RegionOfInterest> ComponentFactoryROS::createRegionOfInterest(const ros::NodeHandle &nh) {
+  std::string type = getType(nh);
+  if (type == "bounding_box") {
+    auto roi = std::make_shared<BoundingBox>();
+    BoundingBox::Config cfg = getBoundingBoxConfigFromRos(nh);
+    roi->setupFromConfig(&cfg);
+    return roi;
+  } else {
+    LOG(ERROR) << "Unknown region of interest type '" << type << "'.";
+    return nullptr;
+  }
+}
+
+
 } // namespace glocal_exploration
