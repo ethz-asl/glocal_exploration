@@ -97,6 +97,10 @@ class RHRRTStar : public LocalPlannerBase {
   // accessors for visualization
   const Config &getConfig() const { return config_; }
   const TreeData &getTreeData() const { return tree_data_; }
+  void visualizeGain(std::vector<Eigen::Vector3d> *voxels,
+                     std::vector<Eigen::Vector3d> *colors,
+                     double *scale,
+                     const WayPoint &pose) const;
 
  protected:
   /* components */
@@ -113,8 +117,12 @@ class RHRRTStar : public LocalPlannerBase {
   // tree building
   void expandTree();
   bool sampleNewPoint(ViewPoint *point);
-  void evaluateViewPoint(ViewPoint *view_point);
   bool connectViewPoint(ViewPoint *view_point);
+
+  // compute gains
+  void evaluateViewPoint(ViewPoint *view_point);
+  double computeGain(const std::vector<Eigen::Vector3d> &visible_voxels);
+  double computeCost(const Connection &connection);
 
   // extract best viewpoint
   bool selectNextBestWayPoint(WayPoint *next_waypoint);
@@ -132,7 +140,7 @@ class RHRRTStar : public LocalPlannerBase {
   int local_sampled_points_;
   int num_previous_points_;
   int next_root_index_; // -1 if there is no next root, >=0 if tree should update
-  ViewPoint* root_;   // root pointer so it does not need to be searched for all the time
+  ViewPoint *root_;   // root pointer so it does not need to be searched for all the time
 
 };
 

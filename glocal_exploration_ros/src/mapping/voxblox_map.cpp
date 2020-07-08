@@ -24,6 +24,9 @@ double VoxbloxMap::getVoxelSize() {
 }
 
 bool VoxbloxMap::isTraversableInActiveSubmap(const Eigen::Vector3d &position, const Eigen::Quaterniond &orientation) {
+  if (!state_machine_->pointInROI(position)) {
+    return false;
+  }
   double distance = 0.0;
   if (server_->getEsdfMapPtr()->getDistanceAtPosition(position, &distance)) {
     // This means the voxel is observed

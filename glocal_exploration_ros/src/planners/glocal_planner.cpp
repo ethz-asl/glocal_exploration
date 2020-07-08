@@ -2,6 +2,7 @@
 
 #include <geometry_msgs/Pose.h>
 #include <tf2/utils.h>
+#include <glocal_exploration_ros/conversions/ros_params.h>
 
 #include "glocal_exploration_ros/conversions/ros_component_factory.h"
 
@@ -12,6 +13,11 @@ GlocalPlanner::GlocalPlanner(const ros::NodeHandle &nh, const ros::NodeHandle &n
 
   // params
   readParamsFromRos();
+
+  // setup the region of interest
+  ros::NodeHandle nh_roi(nh_private_, "region_of_interest");
+  std::shared_ptr<RegionOfInterest> roi = ComponentFactoryROS::createRegionOfInterest(nh_roi);
+  state_machine_->setROI(roi);
 
   // setup the map
   ros::NodeHandle nh_mapping(nh_private_, "mapping");

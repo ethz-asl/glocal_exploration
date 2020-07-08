@@ -47,4 +47,15 @@ RHRRTStar::Config getRHRRTStarConfigFromRos(const ros::NodeHandle &nh){
   return config;
 }
 
+BoundingBox::Config getBoundingBoxConfigFromRos(const ros::NodeHandle &nh) {
+  BoundingBox::Config config;
+  nh.param("x_min", config.x_min, config.x_min);
+  nh.param("y_min", config.y_min, config.y_min);
+  nh.param("z_min", config.z_min, config.z_min);
+  nh.param("x_max", config.x_max, config.x_max);
+  nh.param("y_max", config.y_max, config.y_max);
+  nh.param("z_max", config.z_max, config.z_max);
+  return config;
+}
+
 } // namespace glocal_exploration

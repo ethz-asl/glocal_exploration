@@ -17,7 +17,7 @@ class LidarModel : public SensorModel {
     double downsampling_factor = 1.0; // reduce the number of checks by this factor
   };
 
-  explicit LidarModel(std::shared_ptr<MapBase> map);
+  explicit LidarModel(std::shared_ptr<MapBase> map, std::shared_ptr<StateMachine> state_machine);
   virtual ~LidarModel() = default;
 
   bool getVisibleVoxels(std::vector<Eigen::Vector3d> *result, const WayPoint &waypoint) override;

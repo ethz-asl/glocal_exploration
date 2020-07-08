@@ -14,7 +14,7 @@
 
   <!-- Planner arguments -->
   <arg name="planner_config" default="glocal_planner.yaml"/>
-  <arg name="verbosity" default="3"/>
+  <arg name="verbosity" default="2"/>
   
   <!-- Airsim argument -->
   <arg name="airsim_config" default="maze_airsim.yaml"/>

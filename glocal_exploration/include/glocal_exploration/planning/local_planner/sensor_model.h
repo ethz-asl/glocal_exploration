@@ -11,7 +11,7 @@ namespace glocal_exploration {
 
 class SensorModel {
  public:
-  struct Config{
+  struct Config {
     virtual ~Config() = default;
 
     double mounting_position_x = 0;
@@ -23,17 +23,20 @@ class SensorModel {
     double mounting_orientation_w = 1;
   };
 
-  explicit SensorModel(std::shared_ptr<MapBase> map) : map_(std::move(map)){}
+  explicit SensorModel(std::shared_ptr<MapBase> map, std::shared_ptr<StateMachine> state_machine)
+      : map_(std::move(map)), state_machine_(std::move(state_machine)) {}
   virtual ~SensorModel() = default;
 
   // Return the voxel centers of all visible voxels for that viewpoint
   virtual bool getVisibleVoxels(std::vector<Eigen::Vector3d> *result, const WayPoint &waypoint) = 0;
 
   // setup from a config, these are also allowed to be derived configs
-  virtual bool setupFromConfig(Config* config) = 0;
+  virtual bool setupFromConfig(Config *config) = 0;
 
  protected:
   std::shared_ptr<MapBase> map_;
+  std::shared_ptr<StateMachine> state_machine_;
+
 };
 
 } // namespace glocal_exploration
