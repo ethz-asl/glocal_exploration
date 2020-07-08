@@ -19,6 +19,11 @@ std::shared_ptr<MapBase> ComponentFactoryROS::createMap(
     VoxbloxMap::Config cfg = getVoxbloxMapConfigFromRos(nh);
     map->setupFromConfig(&cfg);
     return map;
+  } else if (type == "voxgraph") {
+    auto map = std::make_shared<VoxgraphMap>(state_machine);
+    VoxgraphMap::Config cfg = getVoxgraphMapConfigFromRos(nh);
+    map->setupFromConfig(&cfg);
+    return map;
   } else {
     LOG(ERROR) << "Unknown map type '" << type << "'.";
     return nullptr;

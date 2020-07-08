@@ -5,8 +5,11 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Sensors1/Lidar1
-        - /Voxblox1
-      Splitter Ratio: 0.7529411911964417
+        - /Voxgraph1
+        - /Voxgraph1/Local1
+        - /Voxgraph1/Global1
+        - /Voxgraph1/Global1/Mesh1
+      Splitter Ratio: 0.8029412031173706
     Tree Height: 755
   - Class: rviz/Selection
     Name: Selection
@@ -289,7 +292,7 @@ Visualization Manager:
           Color: 239; 41; 41
           Color Transformer: FlatColor
           Decay Time: 0
-          Enabled: false
+          Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Max Intensity: 4096
@@ -306,9 +309,138 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: false
-      Enabled: true
+          Value: true
+      Enabled: false
       Name: Voxblox
+    - Class: rviz/Group
+      Displays:
+        - Class: rviz/Group
+          Displays:
+            - Class: voxblox_rviz_plugin/VoxbloxMesh
+              Enabled: true
+              Name: Sliding window
+              Topic: /planner/glocal_planner/mapping/voxgraph/local/mesh
+              Unreliable: false
+              Value: true
+            - Alpha: 0.5
+              Autocompute Intensity Bounds: true
+              Autocompute Value Bounds:
+                Max Value: 10
+                Min Value: -10
+                Value: true
+              Axis: Z
+              Channel Name: intensity
+              Class: rviz/PointCloud2
+              Color: 255; 255; 255
+              Color Transformer: Intensity
+              Decay Time: 0
+              Enabled: false
+              Invert Rainbow: false
+              Max Color: 255; 255; 255
+              Max Intensity: 3.728839874267578
+              Min Color: 0; 0; 0
+              Min Intensity: 1
+              Name: Traversable
+              Position Transformer: XYZ
+              Queue Size: 10
+              Selectable: true
+              Size (Pixels): 3
+              Size (m): 0.20000000298023224
+              Style: Points
+              Topic: /planner/glocal_planner/mapping/voxgraph/local/traversable
+              Unreliable: false
+              Use Fixed Frame: true
+              Use rainbow: true
+              Value: false
+            - Alpha: 1
+              Autocompute Intensity Bounds: true
+              Autocompute Value Bounds:
+                Max Value: 10
+                Min Value: -10
+                Value: true
+              Axis: Z
+              Channel Name: intensity
+              Class: rviz/PointCloud2
+              Color: 239; 41; 41
+              Color Transformer: FlatColor
+              Decay Time: 0
+              Enabled: false
+              Invert Rainbow: false
+              Max Color: 255; 255; 255
+              Max Intensity: 4096
+              Min Color: 0; 0; 0
+              Min Intensity: 0
+              Name: Reprojected pointcloud
+              Position Transformer: XYZ
+              Queue Size: 10
+              Selectable: true
+              Size (Pixels): 3
+              Size (m): 0.009999999776482582
+              Style: Points
+              Topic: /planner/glocal_planner/mapping/voxgraph/local/reprojected_ptcloud
+              Unreliable: false
+              Use Fixed Frame: true
+              Use rainbow: true
+              Value: false
+          Enabled: true
+          Name: Local
+        - Class: rviz/Group
+          Displays:
+            - Class: rviz/Marker
+              Enabled: true
+              Marker Topic: /planner/glocal_planner/mapping/voxgraph/global/pose_graph
+              Name: Pose graph
+              Namespaces:
+                optimized: true
+              Queue Size: 100
+              Value: true
+            - Alpha: 1
+              Buffer Length: 1
+              Class: rviz/Path
+              Color: 25; 255; 0
+              Enabled: true
+              Head Diameter: 0.30000001192092896
+              Head Length: 0.20000000298023224
+              Length: 0.30000001192092896
+              Line Style: Lines
+              Line Width: 0.029999999329447746
+              Name: Trajectory
+              Offset:
+                X: 0
+                Y: 0
+                Z: 0
+              Pose Color: 255; 85; 255
+              Pose Style: None
+              Radius: 0.029999999329447746
+              Shaft Diameter: 0.10000000149011612
+              Shaft Length: 0.10000000149011612
+              Topic: /planner/glocal_planner/mapping/voxgraph/pose_history
+              Unreliable: false
+              Value: true
+            - Class: rviz/Group
+              Displays:
+                - Class: rviz/Marker
+                  Enabled: true
+                  Marker Topic: /planner/glocal_planner/mapping/voxgraph/global/combined_mesh
+                  Name: Merged submaps
+                  Namespaces:
+                    mesh: true
+                  Queue Size: 100
+                  Value: true
+                - Class: rviz/Marker
+                  Enabled: false
+                  Marker Topic: /planner/glocal_planner/mapping/voxgraph/global/separated_mesh
+                  Name: Separate submaps
+                  Namespaces:
+                    {}
+                  Queue Size: 100
+                  Value: false
+              Enabled: true
+              Name: Mesh
+          Enabled: true
+          Name: Global
+      Enabled: true
+      Name: Voxgraph
   Enabled: true
   Global Options:
     Background Color: 255; 255; 255
@@ -336,21 +468,26 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0
-      Class: rviz/TopDownOrtho
+      Class: rviz/Orbit
+      Distance: 55.756370544433594
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
+      Focal Point:
+        X: -5.12448787689209
+        Y: -4.07089376449585
+        Z: -5.237387657165527
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 18.897754669189453
+      Pitch: 1.5697963237762451
       Target Frame: <Fixed Frame>
-      Value: TopDownOrtho (rviz)
-      X: -0.6938134431838989
-      Y: -1.7895822525024414
+      Value: Orbit (rviz)
+      Yaw: 3.1395070552825928
     Saved: ~
 Window Geometry:
   Displays:
@@ -368,5 +505,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1920
-  X: 6400
+  X: 0
   Y: 0

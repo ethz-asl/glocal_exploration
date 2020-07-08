@@ -1,5 +1,7 @@
 #include "glocal_exploration_ros/mapping/voxblox_map.h"
 
+#include <glocal_exploration/common.h>
+
 namespace glocal_exploration {
 
 VoxbloxMap::VoxbloxMap(const std::shared_ptr<StateMachine>& state_machine)
@@ -37,23 +39,6 @@ bool VoxbloxMap::isTraversableInActiveSubmap(
          config_.clearing_radius;
 }
 
-bool VoxbloxMap::getVoxelCenterInLocalArea(Eigen::Vector3d* center,
-                                           const Eigen::Vector3d& point) {
-  voxblox::BlockIndex block_id = server_->getEsdfMapPtr()
-                                     ->getEsdfLayerPtr()
-                                     ->computeBlockIndexFromCoordinates(
-                                         point.cast<voxblox::FloatingPoint>());
-  *center = voxblox::getOriginPointFromGridIndex(block_id, c_block_size_)
-                .cast<double>();
-  voxblox::VoxelIndex voxel_id =
-      voxblox::getGridIndexFromPoint<voxblox::VoxelIndex>(
-          (point - *center).cast<voxblox::FloatingPoint>(),
-          1.0 / c_voxel_size_);
-  *center += voxblox::getCenterPointFromGridIndex(voxel_id, c_voxel_size_)
-                 .cast<double>();
-  return true;
-}
-
 MapBase::VoxelState VoxbloxMap::getVoxelStateInLocalArea(
     const Eigen::Vector3d& point) {
   double distance = 0.0;
@@ -65,6 +50,13 @@ MapBase::VoxelState VoxbloxMap::getVoxelStateInLocalArea(
     return VoxelState::Occupied;
   }
   return VoxelState::Unknown;
+}
+
+bool VoxbloxMap::getVoxelCenterInLocalArea(Eigen::Vector3d* center,
+                                           const Eigen::Vector3d& point) {
+  CHECK_NOTNULL(center);
+  *center = (point / c_voxel_size_).array().round() * c_voxel_size_;
+  return true;
 }
 
 }  // namespace glocal_exploration

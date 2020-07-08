@@ -4,6 +4,8 @@
 #include <glog/logging.h>
 #include <Eigen/Geometry>
 
-namespace glocal_exploration {}  // namespace glocal_exploration
+namespace glocal_exploration {
+using FloatingPoint = float;
+}  // namespace glocal_exploration
 
 #endif  // GLOCAL_EXPLORATION_COMMON_H_

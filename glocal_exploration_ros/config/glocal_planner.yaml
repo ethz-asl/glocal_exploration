@@ -14,13 +14,13 @@ region_of_interest:
   z_max: 1.5
 
 mapping:
-  type: voxblox
+  type: voxgraph
 
   voxblox:
     # This namespace contains params specifically for voxblox
     # VoxbloxMap params
     clearing_radius: 1.0
-    traversability_radius: 1.2
+    traversability_radius: 1.5
     # Grid settings
     tsdf_voxel_size: 0.2
     tsdf_voxels_per_side: 16
@@ -53,6 +53,94 @@ mapping:
     publish_traversable: true
     publish_slices: true
     publish_pointclouds_on_update: true
+
+  voxgraph:
+    # GENERAL
+    clearing_radius: 1.0
+    traversability_radius: 1.5
+
+    local:
+      # VOXBLOX sliding window
+      # Grid settings
+      tsdf_voxel_size: 0.2
+      tsdf_voxels_per_side: 16
+      # Integrator settings general
+      method: "projective"
+      truncation_distance: 0.60
+      min_ray_length_m: 1.0
+      max_ray_length_m: 10
+      max_weight: 1000
+      use_const_weight: true
+      use_weight_dropoff: false
+      max_consecutive_ray_collisions: 1  # Only affects the fast integrator
+      pointcloud_queue_size: 2
+      # Integrator settings: projective integrator
+      sensor_horizontal_resolution: 200
+      sensor_vertical_resolution: 32
+      sensor_vertical_field_of_view_degrees: 45
+      integrator_threads: 4
+      use_missing_points_for_clearing: true
+      # Integrator settings: temporal window (for compatibility with voxgraph)
+      pointcloud_deintegration_queue_length: 40
+      publish_map_every_n_sec: 20.0
+      publish_map_with_trajectory: true
+      publish_tsdf_map: true
+      # Visualization
+      verbose: false
+      color_mode: "normals"
+      slice_level: -0.5
+      publish_pointclouds: true
+      publish_traversable: true
+      publish_slices: true
+      publish_pointclouds_on_update: true
+
+    global:
+      # VOXGRAPH
+      verbose: false
+      debug: true
+      submap_topic: "/planner/glocal_planner/mapping/voxgraph/local/tsdf_map_out"
+      submap_creation_interval: 6
+      loop_closure_topic_queue_length: 1000
+      submap_topic_queue_length: 10
+      publisher_queue_length: 10
+      input_odom_frame: "odom"
+      input_base_link_frame: "imu"
+      output_mission_frame: "odom"
+      output_odom_frame: "odom_corrected"
+      output_base_link_frame: "drone_corrected"
+      output_sensor_frame: "lidar_corrected"
+      tsdf_voxel_size: 0.20
+      tsdf_integrator:
+        truncation_distance: 0.60
+        max_ray_length_m: 12.0
+        use_const_weight: true
+        use_weight_dropoff: true
+        use_sparsity_compensation_factor: true
+        sparsity_compensation_factor: 20.0
+        # integration_order_mode: "sorted"
+      measurements:
+        submap_registration:
+          enabled: true
+          sampling_ratio: 0.05
+          registration_method: "explicit_to_implicit"
+          information_matrix:
+            x_x:     1.0
+            y_y:     1.0
+            z_z:     1.0
+            yaw_yaw: 1.0
+        odometry:
+          enabled: true
+          information_matrix:
+            x_x:     1000.0
+            y_y:     1000.0
+            z_z:     2500.0
+            yaw_yaw: 2500.0
+        height:
+          enabled: false
+          information_zz: 2500.0
+      mesh_min_weight: 2.0
+      mesh_use_color: false
+
 
 local_planner:
   type: rh_rrt_star

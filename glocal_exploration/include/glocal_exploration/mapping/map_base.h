@@ -38,6 +38,8 @@ class MapBase {
                                            Eigen::Quaterniond::Identity()) = 0;
   // sets *center to the center of the voxel that contains point. Voxels are
   // referred in the planner by their centers.
+  // TODO(victorr): This method never fails. Update it to return the center
+  //                instead of a success/failure bool.
   virtual bool getVoxelCenterInLocalArea(Eigen::Vector3d* center,
                                          const Eigen::Vector3d& point) = 0;
   virtual VoxelState getVoxelStateInLocalArea(const Eigen::Vector3d& point) = 0;
