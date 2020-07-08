@@ -11,7 +11,9 @@ namespace glocal_exploration {
 
 class LocalPlannerVisualizerBase {
  public:
-  LocalPlannerVisualizerBase(const ros::NodeHandle &nh, const std::shared_ptr<LocalPlannerBase> &planner) : nh_(nh) {}
+  LocalPlannerVisualizerBase(const ros::NodeHandle& nh,
+                             const std::shared_ptr<LocalPlannerBase>& planner)
+      : nh_(nh) {}
   virtual ~LocalPlannerVisualizerBase() = default;
 
   // Interface
@@ -21,6 +23,6 @@ class LocalPlannerVisualizerBase {
   ros::NodeHandle nh_;
 };
 
-} // namespace glocal_exploration
+}  // namespace glocal_exploration
 
-#endif // GLOCAL_EXPLORATION_VISUALIZATION_LOCAL_PLANNER_VISUALIZER_
+#endif  // GLOCAL_EXPLORATION_VISUALIZATION_LOCAL_PLANNER_VISUALIZER_
