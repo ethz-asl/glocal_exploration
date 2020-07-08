@@ -23,7 +23,8 @@ class RHRRTStar : public LocalPlannerBase {
     int min_local_points = 5;
 
     // path
-    double min_path_length = 0.5;   // m
+    double min_path_length = 0.5;   // m, determines the length of connections
+    double min_sampling_distance = 0.5; // m, determines the minimum path length when sampling
     double max_path_length = 2.0;   // m
     double path_cropping_length = 0.2;  // m, distance until cropped paths become infeasible
     int max_number_of_neighbors = 20;

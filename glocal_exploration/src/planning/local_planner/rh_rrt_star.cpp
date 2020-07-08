@@ -210,6 +210,9 @@ void RHRRTStar::updateTree() {
 }
 
 void RHRRTStar::updateCollision() {
+  // cache the next connection so the index can be corrected after pruning
+  Connection* next_connection = root_->connections[next_root_index_].second.get();
+
   // update all connections
   for (auto &viewpoint : tree_data_.points) {
     int offset = 0;
@@ -220,13 +223,9 @@ void RHRRTStar::updateCollision() {
       if (viewpoint->connections[i].first) {
         Connection *connection = viewpoint->connections[i].second.get();
         ViewPoint *target = connection->target;
-        if (target->is_root) {
-          if (target->connections.size() > next_root_index_) {
-            if (target->connections[next_root_index_].second.get() == connection) {
-              // don't update the currently executed connection, this always allows backtracking as well.
-              continue;
-            }
-          }
+        if (connection == next_connection) {
+          // don't update the currently executed connection, this always allows backtracking as well.
+          continue;
         }
 
         // check collision
@@ -261,6 +260,14 @@ void RHRRTStar::updateCollision() {
   // reset the kdtree
   kdtree_ = std::make_unique<KDTree>(3, tree_data_);
   kdtree_->addPoints(0, tree_data_.points.size() - 1);
+
+  // adjust the next_root index
+  for (size_t i = 0; i < root_->connections.size(); ++i) {
+    if (root_->connections[i].second.get() == next_connection) {
+      next_root_index_ = i;
+      break;
+    }
+  }
 }
 
 void RHRRTStar::computePointsConnectedToRoot(bool count_only_active_connections) {
@@ -417,7 +424,7 @@ bool RHRRTStar::sampleNewPoint(ViewPoint *point) {
   std::vector<size_t> nearest_viewpoint;
   if (!findNearestNeighbors(goal, &nearest_viewpoint)) { return false; }
   Eigen::Vector3d origin = tree_data_.points[nearest_viewpoint.front()]->pose.position();
-  double distance_max = std::min(std::max((goal - origin).norm(), config_.min_path_length), config_.max_path_length)
+  double distance_max = std::min(std::max((goal - origin).norm(), config_.min_sampling_distance), config_.max_path_length)
       + config_.path_cropping_length;
 
   // verify and crop the sampled path
@@ -430,7 +437,7 @@ bool RHRRTStar::sampleNewPoint(ViewPoint *point) {
     range += range_increment;
   }
   range = range - config_.path_cropping_length - range_increment;
-  if (range < config_.min_path_length) {
+  if (range < config_.min_sampling_distance) {
     return false;
   }
 

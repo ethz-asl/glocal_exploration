@@ -38,6 +38,7 @@ RHRRTStar::Config getRHRRTStarConfigFromRos(const ros::NodeHandle &nh){
   nh.param("global_sampling_radius", config.global_sampling_radius, config.global_sampling_radius);
   nh.param("min_local_points", config.min_local_points, config.min_local_points);
   nh.param("min_path_length", config.min_path_length, config.min_path_length);
+  nh.param("min_sampling_distance", config.min_sampling_distance, config.min_sampling_distance);
   nh.param("max_path_length", config.max_path_length, config.max_path_length);
   nh.param("path_cropping_length", config.path_cropping_length, config.path_cropping_length);
   nh.param("max_number_of_neighbors", config.max_number_of_neighbors, config.max_number_of_neighbors);

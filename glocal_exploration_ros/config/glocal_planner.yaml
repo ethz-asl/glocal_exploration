@@ -1,4 +1,4 @@
-#Config for the Planner
+# Config for the Planner
 # General params
 replan_position_threshold: 0.35  # m
 replan_yaw_threshold: 5   # deg
@@ -7,16 +7,15 @@ republish_waypoints: true
 mapping:
   type: voxblox
 
-
   voxblox:
     # This namespace contains params specifically for voxblox
     # VoxbloxMap params
     clearing_radius: 1.0
-    traversability_radius: 1.5
+    traversability_radius: 1.0
     # Grid settings
     tsdf_voxel_size: 0.2
     tsdf_voxels_per_side: 16
-    # Integrator settings: general
+    # Integrator settings general
     method: "fast"
     truncation_distance: 0.60
     min_ray_length_m: 1.0
@@ -42,7 +41,8 @@ local_planner:
   local_sampling_radius: 5.0  # m
   global_sampling_radius: 100 # m
   min_local_points: 10
-  min_path_length: 0.8  # m
+  min_path_length: 1.0  # m
+  min_sampling_distance: 0.5 # m
   max_path_length: 2.0  # m
   path_cropping_length: 0.5 # m
   max_number_of_neighbors: 20
@@ -57,6 +57,6 @@ local_planner:
   horizontal_resolution: 200 # 1024
   ray_step: 0 # m
   downsampling_factor: 2
-  mounting_orientation_y: 0.2164396
+  mounting_orientation_y: 0.2164396 # 25deg pitch
   mounting_orientation_w: 0.976296
     
