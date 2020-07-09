@@ -1,11 +1,12 @@
 #include "glocal_exploration_ros/visualization/rh_rrt_star_visualizer.h"
 
-#include <visualization_msgs/MarkerArray.h>
 #include <tf2/LinearMath/Quaternion.h>
+#include <visualization_msgs/MarkerArray.h>
 
 namespace glocal_exploration {
 
-RHRRTStarVisualizer::RHRRTStarVisualizer(const ros::NodeHandle &nh, const std::shared_ptr<LocalPlannerBase> &planner)
+RHRRTStarVisualizer::RHRRTStarVisualizer(
+    const ros::NodeHandle& nh, const std::shared_ptr<LocalPlannerBase>& planner)
     : LocalPlannerVisualizerBase(nh, planner),
       num_previous_msgs_(0),
       num_previous_visible_voxels_(0),
@@ -15,21 +16,23 @@ RHRRTStarVisualizer::RHRRTStarVisualizer(const ros::NodeHandle &nh, const std::s
       visualize_visible_voxels_(true) {
   planner_ = std::dynamic_pointer_cast<RHRRTStar>(planner);
   if (!planner) {
-    LOG(FATAL) << "Can not setup 'RHRRTStarVisualizer' with planner that is not of type 'RHRRTStar'";
+    LOG(FATAL) << "Can not setup 'RHRRTStarVisualizer' with planner that is "
+                  "not of type 'RHRRTStar'";
   }
 
   // params
   nh.param("visualize_gain", visualize_gain_, visualize_gain_);
   nh.param("visualize_value", visualize_value_, visualize_value_);
   nh.param("visualize_text", visualize_text_, visualize_text_);
-  nh.param("visualize_visible_voxels", visualize_visible_voxels_, visualize_visible_voxels_);
+  nh.param("visualize_visible_voxels", visualize_visible_voxels_,
+           visualize_visible_voxels_);
 
   // ROS
   pub_ = nh_.advertise<visualization_msgs::MarkerArray>("visualization", 100);
 }
 
 void RHRRTStarVisualizer::visualize() {
-  auto &points = planner_->getTreeData().points;
+  auto& points = planner_->getTreeData().points;
   ros::Time now = ros::Time::now();
   std::string frame_id = "world";
   // Display all trajectories in the input and erase previous ones
@@ -52,7 +55,8 @@ void RHRRTStarVisualizer::visualize() {
     }
   }
 
-  visualization_msgs::MarkerArray value_markers, gain_markers, text_markers, visible_voxels;
+  visualization_msgs::MarkerArray value_markers, gain_markers, text_markers,
+      visible_voxels;
   visualization_msgs::Marker msg;
   for (int i = 0; i < points.size(); ++i) {
     // visualize value
@@ -72,7 +76,8 @@ void RHRRTStarVisualizer::visualize() {
       if (!points[i]->is_root) {
         // Color according to relative value (blue when indifferent)
         if (max_value != min_value) {
-          double frac = (points[i]->value - min_value) / (max_value - min_value);
+          double frac =
+              (points[i]->value - min_value) / (max_value - min_value);
           msg.color.r = std::min((0.5 - frac) * 2.0 + 1.0, 1.0);
           msg.color.g = std::min((frac - 0.5) * 2.0 + 1.0, 1.0);
           msg.color.b = 0.0;
@@ -84,18 +89,21 @@ void RHRRTStarVisualizer::visualize() {
 
         // points
         geometry_msgs::Point pt;
-        const Eigen::Vector3d &start = points[i]->pose.position();
+        const Eigen::Vector3d& start = points[i]->pose.position();
         pt.x = start.x();
         pt.y = start.y();
         pt.z = start.z();
         msg.points.push_back(pt);
-        const Eigen::Vector3d &end = points[i]->getConnectedViewPoint(points[i]->active_connection)->pose.position();
+        const Eigen::Vector3d& end =
+            points[i]
+                ->getConnectedViewPoint(points[i]->active_connection)
+                ->pose.position();
         pt.x = end.x();
         pt.y = end.y();
         pt.z = end.z();
         msg.points.push_back(pt);
       } else {
-        msg.points.push_back(geometry_msgs::Point()); // suppress rviz warnings
+        msg.points.push_back(geometry_msgs::Point());  // suppress rviz warnings
         msg.points.push_back(geometry_msgs::Point());
       }
       value_markers.markers.push_back(msg);
@@ -158,10 +166,12 @@ void RHRRTStarVisualizer::visualize() {
       double c = points[i]->getActiveConnection()->cost;
       double v = points[i]->value;
       std::stringstream stream;
-      stream << "g: " << std::fixed << std::setprecision(1) << (g > 1000 ? g / 1000 : g) << (g > 1000 ? "k" : "")
-             << ", c: "
-             << std::fixed << std::setprecision(1) << (c > 1000 ? c / 1000 : c) << (c > 1000 ? "k" : "") << ", v: "
-             << std::fixed << std::setprecision(1) << (v > 1000 ? v / 1000 : v) << (v > 1000 ? "k" : "");
+      stream << "g: " << std::fixed << std::setprecision(1)
+             << (g > 1000 ? g / 1000 : g) << (g > 1000 ? "k" : "")
+             << ", c: " << std::fixed << std::setprecision(1)
+             << (c > 1000 ? c / 1000 : c) << (c > 1000 ? "k" : "")
+             << ", v: " << std::fixed << std::setprecision(1)
+             << (v > 1000 ? v / 1000 : v) << (v > 1000 ? "k" : "");
       msg.text = stream.str();
       msg.action = visualization_msgs::Marker::ADD;
       text_markers.markers.push_back(msg);
@@ -170,9 +180,12 @@ void RHRRTStarVisualizer::visualize() {
 
   if (visualize_visible_voxels_) {
     // compute visualization
-    RHRRTStar::ViewPoint *view_point = std::find_if(points.begin(),
-                                                    points.end(),
-                                                    [](const std::unique_ptr<RHRRTStar::ViewPoint> &p) { return p->is_root; })->get();
+    RHRRTStar::ViewPoint* view_point =
+        std::find_if(points.begin(), points.end(),
+                     [](const std::unique_ptr<RHRRTStar::ViewPoint>& p) {
+                       return p->is_root;
+                     })
+            ->get();
 
     std::vector<Eigen::Vector3d> voxels, colors;
     double scale;
@@ -202,7 +215,8 @@ void RHRRTStarVisualizer::visualize() {
     }
 
     // clear deleted markers
-    for (size_t i = visible_voxels.markers.size(); i < num_previous_visible_voxels_; ++i) {
+    for (size_t i = visible_voxels.markers.size();
+         i < num_previous_visible_voxels_; ++i) {
       msg = visualization_msgs::Marker();
       msg.id = i;
       msg.ns = "visible_voxels";
@@ -255,4 +269,4 @@ void RHRRTStarVisualizer::visualize() {
   pub_.publish(text_markers);
 }
 
-} // namespace glocal_exploration
+}  // namespace glocal_exploration

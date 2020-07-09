@@ -1,22 +1,23 @@
 #include "glocal_exploration_ros/planners/glocal_planner.h"
 
 #include <geometry_msgs/Pose.h>
-#include <tf2/utils.h>
 #include <glocal_exploration_ros/conversions/ros_params.h>
+#include <tf2/utils.h>
 
 #include "glocal_exploration_ros/conversions/ros_component_factory.h"
 
 namespace glocal_exploration {
 
-GlocalPlanner::GlocalPlanner(const ros::NodeHandle &nh, const ros::NodeHandle &nh_private)
+GlocalPlanner::GlocalPlanner(const ros::NodeHandle& nh,
+                             const ros::NodeHandle& nh_private)
     : nh_(nh), nh_private_(nh_private), state_machine_(new StateMachine()) {
-
   // params
   readParamsFromRos();
 
   // setup the region of interest
   ros::NodeHandle nh_roi(nh_private_, "region_of_interest");
-  std::shared_ptr<RegionOfInterest> roi = ComponentFactoryROS::createRegionOfInterest(nh_roi);
+  std::shared_ptr<RegionOfInterest> roi =
+      ComponentFactoryROS::createRegionOfInterest(nh_roi);
   state_machine_->setROI(roi);
 
   // setup the map
@@ -25,8 +26,10 @@ GlocalPlanner::GlocalPlanner(const ros::NodeHandle &nh, const ros::NodeHandle &n
 
   // setup the local planner
   ros::NodeHandle nh_local_planner(nh_private_, "local_planner");
-  local_planner_ = ComponentFactoryROS::createLocalPlanner(nh_local_planner, map_, state_machine_);
-  local_planner_visualizer_ = ComponentFactoryROS::createLocalPlannerVisualizer(nh_local_planner, local_planner_);
+  local_planner_ = ComponentFactoryROS::createLocalPlanner(
+      nh_local_planner, map_, state_machine_);
+  local_planner_visualizer_ = ComponentFactoryROS::createLocalPlannerVisualizer(
+      nh_local_planner, local_planner_);
 
   // setup the global planner
   ros::NodeHandle nh_global_planner(nh_private_, "global_planner");
@@ -38,11 +41,17 @@ GlocalPlanner::GlocalPlanner(const ros::NodeHandle &nh, const ros::NodeHandle &n
 }
 
 void GlocalPlanner::readParamsFromRos() {
-  nh_private_.param("replan_position_threshold", config_.replan_position_threshold, config_.replan_position_threshold);
-  nh_private_.param("replan_yaw_threshold", config_.replan_yaw_threshold, config_.replan_yaw_threshold);
-  nh_private_.param("republish_waypoints", config_.republish_waypoints, config_.republish_waypoints);
-  CHECK_GT(config_.replan_position_threshold, 0) << "Param 'replan_position_threshold' expected > 0";
-  CHECK_GT(config_.replan_yaw_threshold, 0) << "Param 'replan_yaw_threshold' expected > 0";
+  nh_private_.param("replan_position_threshold",
+                    config_.replan_position_threshold,
+                    config_.replan_position_threshold);
+  nh_private_.param("replan_yaw_threshold", config_.replan_yaw_threshold,
+                    config_.replan_yaw_threshold);
+  nh_private_.param("republish_waypoints", config_.republish_waypoints,
+                    config_.republish_waypoints);
+  CHECK_GT(config_.replan_position_threshold, 0)
+      << "Param 'replan_position_threshold' expected > 0";
+  CHECK_GT(config_.replan_yaw_threshold, 0)
+      << "Param 'replan_yaw_threshold' expected > 0";
 }
 
 void GlocalPlanner::planningLoop() {
@@ -50,9 +59,11 @@ void GlocalPlanner::planningLoop() {
   // starting the main loop means everything is setup
   VLOG(1) << "Glocal Exploration Planner set up successfully.";
   state_machine_->signalReady();
-  run_srv_ = nh_private_.advertiseService("toggle_running", &GlocalPlanner::runSrvCallback, this);
+  run_srv_ = nh_private_.advertiseService("toggle_running",
+                                          &GlocalPlanner::runSrvCallback, this);
 
-  while (ros::ok() && state_machine_->currentState() != StateMachine::Finished) {
+  while (ros::ok() &&
+         state_machine_->currentState() != StateMachine::Finished) {
     if (state_machine_->currentState() != StateMachine::Ready) {
       loopIteration();
     }
@@ -102,13 +113,14 @@ void GlocalPlanner::publishTargetPose() {
   target_pub_.publish(msg);
 }
 
-void GlocalPlanner::odomCallback(const nav_msgs::Odometry &msg) {
+void GlocalPlanner::odomCallback(const nav_msgs::Odometry& msg) {
   // Track the current pose
-  current_position_ = Eigen::Vector3d(msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z);
-  current_orientation_ = Eigen::Quaterniond(msg.pose.pose.orientation.w,
-                                            msg.pose.pose.orientation.x,
-                                            msg.pose.pose.orientation.y,
-                                            msg.pose.pose.orientation.z);
+  current_position_ =
+      Eigen::Vector3d(msg.pose.pose.position.x, msg.pose.pose.position.y,
+                      msg.pose.pose.position.z);
+  current_orientation_ = Eigen::Quaterniond(
+      msg.pose.pose.orientation.w, msg.pose.pose.orientation.x,
+      msg.pose.pose.orientation.y, msg.pose.pose.orientation.z);
 
   // update the state machine with the current pose
   double yaw = tf2::getYaw(msg.pose.pose.orientation);
@@ -122,7 +134,8 @@ void GlocalPlanner::odomCallback(const nav_msgs::Odometry &msg) {
   // Check whether the goal pose is reached
   if (!state_machine_->targetIsReached()) {
     // check position
-    if ((target_position_ - current_position_).norm() <= config_.replan_position_threshold) {
+    if ((target_position_ - current_position_).norm() <=
+        config_.replan_position_threshold) {
       // check yaw
       double yaw_diff = target_yaw_ - yaw;
       if (yaw_diff < 0) {
@@ -138,7 +151,8 @@ void GlocalPlanner::odomCallback(const nav_msgs::Odometry &msg) {
   }
 
   // check whether we're moving if we should be
-  if (config_.republish_waypoints && !state_machine_->targetIsReached() && (msg.header.stamp - previous_time_).toSec() > 1.0) {
+  if (config_.republish_waypoints && !state_machine_->targetIsReached() &&
+      (msg.header.stamp - previous_time_).toSec() > 1.0) {
     double distance = (current_position_ - previous_position_).norm();
     double yaw_diff = previous_yaw_ - yaw;
     if (yaw_diff < 0) {
@@ -156,7 +170,8 @@ void GlocalPlanner::odomCallback(const nav_msgs::Odometry &msg) {
   }
 }
 
-bool GlocalPlanner::runSrvCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res) {
+bool GlocalPlanner::runSrvCallback(std_srvs::SetBool::Request& req,
+                                   std_srvs::SetBool::Response& res) {
   state_machine_->signalLocalPlanning();
   if (state_machine_->currentState() == StateMachine::LocalPlanning) {
     VLOG(1) << "Started Glocal Exploration.";
@@ -171,4 +186,4 @@ bool GlocalPlanner::runSrvCallback(std_srvs::SetBool::Request &req, std_srvs::Se
   return true;
 }
 
-} // namespace glocal_exploration
+}  // namespace glocal_exploration

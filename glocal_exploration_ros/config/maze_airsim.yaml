@@ -20,3 +20,4 @@ sensors:
     RotationsPerSecond: 10
     VerticalFOVUpper: 22.5  # deg 
     VerticalFOVLower: -22.5  # deg
+    DrawDebugPoints: false

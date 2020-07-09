@@ -1,14 +1,18 @@
 #include "glocal_exploration_ros/mapping/voxblox_map.h"
 
+#include <glocal_exploration/common.h>
+
 namespace glocal_exploration {
 
-VoxbloxMap::VoxbloxMap(const std::shared_ptr<StateMachine> &state_machine) : MapBase(state_machine) {};
+VoxbloxMap::VoxbloxMap(const std::shared_ptr<StateMachine>& state_machine)
+    : MapBase(state_machine){};
 
-bool VoxbloxMap::setupFromConfig(MapBase::Config *config) {
+bool VoxbloxMap::setupFromConfig(MapBase::Config* config) {
   CHECK_NOTNULL(config);
-  auto cfg = dynamic_cast<Config *>(config);
+  auto cfg = dynamic_cast<Config*>(config);
   if (!cfg) {
-    LOG(ERROR) << "Failed to setup: config is not of type 'VoxbloxMap::Config'.";
+    LOG(ERROR)
+        << "Failed to setup: config is not of type 'VoxbloxMap::Config'.";
     return false;
   }
   config_ = *cfg;
@@ -19,11 +23,10 @@ bool VoxbloxMap::setupFromConfig(MapBase::Config *config) {
   c_block_size_ = server_->getEsdfMapPtr()->block_size();
 }
 
-double VoxbloxMap::getVoxelSize() {
-  return c_voxel_size_;
-}
+double VoxbloxMap::getVoxelSize() { return c_voxel_size_; }
 
-bool VoxbloxMap::isTraversableInActiveSubmap(const Eigen::Vector3d &position, const Eigen::Quaterniond &orientation) {
+bool VoxbloxMap::isTraversableInActiveSubmap(
+    const Eigen::Vector3d& position, const Eigen::Quaterniond& orientation) {
   if (!state_machine_->pointInROI(position)) {
     return false;
   }
@@ -32,20 +35,12 @@ bool VoxbloxMap::isTraversableInActiveSubmap(const Eigen::Vector3d &position, co
     // This means the voxel is observed
     return (distance > config_.traversability_radius);
   }
-  return (position - state_machine_->currentPose().position()).norm() < config_.clearing_radius;
+  return (position - state_machine_->currentPose().position()).norm() <
+         config_.clearing_radius;
 }
 
-bool VoxbloxMap::getVoxelCenterInLocalArea(Eigen::Vector3d *center, const Eigen::Vector3d &point) {
-  voxblox::BlockIndex block_id = server_->getEsdfMapPtr()->getEsdfLayerPtr()->
-      computeBlockIndexFromCoordinates(point.cast<voxblox::FloatingPoint>());
-  *center = voxblox::getOriginPointFromGridIndex(block_id, c_block_size_).cast<double>();
-  voxblox::VoxelIndex voxel_id = voxblox::getGridIndexFromPoint<voxblox::VoxelIndex>(
-      (point - *center).cast<voxblox::FloatingPoint>(), 1.0 / c_voxel_size_);
-  *center += voxblox::getCenterPointFromGridIndex(voxel_id, c_voxel_size_).cast<double>();
-  return true;
-}
-
-MapBase::VoxelState VoxbloxMap::getVoxelStateInLocalArea(const Eigen::Vector3d &point) {
+MapBase::VoxelState VoxbloxMap::getVoxelStateInLocalArea(
+    const Eigen::Vector3d& point) {
   double distance = 0.0;
   if (server_->getEsdfMapPtr()->getDistanceAtPosition(point, &distance)) {
     // This means the voxel is observed
@@ -57,4 +52,11 @@ MapBase::VoxelState VoxbloxMap::getVoxelStateInLocalArea(const Eigen::Vector3d &
   return VoxelState::Unknown;
 }
 
-} // namespace glocal_exploration {
+bool VoxbloxMap::getVoxelCenterInLocalArea(Eigen::Vector3d* center,
+                                           const Eigen::Vector3d& point) {
+  CHECK_NOTNULL(center);
+  *center = (point / c_voxel_size_).array().round() * c_voxel_size_;
+  return true;
+}
+
+}  // namespace glocal_exploration
