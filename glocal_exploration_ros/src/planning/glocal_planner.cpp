@@ -1,4 +1,4 @@
-#include "glocal_exploration_ros/planners/glocal_planner.h"
+#include "glocal_exploration_ros/planning/glocal_planner.h"
 
 #include <geometry_msgs/Pose.h>
 #include <glocal_exploration_ros/conversions/ros_params.h>

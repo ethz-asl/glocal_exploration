@@ -27,8 +27,7 @@ class VoxgraphMap : public MapBase {
       const Eigen::Vector3d& position,
       const Eigen::Quaterniond& orientation) override;
   VoxelState getVoxelStateInLocalArea(const Eigen::Vector3d& point) override;
-  bool getVoxelCenterInLocalArea(Eigen::Vector3d* center,
-                                 const Eigen::Vector3d& point) override;
+  Eigen::Vector3d getVoxelCenterInLocalArea(const Eigen::Vector3d& point) override;
 
  protected:
   Config config_;

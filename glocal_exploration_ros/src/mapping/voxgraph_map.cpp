@@ -42,7 +42,7 @@ bool VoxgraphMap::isTraversableInActiveSubmap(
     return (distance > config_.traversability_radius);
   }
   return (position - state_machine_->currentPose().position()).norm() <
-         config_.clearing_radius;
+      config_.clearing_radius;
 }
 
 // TODO(victorr): Replace dummy code and actually check in overlapping submaps
@@ -60,10 +60,8 @@ MapBase::VoxelState VoxgraphMap::getVoxelStateInLocalArea(
   return VoxelState::Unknown;
 }
 
-bool VoxgraphMap::getVoxelCenterInLocalArea(Eigen::Vector3d* center,
-                                            const Eigen::Vector3d& point) {
-  CHECK_NOTNULL(center);
-  *center = (point / c_voxel_size_).array().round() * c_voxel_size_;
-  return true;
+Eigen::Vector3d VoxgraphMap::getVoxelCenterInLocalArea(const Eigen::Vector3d& point) {
+  return (point / c_voxel_size_).array().round() * c_voxel_size_;
 }
+
 }  // namespace glocal_exploration
