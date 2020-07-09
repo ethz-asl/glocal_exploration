@@ -1,4 +1,4 @@
-#include "glocal_exploration/planning/local_planner/lidar_model.h"
+#include "glocal_exploration/planning/local/lidar_model.h"
 
 namespace glocal_exploration {
 
@@ -76,7 +76,6 @@ bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d>* result,
   Eigen::Vector3d camera_direction;
   Eigen::Vector3d direction;
   Eigen::Vector3d current_position;
-  Eigen::Vector3d voxel_center;
   double distance;
   bool cast_ray;
   for (int i = 0; i < c_res_x_; ++i) {
@@ -108,8 +107,7 @@ bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d>* result,
           }
 
           // add point
-          map_->getVoxelCenterInLocalArea(&voxel_center, current_position);
-          result->push_back(voxel_center);
+          result->push_back(map_->getVoxelCenterInLocalArea(current_position));
         }
         if (cast_ray) {
           current_segment++;
@@ -139,7 +137,7 @@ void LidarModel::markNeighboringRays(int x, int y, int segment, int value) {
 }
 
 void LidarModel::getDirectionVector(Eigen::Vector3d* result, double relative_x,
-                                    double relative_y) {
+                                    double relative_y) const {
   double phi = (0.5 - relative_x) * c_fov_x_;
   double theta = M_PI / 2.0 + (relative_y - 0.5) * c_fov_y_;
   *result =

@@ -1,7 +1,7 @@
-#ifndef GLOCAL_EXPLORATION_PLANNING_LOCAL_PLANNER_LIDAR_MODEL_H_
-#define GLOCAL_EXPLORATION_PLANNING_LOCAL_PLANNER_LIDAR_MODEL_H_
+#ifndef GLOCAL_EXPLORATION_PLANNING_LOCAL_LIDAR_MODEL_H_
+#define GLOCAL_EXPLORATION_PLANNING_LOCAL_LIDAR_MODEL_H_
 
-#include "glocal_exploration/planning/local_planner/sensor_model.h"
+#include "glocal_exploration/planning/local/sensor_model.h"
 
 namespace glocal_exploration {
 
@@ -49,9 +49,9 @@ class LidarModel : public SensorModel {
   // methods
   void markNeighboringRays(int x, int y, int segment, int value);
   void getDirectionVector(Eigen::Vector3d* result, double relative_x,
-                          double relative_y);
+                          double relative_y) const;
 };
 
 }  // namespace glocal_exploration
 
-#endif  // GLOCAL_EXPLORATION_PLANNING_LOCAL_PLANNER_LIDAR_MODEL_H_
+#endif  // GLOCAL_EXPLORATION_PLANNING_LOCAL_LIDAR_MODEL_H_

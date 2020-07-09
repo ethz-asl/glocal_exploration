@@ -20,6 +20,7 @@ class VoxbloxMap : public MapBase {
     double traversability_radius = 0.3;  // m
     double clearing_radius = 0.5;        // m
   };
+
   explicit VoxbloxMap(const std::shared_ptr<StateMachine>& state_machine);
   virtual ~VoxbloxMap() = default;
 
@@ -29,8 +30,7 @@ class VoxbloxMap : public MapBase {
       const Eigen::Vector3d& position,
       const Eigen::Quaterniond& orientation) override;
   VoxelState getVoxelStateInLocalArea(const Eigen::Vector3d& point) override;
-  bool getVoxelCenterInLocalArea(Eigen::Vector3d* center,
-                                 const Eigen::Vector3d& point) override;
+  Eigen::Vector3d getVoxelCenterInLocalArea(const Eigen::Vector3d& point) override;
 
  protected:
   Config config_;

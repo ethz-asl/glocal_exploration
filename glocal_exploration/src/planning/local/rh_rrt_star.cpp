@@ -1,4 +1,4 @@
-#include "glocal_exploration/planning/local_planner/rh_rrt_star.h"
+#include "glocal_exploration/planning/local/rh_rrt_star.h"
 
 #include <algorithm>
 #include <chrono>

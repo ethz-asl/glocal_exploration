@@ -4,11 +4,10 @@ namespace glocal_exploration {
 
 VoxbloxMap::Config getVoxbloxMapConfigFromRos(const ros::NodeHandle& nh) {
   VoxbloxMap::Config config;
-  ros::NodeHandle nh_mapping(nh, "voxblox");
-  config.nh_private_namespace = nh_mapping.getNamespace();
-  nh_mapping.param("traversability_radius", config.traversability_radius,
+  config.nh_private_namespace = nh.getNamespace();
+  nh.param("traversability_radius", config.traversability_radius,
                    config.traversability_radius);
-  nh_mapping.param("clearing_radius", config.clearing_radius,
+  nh.param("clearing_radius", config.clearing_radius,
                    config.clearing_radius);
   return config;
 }

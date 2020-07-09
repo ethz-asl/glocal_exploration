@@ -1,5 +1,5 @@
-#ifndef GLOCAL_EXPLORATION_PLANNING_LOCAL_PLANNER_RH_RRT_STAR_H_
-#define GLOCAL_EXPLORATION_PLANNING_LOCAL_PLANNER_RH_RRT_STAR_H_
+#ifndef GLOCAL_EXPLORATION_PLANNING_LOCAL_RH_RRT_STAR_H_
+#define GLOCAL_EXPLORATION_PLANNING_LOCAL_RH_RRT_STAR_H_
 
 #include <memory>
 #include <utility>
@@ -8,9 +8,9 @@
 #include <3rd_party/nanoflann.hpp>
 
 #include "glocal_exploration/common.h"
-#include "glocal_exploration/planning/local_planner/lidar_model.h"
-#include "glocal_exploration/planning/local_planner/local_planner_base.h"
-#include "glocal_exploration/planning/local_planner/sensor_model.h"
+#include "glocal_exploration/planning/local/lidar_model.h"
+#include "glocal_exploration/planning/local/local_planner_base.h"
+#include "glocal_exploration/planning/local/sensor_model.h"
 
 namespace glocal_exploration {
 
@@ -153,4 +153,4 @@ class RHRRTStar : public LocalPlannerBase {
 
 }  // namespace glocal_exploration
 
-#endif  // GLOCAL_EXPLORATION_PLANNING_LOCAL_PLANNER_RH_RRT_STAR_H_
+#endif  // GLOCAL_EXPLORATION_PLANNING_LOCAL_RH_RRT_STAR_H_

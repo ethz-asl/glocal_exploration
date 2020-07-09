@@ -1,7 +1,7 @@
 #ifndef GLOCAL_EXPLORATION_VISUALIZATION_RH_RRT_STAR_VISUALIZER_
 #define GLOCAL_EXPLORATION_VISUALIZATION_RH_RRT_STAR_VISUALIZER_
 
-#include "glocal_exploration/planning/local_planner/rh_rrt_star.h"
+#include "glocal_exploration/planning/local/rh_rrt_star.h"
 #include "glocal_exploration_ros/visualization/local_planner_visualizer_base.h"
 
 namespace glocal_exploration {

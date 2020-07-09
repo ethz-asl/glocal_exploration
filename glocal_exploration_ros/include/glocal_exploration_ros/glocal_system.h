@@ -8,13 +8,13 @@
 #include <std_srvs/SetBool.h>
 
 #include "glocal_exploration/mapping/map_base.h"
-#include "glocal_exploration/planning/local_planner/local_planner_base.h"
+#include "glocal_exploration/planning/local/local_planner_base.h"
 #include "glocal_exploration/planning/state_machine.h"
 #include "glocal_exploration_ros/visualization/local_planner_visualizer_base.h"
 
 namespace glocal_exploration {
 
-class GlocalPlanner {
+class GlocalSystem {
  public:
   struct Config {
     double replan_position_threshold = 0.2;  // m
@@ -23,8 +23,8 @@ class GlocalPlanner {
   };
 
   // Constructor
-  GlocalPlanner(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
-  virtual ~GlocalPlanner() = default;
+  GlocalSystem(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
+  virtual ~GlocalSystem() = default;
 
   // ROS callbacks
   void odomCallback(const nav_msgs::Odometry& msg);
@@ -32,7 +32,7 @@ class GlocalPlanner {
                       std_srvs::SetBool::Response& res);
 
   // spinning is managed explicitly, run this to start the planner
-  void planningLoop();
+  void mainLoop();
 
  protected:
   ros::NodeHandle nh_;
