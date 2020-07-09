@@ -22,7 +22,7 @@ class EvalData:
     def __init__(self):
         '''  Initialize ros node and read params '''
         # Parse parameters
-        self.ns_planner = rospy.get_param('~ns_planner', "/planner/glocal_planner/toggle_running")
+        self.ns_planner = rospy.get_param('~ns_planner', "/glocal/glocal_system/toggle_running")
         self.planner_delay = rospy.get_param('~delay', 0.0)  # Waiting time until the planner is launched
         self.startup_timeout = rospy.get_param('~startup_timeout', 0.0)  # Max allowed time for startup, 0 for inf
 

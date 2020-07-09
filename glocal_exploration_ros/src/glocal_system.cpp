@@ -1,4 +1,4 @@
-#include "glocal_exploration_ros/planners/glocal_planner.h"
+#include "glocal_exploration_ros/glocal_system.h"
 
 #include <geometry_msgs/Pose.h>
 #include <tf2/utils.h>
@@ -8,7 +8,7 @@
 
 namespace glocal_exploration {
 
-GlocalPlanner::GlocalPlanner(const ros::NodeHandle& nh,
+GlocalSystem::GlocalSystem(const ros::NodeHandle& nh,
                              const ros::NodeHandle& nh_private)
     : nh_(nh), nh_private_(nh_private), state_machine_(new StateMachine()) {
   // params
@@ -33,10 +33,10 @@ GlocalPlanner::GlocalPlanner(const ros::NodeHandle& nh,
 
   // ROS
   target_pub_ = nh_.advertise<geometry_msgs::Pose>("command/pose", 10);
-  odom_sub_ = nh_.subscribe("odometry", 1, &GlocalPlanner::odomCallback, this);
+  odom_sub_ = nh_.subscribe("odometry", 1, &GlocalSystem::odomCallback, this);
 }
 
-void GlocalPlanner::readParamsFromRos() {
+void GlocalSystem::readParamsFromRos() {
   nh_private_.param("replan_position_threshold",
                     config_.replan_position_threshold,
                     config_.replan_position_threshold);
@@ -50,13 +50,13 @@ void GlocalPlanner::readParamsFromRos() {
       << "Param 'replan_yaw_threshold' expected > 0";
 }
 
-void GlocalPlanner::planningLoop() {
+void GlocalSystem::mainLoop() {
   // This is the main loop, spinning is managed explicitely for efficiency
   // starting the main loop means everything is setup
   VLOG(1) << "Glocal Exploration Planner set up successfully.";
   state_machine_->signalReady();
   run_srv_ = nh_private_.advertiseService("toggle_running",
-                                          &GlocalPlanner::runSrvCallback, this);
+                                          &GlocalSystem::runSrvCallback, this);
 
   while (ros::ok() &&
          state_machine_->currentState() != StateMachine::Finished) {
@@ -68,7 +68,7 @@ void GlocalPlanner::planningLoop() {
   VLOG(1) << "Glocal Exploration Planner finished planning.";
 }
 
-void GlocalPlanner::loopIteration() {
+void GlocalSystem::loopIteration() {
   // actions
   switch (state_machine_->currentState()) {
     case StateMachine::LocalPlanning: {
@@ -95,7 +95,7 @@ void GlocalPlanner::loopIteration() {
   }
 }
 
-void GlocalPlanner::publishTargetPose() {
+void GlocalSystem::publishTargetPose() {
   geometry_msgs::Pose msg;
   tf2::Quaternion q;
   q.setRPY(0, 0, target_yaw_);
@@ -109,7 +109,7 @@ void GlocalPlanner::publishTargetPose() {
   target_pub_.publish(msg);
 }
 
-void GlocalPlanner::odomCallback(const nav_msgs::Odometry& msg) {
+void GlocalSystem::odomCallback(const nav_msgs::Odometry& msg) {
   // Track the current pose
   current_position_ =
       Eigen::Vector3d(msg.pose.pose.position.x, msg.pose.pose.position.y,
@@ -166,7 +166,7 @@ void GlocalPlanner::odomCallback(const nav_msgs::Odometry& msg) {
   }
 }
 
-bool GlocalPlanner::runSrvCallback(std_srvs::SetBool::Request& req,
+bool GlocalSystem::runSrvCallback(std_srvs::SetBool::Request& req,
                                    std_srvs::SetBool::Response& res) {
   state_machine_->signalLocalPlanning();
   if (state_machine_->currentState() == StateMachine::LocalPlanning) {

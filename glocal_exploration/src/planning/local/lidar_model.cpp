@@ -1,4 +1,4 @@
-#include "glocal_exploration/planning/local_planner/lidar_model.h"
+#include "glocal_exploration/planning/local/lidar_model.h"
 
 namespace glocal_exploration {
 

@@ -11,7 +11,7 @@ catkin_package()
 #############
 
 cs_add_library(${PROJECT_NAME}
-        src/planners/glocal_planner.cpp
+        src/glocal_system.cpp
         src/mapping/voxblox_map.cpp
         src/conversions/ros_params.cpp
         src/conversions/ros_component_factory.cpp
@@ -22,10 +22,10 @@ cs_add_library(${PROJECT_NAME}
 # Executables #
 ###############
 
-cs_add_executable(glocal_planner_node
-        src/ros_nodes/glocal_planner_node.cpp
+cs_add_executable(glocal_system_node
+        src/glocal_system_node.cpp
         )
-target_link_libraries(glocal_planner_node ${PROJECT_NAME})
+target_link_libraries(glocal_system_node ${PROJECT_NAME})
 
 ##########
 # Export #

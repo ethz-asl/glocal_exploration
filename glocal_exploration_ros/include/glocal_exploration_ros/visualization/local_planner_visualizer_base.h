@@ -1,11 +1,11 @@
-#ifndef GLOCAL_EXPLORATION_VISUALIZATION_LOCAL_PLANNER_VISUALIZER_
-#define GLOCAL_EXPLORATION_VISUALIZATION_LOCAL_PLANNER_VISUALIZER_
+#ifndef GLOCAL_EXPLORATION_VISUALIZATION_LOCAL_PLANNER_VISUALIZER_BASE_
+#define GLOCAL_EXPLORATION_VISUALIZATION_LOCAL_PLANNER_VISUALIZER_BASE_
 
 #include <memory>
 
 #include <ros/ros.h>
 
-#include "glocal_exploration/planning/local_planner/local_planner_base.h"
+#include "glocal_exploration/planning/local/local_planner_base.h"
 
 namespace glocal_exploration {
 
@@ -25,4 +25,4 @@ class LocalPlannerVisualizerBase {
 
 }  // namespace glocal_exploration
 
-#endif  // GLOCAL_EXPLORATION_VISUALIZATION_LOCAL_PLANNER_VISUALIZER_
+#endif  // GLOCAL_EXPLORATION_VISUALIZATION_LOCAL_PLANNER_VISUALIZER_BASE_
