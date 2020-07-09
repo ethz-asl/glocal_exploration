@@ -22,8 +22,6 @@ class ThreadsafeVoxgraphServer : public voxgraph::VoxgraphMapper {
     spinner_.start();
   }
 
-  // TODO(victorr): Add the local area update here
-
  protected:
   ros::CallbackQueue callback_queue_;
   ros::AsyncSpinner spinner_;

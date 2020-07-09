@@ -28,8 +28,6 @@ bool VoxgraphMap::setupFromConfig(MapBase::Config* config) {
   c_block_size_ = voxblox_server_->getEsdfMapPtr()->block_size();
 }
 
-double VoxgraphMap::getVoxelSize() { return c_voxel_size_; }
-
 bool VoxgraphMap::isTraversableInActiveSubmap(
     const Eigen::Vector3d& position, const Eigen::Quaterniond& orientation) {
   if (!state_machine_->pointInROI(position)) {
@@ -45,7 +43,6 @@ bool VoxgraphMap::isTraversableInActiveSubmap(
          config_.clearing_radius;
 }
 
-// TODO(victorr): Replace dummy code and actually check in overlapping submaps
 MapBase::VoxelState VoxgraphMap::getVoxelStateInLocalArea(
     const Eigen::Vector3d& point) {
   double distance = 0.0;

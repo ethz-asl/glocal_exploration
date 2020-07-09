@@ -25,11 +25,13 @@ class VoxgraphMap : public MapBase {
   virtual ~VoxgraphMap() = default;
 
   bool setupFromConfig(MapBase::Config* config) override;
-  double getVoxelSize() override;
+
   bool isTraversableInActiveSubmap(
       const Eigen::Vector3d& position,
       const Eigen::Quaterniond& orientation) override;
   VoxelState getVoxelStateInLocalArea(const Eigen::Vector3d& point) override;
+
+  double getVoxelSize() override { return c_voxel_size_; }
   Eigen::Vector3d getVoxelCenterInLocalArea(
       const Eigen::Vector3d& point) override;
 
