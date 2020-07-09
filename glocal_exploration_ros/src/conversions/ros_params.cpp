@@ -6,20 +6,17 @@ VoxbloxMap::Config getVoxbloxMapConfigFromRos(const ros::NodeHandle& nh) {
   VoxbloxMap::Config config;
   config.nh_private_namespace = nh.getNamespace();
   nh.param("traversability_radius", config.traversability_radius,
-                   config.traversability_radius);
-  nh.param("clearing_radius", config.clearing_radius,
-                   config.clearing_radius);
+           config.traversability_radius);
+  nh.param("clearing_radius", config.clearing_radius, config.clearing_radius);
   return config;
 }
 
 VoxgraphMap::Config getVoxgraphMapConfigFromRos(const ros::NodeHandle& nh) {
   VoxgraphMap::Config config;
-  ros::NodeHandle nh_mapping(nh, "voxgraph");
-  config.nh_private_namespace = nh_mapping.getNamespace();
-  nh_mapping.param("traversability_radius", config.traversability_radius,
-                   config.traversability_radius);
-  nh_mapping.param("clearing_radius", config.clearing_radius,
-                   config.clearing_radius);
+  config.nh_private_namespace = nh.getNamespace();
+  nh.param("traversability_radius", config.traversability_radius,
+           config.traversability_radius);
+  nh.param("clearing_radius", config.clearing_radius, config.clearing_radius);
   return config;
 }
 

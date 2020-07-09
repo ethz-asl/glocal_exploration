@@ -1,5 +1,7 @@
 #include "glocal_exploration_ros/mapping/voxgraph_map.h"
 
+#include <memory>
+
 namespace glocal_exploration {
 
 VoxgraphMap::VoxgraphMap(const std::shared_ptr<StateMachine>& state_machine)
@@ -17,11 +19,9 @@ bool VoxgraphMap::setupFromConfig(MapBase::Config* config) {
 
   // Launch the sliding window local map and global map servers
   ros::NodeHandle nh(ros::names::parentNamespace(config_.nh_private_namespace));
-  ros::NodeHandle nh_voxblox(config_.nh_private_namespace, "local");
-  voxblox_server_ = std::make_unique<voxblox::EsdfServer>(nh, nh_voxblox);
-  ros::NodeHandle nh_voxgraph(config_.nh_private_namespace, "global");
-  voxgraph_server_ =
-      std::make_unique<voxgraph::VoxgraphMapper>(nh, nh_voxgraph);
+  ros::NodeHandle nh_private(config_.nh_private_namespace);
+  voxblox_server_ = std::make_unique<ThreadsafeVoxbloxServer>(nh, nh_private);
+  voxgraph_server_ = std::make_unique<ThreadsafeVoxgraphServer>(nh, nh_private);
 
   // Cached params
   c_voxel_size_ = voxblox_server_->getEsdfMapPtr()->voxel_size();
@@ -60,7 +60,8 @@ MapBase::VoxelState VoxgraphMap::getVoxelStateInLocalArea(
   return VoxelState::Unknown;
 }
 
-Eigen::Vector3d VoxgraphMap::getVoxelCenterInLocalArea(const Eigen::Vector3d& point) {
+Eigen::Vector3d VoxgraphMap::getVoxelCenterInLocalArea(
+    const Eigen::Vector3d& point) {
   return (point / c_voxel_size_).array().round() * c_voxel_size_;
 }
 }  // namespace glocal_exploration

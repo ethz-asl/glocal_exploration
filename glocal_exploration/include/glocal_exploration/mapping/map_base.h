@@ -1,7 +1,8 @@
-#ifndef GLOCAL_EXPLORATION_MAPPING_MAP_INTERFACE_H_
-#define GLOCAL_EXPLORATION_MAPPING_MAP_INTERFACE_H_
+#ifndef GLOCAL_EXPLORATION_MAPPING_MAP_BASE_H_
+#define GLOCAL_EXPLORATION_MAPPING_MAP_BASE_H_
 
 #include <memory>
+#include <utility>
 
 #include "glocal_exploration/common.h"
 #include "glocal_exploration/planning/state_machine.h"
@@ -38,7 +39,8 @@ class MapBase {
                                            Eigen::Quaterniond::Identity()) = 0;
 
   // Voxels are referred in the planner by their center points.
-  virtual Eigen::Vector3d getVoxelCenterInLocalArea(const Eigen::Vector3d& point) = 0;
+  virtual Eigen::Vector3d getVoxelCenterInLocalArea(
+      const Eigen::Vector3d& point) = 0;
 
   virtual VoxelState getVoxelStateInLocalArea(const Eigen::Vector3d& point) = 0;
 
@@ -48,4 +50,4 @@ class MapBase {
 
 }  // namespace glocal_exploration
 
-#endif  // GLOCAL_EXPLORATION_MAPPING_MAP_INTERFACE_H_
+#endif  // GLOCAL_EXPLORATION_MAPPING_MAP_BASE_H_
