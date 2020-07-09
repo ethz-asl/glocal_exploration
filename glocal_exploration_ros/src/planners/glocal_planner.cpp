@@ -1,10 +1,10 @@
 #include "glocal_exploration_ros/planners/glocal_planner.h"
 
 #include <geometry_msgs/Pose.h>
-#include <glocal_exploration_ros/conversions/ros_params.h>
 #include <tf2/utils.h>
 
 #include "glocal_exploration_ros/conversions/ros_component_factory.h"
+#include "glocal_exploration_ros/conversions/ros_params.h"
 
 namespace glocal_exploration {
 

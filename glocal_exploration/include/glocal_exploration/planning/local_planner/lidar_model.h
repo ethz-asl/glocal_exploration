@@ -49,7 +49,7 @@ class LidarModel : public SensorModel {
   // methods
   void markNeighboringRays(int x, int y, int segment, int value);
   void getDirectionVector(Eigen::Vector3d* result, double relative_x,
-                          double relative_y);
+                          double relative_y) const;
 };
 
 }  // namespace glocal_exploration
