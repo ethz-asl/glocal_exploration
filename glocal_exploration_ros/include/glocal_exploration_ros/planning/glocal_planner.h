@@ -8,8 +8,9 @@
 #include <std_srvs/SetBool.h>
 
 #include "glocal_exploration/mapping/map_base.h"
-#include "glocal_exploration/planning/local_planner/local_planner_base.h"
 #include "glocal_exploration/planning/state_machine.h"
+#include "glocal_exploration/planning/local_planner/local_planner_base.h"
+#include <glocal_exploration/planning/global_planner/global_planner_base.h>
 #include "glocal_exploration_ros/visualization/local_planner_visualizer_base.h"
 
 namespace glocal_exploration {
@@ -57,8 +58,7 @@ class GlocalPlanner {
   void publishTargetPose();
 
   // variables
-  Eigen::Vector3d
-      current_position_;  // current and goal poses are in odom frame
+  Eigen::Vector3d current_position_; // current and goal poses are in odom frame
   Eigen::Quaterniond current_orientation_;
   Eigen::Vector3d target_position_;
   double target_yaw_;                  // rad

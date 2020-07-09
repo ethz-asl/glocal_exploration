@@ -33,7 +33,8 @@ GlocalPlanner::GlocalPlanner(const ros::NodeHandle& nh,
 
   // setup the global planner
   ros::NodeHandle nh_global_planner(nh_private_, "global_planner");
-  global_planner = ComponentFactoryROS::createGlobalPlanner(nh_local_planner, map_, state_machine_);
+  global_planner_ = ComponentFactoryROS::createGlobalPlanner
+      (nh_local_planner, map_, state_machine_);
 
   // ROS
   target_pub_ = nh_.advertise<geometry_msgs::Pose>("command/pose", 10);

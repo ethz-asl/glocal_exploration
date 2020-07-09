@@ -2,7 +2,7 @@
 #include <glog/logging.h>
 #include <ros/ros.h>
 
-#include "glocal_exploration_ros/planners/glocal_planner.h"
+#include "glocal_exploration_ros/planning/glocal_planner.h"
 
 int main(int argc, char** argv) {
   // Setup logging
