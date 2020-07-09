@@ -38,6 +38,10 @@ class MapBase {
   virtual bool getVoxelCenterInLocalArea(Eigen::Vector3d *center, const Eigen::Vector3d &point) = 0;
   virtual VoxelState getVoxelStateInLocalArea(const Eigen::Vector3d &point) = 0;
 
+  /* Global planner */
+  virtual void getSubmapCenter(Eigen::Vector3d *center, int submap_id) = 0;
+
+
  protected:
   const std::shared_ptr<StateMachine> state_machine_;
 };

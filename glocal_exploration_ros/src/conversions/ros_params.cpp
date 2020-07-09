@@ -58,4 +58,11 @@ BoundingBox::Config getBoundingBoxConfigFromRos(const ros::NodeHandle &nh) {
   return config;
 }
 
+SkeletonPlanner::Config getSkeletonPlannerConfigFromRos(const ros::NodeHandle &nh){
+  SkeletonPlanner::Config config;
+
+  return config;
+}
+
+
 } // namespace glocal_exploration

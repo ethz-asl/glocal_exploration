@@ -65,5 +65,19 @@ std::shared_ptr<RegionOfInterest> ComponentFactoryROS::createRegionOfInterest(co
   }
 }
 
+static std::shared_ptr<GlobalPlannerBase> createGlobalPlanner(const ros::NodeHandle &nh,
+                                                              std::shared_ptr<MapBase> map,
+                                                              std::shared_ptr<StateMachine> state_machine) {
+  std::string type = getType(nh);
+  if (type == "skeleton") {
+    auto planner = std::make_shared<SkeletonPlanner>(map, state_machine);
+    SkeletonPlanner::Config cfg = getSkeletonPlannerConfigFromRos(nh);
+    planner->setupFromConfig(&cfg);
+    return planner;
+  } else {
+    LOG(ERROR) << "Unknown global planner type '" << type << "'.";
+    return nullptr;
+  }
+}
 
 } // namespace glocal_exploration

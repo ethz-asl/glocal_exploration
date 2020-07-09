@@ -28,6 +28,10 @@ GlocalPlanner::GlocalPlanner(const ros::NodeHandle &nh, const ros::NodeHandle &n
   local_planner_ = ComponentFactoryROS::createLocalPlanner(nh_local_planner, map_, state_machine_);
   local_planner_visualizer_ = ComponentFactoryROS::createLocalPlannerVisualizer(nh_local_planner, local_planner_);
 
+  // setup the global planner
+  ros::NodeHandle nh_global_planner(nh_private_, "global_planner");
+  global_planner = ComponentFactoryROS::createGlobalPlanner(nh_local_planner, map_, state_machine_);
+
   // ROS
   target_pub_ = nh_.advertise<geometry_msgs::Pose>("command/pose", 10);
   odom_sub_ = nh_.subscribe("odometry", 1, &GlocalPlanner::odomCallback, this);

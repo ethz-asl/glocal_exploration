@@ -67,4 +67,7 @@ local_planner:
   downsampling_factor: 3
   mounting_orientation_y: 0.2164396 # 25deg pitch
   mounting_orientation_w: 0.976296
+  
+global_planner:
+  type: skeleton
     

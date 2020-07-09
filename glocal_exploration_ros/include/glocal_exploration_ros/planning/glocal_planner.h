@@ -49,6 +49,7 @@ class GlocalPlanner {
   std::shared_ptr<MapBase> map_;
   std::shared_ptr<LocalPlannerBase> local_planner_;
   std::shared_ptr<LocalPlannerVisualizerBase> local_planner_visualizer_;
+  std::shared_ptr<GlobalPlannerBase> global_planner_;
 
   // methods
   void loopIteration();

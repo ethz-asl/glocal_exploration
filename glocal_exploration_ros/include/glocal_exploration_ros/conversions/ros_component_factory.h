@@ -10,6 +10,7 @@
 #include "glocal_exploration/planning/local_planner/local_planner_base.h"
 #include "glocal_exploration/planning/state_machine.h"
 #include "glocal_exploration_ros/visualization/local_planner_visualizer_base.h"
+#include "glocal_exploration/planning/global_planner/global_planner_base.h"
 
 namespace glocal_exploration {
 
@@ -27,6 +28,11 @@ class ComponentFactoryROS {
                                                               const std::shared_ptr<LocalPlannerBase> &planner);
 
   static std::shared_ptr<RegionOfInterest> createRegionOfInterest(const ros::NodeHandle &nh);
+
+  static std::shared_ptr<GlobalPlannerBase> createGlobalPlanner(const ros::NodeHandle &nh,
+                                                                std::shared_ptr<MapBase> map,
+                                                                std::shared_ptr<StateMachine> state_machine);
+
 
  private:
   ComponentFactoryROS() = default;
