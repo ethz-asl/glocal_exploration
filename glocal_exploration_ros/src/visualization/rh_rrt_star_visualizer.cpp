@@ -1,5 +1,12 @@
 #include "glocal_exploration_ros/visualization/rh_rrt_star_visualizer.h"
 
+#include <algorithm>
+#include <limits>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include <eigen_conversions/eigen_msg.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <visualization_msgs/MarkerArray.h>
 
@@ -35,11 +42,12 @@ void RHRRTStarVisualizer::visualize() {
   auto& points = planner_->getTreeData().points;
   ros::Time now = ros::Time::now();
   std::string frame_id = "world";
+
   // Display all trajectories in the input and erase previous ones
-  double max_value = points[0]->value;
-  double min_value = points[0]->value;
-  double max_gain = points[0]->gain;
-  double min_gain = points[0]->gain;
+  double max_value = std::numeric_limits<double>::min();
+  double min_value = std::numeric_limits<double>::max();
+  double max_gain = std::numeric_limits<double>::min();
+  double min_gain = std::numeric_limits<double>::max();
   for (size_t i = 1; i < points.size(); ++i) {
     if (points[i]->value >= max_value) {
       max_value = points[i]->value;
@@ -94,13 +102,16 @@ void RHRRTStarVisualizer::visualize() {
         pt.y = start.y();
         pt.z = start.z();
         msg.points.push_back(pt);
-        const Eigen::Vector3d& end =
-            points[i]
-                ->getConnectedViewPoint(points[i]->active_connection)
-                ->pose.position();
-        pt.x = end.x();
-        pt.y = end.y();
-        pt.z = end.z();
+        RHRRTStar::ViewPoint* viewpoint_end =
+            points[i]->getConnectedViewPoint(points[i]->active_connection);
+        if (viewpoint_end) {
+          const Eigen::Vector3d& end = viewpoint_end->pose.position();
+          tf::pointEigenToMsg(end, pt);
+        } else {
+          // TODO(lukas): Please check if there's a more meaningful position to
+          // set it to
+          tf::pointEigenToMsg(Eigen::Vector3d::Zero(), pt);
+        }
         msg.points.push_back(pt);
       } else {
         msg.points.push_back(geometry_msgs::Point());  // suppress rviz warnings
@@ -163,7 +174,7 @@ void RHRRTStarVisualizer::visualize() {
       msg.pose.position.y = points[i]->pose.y;
       msg.pose.position.z = points[i]->pose.z;
       double g = points[i]->gain;
-      double c = points[i]->getActiveConnection()->cost;
+      double c = CHECK_NOTNULL(points[i]->getActiveConnection())->cost;
       double v = points[i]->value;
       std::stringstream stream;
       stream << "g: " << std::fixed << std::setprecision(1)
