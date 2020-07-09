@@ -16,15 +16,14 @@ cs_add_library(${PROJECT_NAME}
         src/conversions/ros_params.cpp
         src/conversions/ros_component_factory.cpp
         src/visualization/rh_rrt_star_visualizer.cpp
-        )
+)
 
 ###############
 # Executables #
 ###############
 
 cs_add_executable(glocal_system_node
-        src/glocal_system_node.cpp
-        )
+    app/glocal_system_node.cpp)
 target_link_libraries(glocal_system_node ${PROJECT_NAME})
 
 ##########
