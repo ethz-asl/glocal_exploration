@@ -1,9 +1,11 @@
 #include "glocal_exploration_ros/mapping/voxblox_map.h"
 
+#include <memory>
+
 namespace glocal_exploration {
 
 VoxbloxMap::VoxbloxMap(const std::shared_ptr<StateMachine>& state_machine)
-    : MapBase(state_machine) {};
+    : MapBase(state_machine) {}
 
 bool VoxbloxMap::setupFromConfig(MapBase::Config* config) {
   CHECK_NOTNULL(config);
@@ -34,7 +36,7 @@ bool VoxbloxMap::isTraversableInActiveSubmap(
     return (distance > config_.traversability_radius);
   }
   return (position - state_machine_->currentPose().position()).norm() <
-      config_.clearing_radius;
+         config_.clearing_radius;
 }
 
 MapBase::VoxelState VoxbloxMap::getVoxelStateInLocalArea(
@@ -50,7 +52,8 @@ MapBase::VoxelState VoxbloxMap::getVoxelStateInLocalArea(
   return VoxelState::Unknown;
 }
 
-Eigen::Vector3d VoxbloxMap::getVoxelCenterInLocalArea(const Eigen::Vector3d& point) {
+Eigen::Vector3d VoxbloxMap::getVoxelCenterInLocalArea(
+    const Eigen::Vector3d& point) {
   return (point / c_voxel_size_).array().round() * c_voxel_size_;
 }
 

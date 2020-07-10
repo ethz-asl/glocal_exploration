@@ -1,6 +1,9 @@
 #ifndef GLOCAL_EXPLORATION_PLANNING_LOCAL_LIDAR_MODEL_H_
 #define GLOCAL_EXPLORATION_PLANNING_LOCAL_LIDAR_MODEL_H_
 
+#include <memory>
+#include <vector>
+
 #include "glocal_exploration/planning/local/sensor_model.h"
 
 namespace glocal_exploration {

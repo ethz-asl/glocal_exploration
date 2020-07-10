@@ -2,6 +2,7 @@
 #define GLOCAL_EXPLORATION_PLANNING_LOCAL_LOCAL_PLANNER_BASE_H_
 
 #include <memory>
+#include <utility>
 
 #include "glocal_exploration/common.h"
 #include "glocal_exploration/mapping/map_base.h"
@@ -19,7 +20,7 @@ class LocalPlannerBase {
   };
   LocalPlannerBase(std::shared_ptr<MapBase> map,
                    std::shared_ptr<StateMachine> state_machine)
-      : map_(std::move(map)), state_machine_(std::move(state_machine)){};
+      : map_(std::move(map)), state_machine_(std::move(state_machine)) {}
   virtual ~LocalPlannerBase() = default;
 
   /* Setup */

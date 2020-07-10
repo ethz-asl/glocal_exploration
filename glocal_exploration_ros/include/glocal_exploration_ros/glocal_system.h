@@ -1,5 +1,5 @@
-#ifndef GLOCAL_EXPLORATION_PLANNERS_GLOCAL_PLANNER_H_
-#define GLOCAL_EXPLORATION_PLANNERS_GLOCAL_PLANNER_H_
+#ifndef GLOCAL_EXPLORATION_ROS_GLOCAL_SYSTEM_H_
+#define GLOCAL_EXPLORATION_ROS_GLOCAL_SYSTEM_H_
 
 #include <memory>
 
@@ -28,8 +28,8 @@ class GlocalSystem {
 
   // ROS callbacks
   void odomCallback(const nav_msgs::Odometry& msg);
-  bool runSrvCallback(std_srvs::SetBool::Request& req,
-                      std_srvs::SetBool::Response& res);
+  bool runSrvCallback(std_srvs::SetBool::Request& req,    // NOLINT
+                      std_srvs::SetBool::Response& res);  // NOLINT
 
   // spinning is managed explicitly, run this to start the planner
   void mainLoop();
@@ -68,4 +68,4 @@ class GlocalSystem {
 
 }  // namespace glocal_exploration
 
-#endif  // GLOCAL_EXPLORATION_PLANNERS_GLOCAL_PLANNER_H_
+#endif  // GLOCAL_EXPLORATION_ROS_GLOCAL_SYSTEM_H_

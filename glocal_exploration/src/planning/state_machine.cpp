@@ -1,5 +1,8 @@
 #include "glocal_exploration/planning/state_machine.h"
 
+#include <memory>
+#include <string>
+
 namespace glocal_exploration {
 
 StateMachine::StateMachine()

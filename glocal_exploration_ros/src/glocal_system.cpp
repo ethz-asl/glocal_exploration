@@ -1,5 +1,7 @@
 #include "glocal_exploration_ros/glocal_system.h"
 
+#include <memory>
+
 #include <geometry_msgs/Pose.h>
 #include <tf2/utils.h>
 
@@ -9,7 +11,7 @@
 namespace glocal_exploration {
 
 GlocalSystem::GlocalSystem(const ros::NodeHandle& nh,
-                             const ros::NodeHandle& nh_private)
+                           const ros::NodeHandle& nh_private)
     : nh_(nh), nh_private_(nh_private), state_machine_(new StateMachine()) {
   // params
   readParamsFromRos();
@@ -167,7 +169,7 @@ void GlocalSystem::odomCallback(const nav_msgs::Odometry& msg) {
 }
 
 bool GlocalSystem::runSrvCallback(std_srvs::SetBool::Request& req,
-                                   std_srvs::SetBool::Response& res) {
+                                  std_srvs::SetBool::Response& res) {
   state_machine_->signalLocalPlanning();
   if (state_machine_->currentState() == StateMachine::LocalPlanning) {
     VLOG(1) << "Started Glocal Exploration.";

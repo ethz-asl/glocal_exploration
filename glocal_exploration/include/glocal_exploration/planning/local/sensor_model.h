@@ -2,6 +2,7 @@
 #define GLOCAL_EXPLORATION_PLANNING_LOCAL_SENSOR_MODEL_H_
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "glocal_exploration/mapping/map_base.h"

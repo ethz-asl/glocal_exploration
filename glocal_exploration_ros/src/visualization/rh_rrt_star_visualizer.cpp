@@ -1,5 +1,10 @@
 #include "glocal_exploration_ros/visualization/rh_rrt_star_visualizer.h"
 
+#include <algorithm>
+#include <memory>
+#include <string>
+#include <vector>
+
 #include <tf2/LinearMath/Quaternion.h>
 #include <visualization_msgs/MarkerArray.h>
 
