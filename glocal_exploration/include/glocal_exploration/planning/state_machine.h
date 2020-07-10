@@ -1,6 +1,7 @@
 #ifndef GLOCAL_EXPLORATION_PLANNING_STATE_MACHINE_H_
 #define GLOCAL_EXPLORATION_PLANNING_STATE_MACHINE_H_
 
+#include <memory>
 #include <string>
 
 #include <boost/shared_ptr.hpp>

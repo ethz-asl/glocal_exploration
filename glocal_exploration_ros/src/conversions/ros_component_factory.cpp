@@ -1,5 +1,8 @@
 #include "glocal_exploration_ros/conversions/ros_component_factory.h"
 
+#include <memory>
+#include <string>
+
 #include "glocal_exploration_ros/conversions/ros_params.h"
 #include "glocal_exploration_ros/visualization/rh_rrt_star_visualizer.h"
 

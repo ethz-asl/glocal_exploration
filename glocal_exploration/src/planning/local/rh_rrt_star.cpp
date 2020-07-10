@@ -3,9 +3,13 @@
 #include <algorithm>
 #include <chrono>
 #include <iostream>
+#include <limits>
+#include <memory>
 #include <numeric>
 #include <queue>
 #include <random>
+#include <utility>
+#include <vector>
 
 namespace glocal_exploration {
 
@@ -473,8 +477,10 @@ double RHRRTStar::computeGNVStep(ViewPoint* view_point, double gain,
 
 bool RHRRTStar::sampleNewPoint(ViewPoint* point) {
   // sample the goal point
-  double theta = 2.0 * M_PI * (double)std::rand() / (double)RAND_MAX;
-  double phi = acos(1.0 - 2.0 * (double)std::rand() / (double)RAND_MAX);
+  double theta = 2.0 * M_PI * static_cast<double>(std::rand()) /
+                 static_cast<double>(RAND_MAX);
+  double phi = acos(1.0 - 2.0 * static_cast<double>(std::rand()) /
+                              static_cast<double>(RAND_MAX));
   double rho = local_sampled_points_ > 0 ? config_.local_sampling_radius
                                          : config_.global_sampling_radius;
   Eigen::Vector3d goal = rho * Eigen::Vector3d(sin(phi) * cos(theta),
@@ -513,7 +519,8 @@ bool RHRRTStar::sampleNewPoint(ViewPoint* point) {
   point->pose.x = goal.x();
   point->pose.y = goal.y();
   point->pose.z = goal.z();
-  point->pose.yaw = 2.0 * M_PI * (double)std::rand() / (double)RAND_MAX;
+  point->pose.yaw = 2.0 * M_PI * static_cast<double>(std::rand()) /
+                    static_cast<double>(RAND_MAX);
   return true;
 }
 
@@ -523,8 +530,8 @@ bool RHRRTStar::findNearestNeighbors(Eigen::Vector3d position,
   // how to use nanoflann (:
   // Returns the indices of the neighbors in tree data
   double query_pt[3] = {position.x(), position.y(), position.z()};
-  std::size_t ret_index[n_neighbors];
-  double out_dist[n_neighbors];
+  std::size_t ret_index[n_neighbors];  // NOLINT
+  double out_dist[n_neighbors];        // NOLINT
   nanoflann::KNNResultSet<double> resultSet(n_neighbors);
   resultSet.init(ret_index, out_dist);
   kdtree_->findNeighbors(resultSet, query_pt, nanoflann::SearchParams(10));
@@ -575,7 +582,7 @@ bool RHRRTStar::ViewPoint::tryAddConnection(
   std::vector<Eigen::Vector3d> path_points;
   path_points.resize(n_points);
   for (size_t i = 0; i < n_points; ++i) {
-    path_points[i] = origin + (double)i / n_points * direction;
+    path_points[i] = origin + static_cast<double>(i) / n_points * direction;
     if (!map->isTraversableInActiveSubmap(path_points[i])) {
       return false;
     }
