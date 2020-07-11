@@ -108,8 +108,8 @@ void RHRRTStarVisualizer::visualize() {
           const Eigen::Vector3d& end = viewpoint_end->pose.position();
           tf::pointEigenToMsg(end, pt);
         } else {
-          // TODO(lukas): Please check if there's a more meaningful position to
-          // set it to
+          // TODO(lukas): Set this to something more meaningful than this
+          //              dummy value
           tf::pointEigenToMsg(Eigen::Vector3d::Zero(), pt);
         }
         msg.points.push_back(pt);
@@ -174,7 +174,16 @@ void RHRRTStarVisualizer::visualize() {
       msg.pose.position.y = points[i]->pose.y;
       msg.pose.position.z = points[i]->pose.z;
       double g = points[i]->gain;
-      double c = CHECK_NOTNULL(points[i]->getActiveConnection())->cost;
+      double c;
+      RHRRTStar::Connection* active_connection =
+          points[i]->getActiveConnection();
+      if (active_connection) {
+        c = active_connection->cost;
+      } else {
+        // TODO(lukas): Set this to something more meaningful than this
+        //              dummy value
+        c = 0.0;
+      }
       double v = points[i]->value;
       std::stringstream stream;
       stream << "g: " << std::fixed << std::setprecision(1)
