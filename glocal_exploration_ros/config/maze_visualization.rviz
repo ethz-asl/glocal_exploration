@@ -418,13 +418,13 @@ Visualization Manager:
               Unreliable: false
               Value: false
             - Class: rviz/Marker
-              Enabled: true
+              Enabled: false
               Marker Topic: /glocal/glocal_system/mapping/submap_info
               Name: Submap AABBs
               Namespaces:
                 {}
               Queue Size: 100
-              Value: true
+              Value: false
             - Class: rviz/Group
               Displays:
                 - Class: rviz/Marker
@@ -432,7 +432,7 @@ Visualization Manager:
                   Marker Topic: /glocal/glocal_system/mapping/combined_mesh
                   Name: Merged submaps
                   Namespaces:
-                    {}
+                    mesh: true
                   Queue Size: 100
                   Value: true
                 - Class: rviz/Marker
@@ -448,7 +448,7 @@ Visualization Manager:
           Enabled: true
           Name: Global
         - Alpha: 0.029999999329447746
-          Autocompute Intensity Bounds: false
+          Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
             Max Value: 10
             Min Value: -10
@@ -462,9 +462,9 @@ Visualization Manager:
           Enabled: true
           Invert Rainbow: false
           Max Color: 0; 125; 255
-          Max Intensity: 1
+          Max Intensity: 0.6347218155860901
           Min Color: 204; 0; 0
-          Min Intensity: -1
+          Min Intensity: -0.5999996662139893
           Name: Local area
           Position Transformer: XYZ
           Queue Size: 10
@@ -507,25 +507,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 72.84431457519531
+      Distance: 79.25287628173828
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -7.6483259201049805
-        Y: -4.419708728790283
-        Z: -12.665392875671387
+        X: 1.8011046648025513
+        Y: 3.4249536991119385
+        Z: -13.701264381408691
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.0147968530654907
+      Pitch: 1.1447968482971191
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 5.506772994995117
+      Yaw: 5.22177267074585
     Saved: ~
 Window Geometry:
   Displays:

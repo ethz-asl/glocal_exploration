@@ -87,15 +87,15 @@ void VoxgraphLocalArea::update(
 
 VoxgraphLocalArea::VoxelState VoxgraphLocalArea::getVoxelStateAtPosition(
     const Eigen::Vector3d& position) {
-  ObservationCounterVoxel* voxel_ptr =
-      local_area_layer_.getVoxelPtrByCoordinates(
-          position.cast<FloatingPoint>());
+  TsdfVoxel* voxel_ptr = local_area_layer_.getVoxelPtrByCoordinates(
+      position.cast<FloatingPoint>());
   if (voxel_ptr) {
-    const ObservationCounterElement observation_count =
-        voxel_ptr->observation_count;
-    if (observation_count > 0) {
-      // TODO(victorr): Check with Lukas if we could use VoxelState::Observed
-      return VoxelState::Free;
+    if (voxel_ptr->weight > kTsdfObservedWeight) {
+      if (voxel_ptr->distance > local_area_layer_.voxel_size()) {
+        return VoxelState::Free;
+      } else {
+        return VoxelState::Occupied;
+      }
     }
   }
   return VoxelState::Unknown;
@@ -109,19 +109,19 @@ void VoxgraphLocalArea::publishLocalArea(ros::Publisher local_area_pub) {
   voxblox::BlockIndexList block_indices;
   local_area_layer_.getAllAllocatedBlocks(&block_indices);
   for (const voxblox::BlockIndex& block_index : block_indices) {
-    const voxblox::Block<ObservationCounterVoxel>& block =
+    const voxblox::Block<TsdfVoxel>& block =
         local_area_layer_.getBlockByIndex(block_index);
     for (voxblox::IndexElement linear_voxel_index = 0;
          linear_voxel_index < block.num_voxels(); ++linear_voxel_index) {
-      if (block.getVoxelByLinearIndex(linear_voxel_index).observation_count !=
-          0u) {
+      const TsdfVoxel& voxel = block.getVoxelByLinearIndex(linear_voxel_index);
+      if (voxel.weight > kTsdfObservedWeight) {
         pcl::PointXYZI point_msg;
         const Point voxel_position =
             block.computeCoordinatesFromLinearIndex(linear_voxel_index);
         point_msg.x = voxel_position.x();
         point_msg.y = voxel_position.y();
         point_msg.z = voxel_position.z();
-        point_msg.intensity = 1;
+        point_msg.intensity = voxel.distance;
         local_area_pointcloud_msg.push_back(point_msg);
       }
     }
@@ -151,36 +151,45 @@ void VoxgraphLocalArea::integrateSubmap(
   for (const voxblox::BlockIndex& submap_block_index : submap_blocks) {
     const voxblox::Block<TsdfVoxel>& submap_block =
         world_frame_submap_tsdf.getBlockByIndex(submap_block_index);
-    voxblox::Block<ObservationCounterVoxel>::Ptr local_area_block =
+    if (!submap_block.has_data()) {
+      LOG(INFO) << "Encountered submap block with no data. Skipping.";
+      continue;
+    }
+
+    voxblox::Block<TsdfVoxel>::Ptr local_area_block =
         local_area_layer_.allocateBlockPtrByIndex(submap_block_index);
     CHECK(local_area_block) << "Local area block allocation failed";
+
     for (voxblox::IndexElement linear_voxel_index = 0;
          linear_voxel_index < submap_block.num_voxels(); ++linear_voxel_index) {
-      ObservationCounterVoxel& current_voxel =
+      TsdfVoxel& local_area_voxel =
           local_area_block->getVoxelByLinearIndex(linear_voxel_index);
-      if (voxblox::utils::isObservedVoxel(
-              submap_block.getVoxelByLinearIndex(linear_voxel_index))) {
-        if (deintegrate) {
-          if (current_voxel.observation_count == 0u) {
-            LOG(WARNING) << "Attempted to decrement observation count below "
-                            "zero. This should never happen.";
-          } else {
-            current_voxel.observation_count -= 1u;
-          }
-        } else {
-          if (current_voxel.observation_count == kObservationCounterMax) {
-            LOG(WARNING) << "Attempted to increment observation count beyond "
-                            "max value of "
-                         << kObservationCounterMax
-                         << ". This should never happen.";
-          } else {
-            current_voxel.observation_count += 1u;
-          }
-        }
+      const TsdfVoxel& submap_voxel =
+          submap_block.getVoxelByLinearIndex(linear_voxel_index);
+
+      float signed_submap_voxel_weight;
+      if (deintegrate) {
+        signed_submap_voxel_weight = -submap_voxel.weight;
+      } else {
+        signed_submap_voxel_weight = submap_voxel.weight;
+      }
+
+      float combined_weight =
+          local_area_voxel.weight + signed_submap_voxel_weight;
+      if (combined_weight > kTsdfObservedWeight) {
+        local_area_voxel.distance =
+            (submap_voxel.distance * signed_submap_voxel_weight +
+             local_area_voxel.distance * local_area_voxel.weight) /
+            combined_weight;
+        local_area_voxel.weight = combined_weight;
+      } else {
+        local_area_voxel.distance = 0.f;
+        local_area_voxel.weight = 0.f;
       }
     }
   }
 
+  // Update the record of what submaps currently are in the local area
   if (deintegrate) {
     submaps_in_local_area_.erase(submap_id);
   } else {

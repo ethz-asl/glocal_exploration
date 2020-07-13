@@ -31,18 +31,9 @@ class VoxgraphLocalArea {
   void publishLocalArea(ros::Publisher local_area_pub);
 
  protected:
+  static constexpr FloatingPoint kTsdfObservedWeight = 1e-3;
   std::unordered_map<SubmapId, Transformation> submaps_in_local_area_;
-
-  // NOTE: Since we only need to know whether voxels are known/unknown, we use a
-  //       layer of integers counting the number of submaps in which each voxel
-  //       was observed.
-  using ObservationCounterElement = uint8_t;
-  static constexpr ObservationCounterElement kObservationCounterMax =
-      std::numeric_limits<ObservationCounterElement>::max();
-  struct ObservationCounterVoxel {
-    ObservationCounterElement observation_count = 0u;
-  };
-  voxblox::Layer<ObservationCounterVoxel> local_area_layer_;
+  voxblox::Layer<TsdfVoxel> local_area_layer_;
 
   void deintegrateSubmap(const SubmapId submap_id,
                          const voxblox::Layer<TsdfVoxel>& submap_tsdf);
