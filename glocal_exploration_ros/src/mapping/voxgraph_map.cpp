@@ -34,6 +34,9 @@ bool VoxgraphMap::setupFromConfig(MapBase::Config* config) {
       [&] { local_area_needs_update_ = true; });
   local_area_pub_ = nh_private.advertise<pcl::PointCloud<pcl::PointXYZI>>(
       "local_area", 1, true);
+  local_area_pruning_timer_ = nh_private.createTimer(
+      ros::Duration(local_area_pruning_period_s_),
+      std::bind(&VoxgraphLocalArea::prune, local_area_.get()));
 
   // Cached params
   c_voxel_size_ = voxblox_server_->getEsdfMapPtr()->voxel_size();

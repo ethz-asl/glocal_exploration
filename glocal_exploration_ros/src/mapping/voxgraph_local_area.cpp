@@ -85,6 +85,32 @@ void VoxgraphLocalArea::update(
   }
 }
 
+void VoxgraphLocalArea::prune() {
+  size_t num_pruned_blocks = 0u;
+  voxblox::BlockIndexList blocks_indices;
+  local_area_layer_.getAllAllocatedBlocks(&blocks_indices);
+  for (const voxblox::BlockIndex& block_index : blocks_indices) {
+    const voxblox::Block<TsdfVoxel>& block =
+        local_area_layer_.getBlockByIndex(block_index);
+    bool block_contains_observed_voxels = false;
+    for (size_t linear_index = 0u; linear_index < block.num_voxels();
+         ++linear_index) {
+      const voxblox::TsdfVoxel& voxel =
+          block.getVoxelByLinearIndex(linear_index);
+      if (kTsdfObservedWeight < voxel.weight) {
+        block_contains_observed_voxels = true;
+        break;
+      }
+    }
+    if (!block_contains_observed_voxels) {
+      ++num_pruned_blocks;
+      local_area_layer_.removeBlock(block_index);
+    }
+  }
+
+  LOG(INFO) << "Pruned " << num_pruned_blocks << " local area blocks";
+}
+
 VoxgraphLocalArea::VoxelState VoxgraphLocalArea::getVoxelStateAtPosition(
     const Eigen::Vector3d& position) {
   TsdfVoxel* voxel_ptr = local_area_layer_.getVoxelPtrByCoordinates(

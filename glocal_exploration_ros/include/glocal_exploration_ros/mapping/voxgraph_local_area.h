@@ -25,6 +25,7 @@ class VoxgraphLocalArea {
 
   void update(const voxgraph::VoxgraphSubmapCollection& submap_collection,
               const voxblox::EsdfMap& local_map);
+  void prune();
 
   VoxelState getVoxelStateAtPosition(const Eigen::Vector3d& position);
 
