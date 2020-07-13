@@ -2,6 +2,7 @@
 #define GLOCAL_EXPLORATION_ROS_MAPPING_VOXGRAPH_LOCAL_AREA_H_
 
 #include <limits>
+#include <set>
 #include <unordered_map>
 
 #include <glocal_exploration/mapping/map_base.h>
@@ -11,10 +12,12 @@
 namespace glocal_exploration {
 class VoxgraphLocalArea {
  public:
-  using VoxelState = MapBase::VoxelState;
   using SubmapId = voxgraph::SubmapID;
   using Transformation = voxblox::Transformation;
   using Point = voxblox::Point;
+  using TsdfVoxel = voxblox::TsdfVoxel;
+  using VoxelState = MapBase::VoxelState;
+  using SubmapIdSet = std::set<SubmapId>;
 
   explicit VoxgraphLocalArea(const voxblox::TsdfMap::Config& config)
       : local_area_layer_(config.tsdf_voxel_size, config.tsdf_voxels_per_side) {
@@ -41,10 +44,20 @@ class VoxgraphLocalArea {
   };
   voxblox::Layer<ObservationCounterVoxel> local_area_layer_;
 
+  void deintegrateSubmap(const SubmapId submap_id,
+                         const voxblox::Layer<TsdfVoxel>& submap_tsdf);
   void integrateSubmap(const SubmapId submap_id,
                        const Transformation& submap_pose,
-                       const voxblox::Layer<voxblox::TsdfVoxel>& submap_tsdf,
+                       const voxblox::Layer<TsdfVoxel>& submap_tsdf,
                        bool deintegrate = false);
+
+  bool submapPoseChanged(const SubmapId submap_id,
+                         const Transformation& new_submap_pose);
+
+  static SubmapIdSet setDifference(const SubmapIdSet& positive_set,
+                                   const SubmapIdSet& negative_set);
+  static SubmapIdSet setIntersection(const SubmapIdSet& first_set,
+                                     const SubmapIdSet& second_set);
 };
 }  // namespace glocal_exploration
 

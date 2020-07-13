@@ -422,56 +422,7 @@ Visualization Manager:
               Marker Topic: /glocal/glocal_system/mapping/submap_info
               Name: Submap AABBs
               Namespaces:
-                surface_abb0: true
-                surface_abb1: true
-                surface_abb10: true
-                surface_abb11: true
-                surface_abb12: true
-                surface_abb13: true
-                surface_abb14: true
-                surface_abb15: true
-                surface_abb16: true
-                surface_abb17: true
-                surface_abb18: true
-                surface_abb19: true
-                surface_abb2: true
-                surface_abb20: true
-                surface_abb21: true
-                surface_abb22: true
-                surface_abb23: true
-                surface_abb24: true
-                surface_abb25: true
-                surface_abb26: true
-                surface_abb27: true
-                surface_abb28: true
-                surface_abb29: true
-                surface_abb3: true
-                surface_abb30: true
-                surface_abb31: true
-                surface_abb32: true
-                surface_abb33: true
-                surface_abb34: true
-                surface_abb35: true
-                surface_abb36: true
-                surface_abb37: true
-                surface_abb38: true
-                surface_abb39: true
-                surface_abb4: true
-                surface_abb40: true
-                surface_abb41: true
-                surface_abb42: true
-                surface_abb43: true
-                surface_abb44: true
-                surface_abb45: true
-                surface_abb46: true
-                surface_abb47: true
-                surface_abb48: true
-                surface_abb49: true
-                surface_abb5: true
-                surface_abb6: true
-                surface_abb7: true
-                surface_abb8: true
-                surface_abb9: true
+                {}
               Queue Size: 100
               Value: true
             - Class: rviz/Group
@@ -481,7 +432,7 @@ Visualization Manager:
                   Marker Topic: /glocal/glocal_system/mapping/combined_mesh
                   Name: Merged submaps
                   Namespaces:
-                    mesh: true
+                    {}
                   Queue Size: 100
                   Value: true
                 - Class: rviz/Marker
@@ -506,14 +457,14 @@ Visualization Manager:
           Channel Name: intensity
           Class: rviz/PointCloud2
           Color: 52; 101; 164
-          Color Transformer: FlatColor
+          Color Transformer: Intensity
           Decay Time: 0
           Enabled: true
           Invert Rainbow: false
-          Max Color: 255; 255; 255
-          Max Intensity: -1
-          Min Color: 0; 0; 0
-          Min Intensity: 1
+          Max Color: 0; 125; 255
+          Max Intensity: 1
+          Min Color: 204; 0; 0
+          Min Intensity: -1
           Name: Local area
           Position Transformer: XYZ
           Queue Size: 10
@@ -556,25 +507,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 123.57787322998047
+      Distance: 72.84431457519531
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 3.2289350032806396
-        Y: 9.310766220092773
-        Z: -21.40166473388672
+        X: -7.6483259201049805
+        Y: -4.419708728790283
+        Z: -12.665392875671387
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.1597963571548462
+      Pitch: 1.0147968530654907
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 5.621767997741699
+      Yaw: 5.506772994995117
     Saved: ~
 Window Geometry:
   Displays:
