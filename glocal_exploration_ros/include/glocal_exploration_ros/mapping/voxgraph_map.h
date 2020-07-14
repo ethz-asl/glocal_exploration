@@ -1,6 +1,9 @@
 #ifndef GLOCAL_EXPLORATION_ROS_MAPPING_VOXGRAPH_MAP_H_
 #define GLOCAL_EXPLORATION_ROS_MAPPING_VOXGRAPH_MAP_H_
 
+#include <memory>
+#include <string>
+
 #include <voxblox_ros/esdf_server.h>
 #include <voxgraph/frontend/voxgraph_mapper.h>
 
@@ -27,7 +30,8 @@ class VoxgraphMap : public MapBase {
       const Eigen::Vector3d& position,
       const Eigen::Quaterniond& orientation) override;
   VoxelState getVoxelStateInLocalArea(const Eigen::Vector3d& point) override;
-  Eigen::Vector3d getVoxelCenterInLocalArea(const Eigen::Vector3d& point) override;
+  Eigen::Vector3d getVoxelCenterInLocalArea(
+      const Eigen::Vector3d& point) override;
 
  protected:
   Config config_;

@@ -1,5 +1,10 @@
 #include "glocal_exploration/planning/local/lidar_model.h"
 
+#include <algorithm>
+#include <memory>
+#include <utility>
+#include <vector>
+
 namespace glocal_exploration {
 
 LidarModel::LidarModel(std::shared_ptr<MapBase> map,
@@ -33,14 +38,14 @@ bool LidarModel::setupFromConfig(SensorModel::Config* config) {
   // Downsample to voxel size resolution at max range
   c_fov_x_ = config_.horizontal_fov / 180.0 * M_PI;
   c_fov_y_ = config_.vertical_fov / 180.0 * M_PI;
-  c_res_x_ =
-      std::min((int)ceil(config_.ray_length * c_fov_x_ /
-                         (map_->getVoxelSize() * config_.downsampling_factor)),
-               config_.vertical_resolution);
-  c_res_y_ =
-      std::min((int)ceil(config_.ray_length * c_fov_y_ /
-                         (map_->getVoxelSize() * config_.downsampling_factor)),
-               config_.horizontal_resolution);
+  c_res_x_ = std::min(static_cast<int>(ceil(config_.ray_length * c_fov_x_ /
+                                            (map_->getVoxelSize() *
+                                             config_.downsampling_factor))),
+                      config_.vertical_resolution);
+  c_res_y_ = std::min(static_cast<int>(ceil(config_.ray_length * c_fov_y_ /
+                                            (map_->getVoxelSize() *
+                                             config_.downsampling_factor))),
+                      config_.horizontal_resolution);
   ray_table_ = Eigen::ArrayXXi::Zero(c_res_x_, c_res_y_);
   mounting_position_ =
       Eigen::Vector3d(config_.mounting_position_x, config_.mounting_position_y,
@@ -50,12 +55,13 @@ bool LidarModel::setupFromConfig(SensorModel::Config* config) {
       config_.mounting_orientation_y, config_.mounting_orientation_z);
 
   // Determine number of splits + split distances
-  c_n_sections_ =
-      (int)std::floor(std::log2(std::min((double)c_res_x_, (double)c_res_y_)));
+  c_n_sections_ = static_cast<int>(std::floor(std::log2(
+      std::min(static_cast<double>(c_res_x_), static_cast<double>(c_res_y_)))));
   c_split_widths_.push_back(0);
   for (int i = 0; i < c_n_sections_; ++i) {
     c_split_widths_.push_back(std::pow(2, i));
-    c_split_distances_.push_back(config_.ray_length / std::pow(2.0, (double)i));
+    c_split_distances_.push_back(config_.ray_length /
+                                 std::pow(2.0, static_cast<double>(i)));
   }
   c_split_distances_.push_back(0.0);
   std::reverse(c_split_distances_.begin(), c_split_distances_.end());
@@ -84,9 +90,10 @@ bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d>* result,
       if (current_segment < 0) {
         continue;  // already occluded ray
       }
-      LidarModel::getDirectionVector(&camera_direction,
-                                     (double)i / ((double)c_res_x_ - 1.0),
-                                     (double)j / ((double)c_res_y_ - 1.0));
+      LidarModel::getDirectionVector(
+          &camera_direction,
+          static_cast<double>(i) / (static_cast<double>(c_res_x_) - 1.0),
+          static_cast<double>(j) / (static_cast<double>(c_res_y_) - 1.0));
       direction = orientation * camera_direction;
       distance = c_split_distances_[current_segment];
       cast_ray = true;

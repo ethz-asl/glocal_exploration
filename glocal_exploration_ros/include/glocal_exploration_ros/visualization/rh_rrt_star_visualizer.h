@@ -1,8 +1,10 @@
-#ifndef GLOCAL_EXPLORATION_VISUALIZATION_RH_RRT_STAR_VISUALIZER_
-#define GLOCAL_EXPLORATION_VISUALIZATION_RH_RRT_STAR_VISUALIZER_
+#ifndef GLOCAL_EXPLORATION_ROS_VISUALIZATION_RH_RRT_STAR_VISUALIZER_H_
+#define GLOCAL_EXPLORATION_ROS_VISUALIZATION_RH_RRT_STAR_VISUALIZER_H_
 
 #include "glocal_exploration/planning/local/rh_rrt_star.h"
 #include "glocal_exploration_ros/visualization/local_planner_visualizer_base.h"
+
+#include <memory>
 
 namespace glocal_exploration {
 
@@ -30,4 +32,4 @@ class RHRRTStarVisualizer : public LocalPlannerVisualizerBase {
 
 }  // namespace glocal_exploration
 
-#endif  // GLOCAL_EXPLORATION_VISUALIZATION_RH_RRT_STAR_VISUALIZER_
+#endif  // GLOCAL_EXPLORATION_ROS_VISUALIZATION_RH_RRT_STAR_VISUALIZER_H_

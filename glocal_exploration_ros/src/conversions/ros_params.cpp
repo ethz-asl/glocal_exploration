@@ -6,9 +6,8 @@ VoxbloxMap::Config getVoxbloxMapConfigFromRos(const ros::NodeHandle& nh) {
   VoxbloxMap::Config config;
   config.nh_private_namespace = nh.getNamespace();
   nh.param("traversability_radius", config.traversability_radius,
-                   config.traversability_radius);
-  nh.param("clearing_radius", config.clearing_radius,
-                   config.clearing_radius);
+           config.traversability_radius);
+  nh.param("clearing_radius", config.clearing_radius, config.clearing_radius);
   return config;
 }
 
