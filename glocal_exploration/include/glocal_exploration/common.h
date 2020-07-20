@@ -5,13 +5,15 @@
 #include <kindr/minimal/quat-transformation.h>
 #include <Eigen/Geometry>
 
-namespace glocl_exploration {
+namespace glocal_exploration {
 
 // floating point accuracy
-using FloatingPoint = double;
+typedef double FloatingPoint;
 
-using Point = Eigen::Matrix<FloatingPoint, 1, 3>;
-using Transformation = kindr::minimal::QuatTransformationTemplate<FloatingPoint>;
+// Vector types
+typedef Eigen::Matrix<FloatingPoint, 3, 1> Point;
+typedef kindr::minimal::QuatTransformationTemplate<FloatingPoint>
+    Transformation;
 
 }  // namespace glocal_exploration
 
