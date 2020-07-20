@@ -8,7 +8,7 @@
 namespace glocal_exploration {
 
 VoxbloxMap::VoxbloxMap(const std::shared_ptr<Communicator>& communicator)
-    : MapBase(communicator){}
+    : MapBase(communicator) {}
 
 bool VoxbloxMap::setupFromConfig(MapBase::Config* config) {
   CHECK_NOTNULL(config);

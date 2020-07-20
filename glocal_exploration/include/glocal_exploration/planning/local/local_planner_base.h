@@ -20,7 +20,7 @@ class LocalPlannerBase {
     virtual ~Config() = default;
   };
   explicit LocalPlannerBase(std::shared_ptr<Communicator> communicator)
-      : comm_(std::move(communicator)){}
+      : comm_(std::move(communicator)) {}
   virtual ~LocalPlannerBase() = default;
 
   /* Setup */

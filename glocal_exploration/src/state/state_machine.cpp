@@ -1,6 +1,6 @@
 #include "glocal_exploration/state/state_machine.h"
 
-#include<string>
+#include <string>
 
 namespace glocal_exploration {
 
