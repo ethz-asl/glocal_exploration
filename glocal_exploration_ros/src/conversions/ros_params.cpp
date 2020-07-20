@@ -48,6 +48,7 @@ LidarModel::Config getLidarModelConfigFromRos(const ros::NodeHandle& nh) {
 
 RHRRTStar::Config getRHRRTStarConfigFromRos(const ros::NodeHandle& nh) {
   RHRRTStar::Config config;
+  nh.param("verbosity", config.verbosity, config.verbosity);
   nh.param("local_sampling_radius", config.local_sampling_radius,
            config.local_sampling_radius);
   nh.param("global_sampling_radius", config.global_sampling_radius,

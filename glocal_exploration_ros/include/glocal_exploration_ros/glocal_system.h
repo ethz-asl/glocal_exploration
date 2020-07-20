@@ -15,6 +15,7 @@ namespace glocal_exploration {
 class GlocalSystem {
  public:
   struct Config {
+    int verbosity = 1;
     double replan_position_threshold = 0.2;  // m
     double replan_yaw_threshold = 10;        // deg
     bool republish_waypoints = false;

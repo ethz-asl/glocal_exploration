@@ -3,6 +3,7 @@
 replan_position_threshold: 0.35  # m
 replan_yaw_threshold: 5   # deg
 republish_waypoints: true
+verbosity: 2
 
 region_of_interest:
   type: bounding_box
@@ -99,6 +100,7 @@ mapping:
 
 local_planner:
   type: rh_rrt_star
+  verbosity: 3
   # RH-RRT-Star params
   local_sampling_radius: 3.0  # m
   global_sampling_radius: 100 # m

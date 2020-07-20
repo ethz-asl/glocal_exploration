@@ -149,11 +149,11 @@ bool RHRRTStar::selectNextBestWayPoint(WayPoint* next_waypoint) {
     }
   }
   auto t_end = std::chrono::high_resolution_clock::now();
-  VLOG(3) << "Optimized the tree in "
-          << std::chrono::duration_cast<std::chrono::milliseconds>(t_end -
-                                                                   t_start)
-                 .count()
-          << "ms, " << iterations << " iterations.";
+  LOG_IF(INFO, config_.verbosity >= 3)
+      << "Optimized the tree in "
+      << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start)
+             .count()
+      << "ms, " << iterations << " iterations.";
 
   // select the best node from the current root
   int next_point = -1;
@@ -213,13 +213,13 @@ void RHRRTStar::updateTree() {
 
   // logging
   auto t_end = std::chrono::high_resolution_clock::now();
-  VLOG(2) << "Update took "
-          << std::chrono::duration_cast<std::chrono::milliseconds>(t_end -
-                                                                   t_start)
-                 .count()
-          << "ms: " << points_before_update - num_previous_points_ << " new, "
-          << points_before_update - tree_data_.points.size() << " killed, "
-          << tree_data_.points.size() << " total.";
+  LOG_IF(INFO, config_.verbosity >= 2)
+      << "Update took "
+      << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start)
+             .count()
+      << "ms: " << points_before_update - num_previous_points_ << " new, "
+      << points_before_update - tree_data_.points.size() << " killed, "
+      << tree_data_.points.size() << " total.";
   num_previous_points_ = tree_data_.points.size();
 }
 

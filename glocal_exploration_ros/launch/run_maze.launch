@@ -9,7 +9,6 @@
 
   <!-- Planner arguments -->
   <arg name="planner_config" default="glocal_planner.yaml"/>
-  <arg name="verbosity" default="2"/>
   
   <!-- Airsim arguments -->
   <arg name="airsim_config" default="maze_airsim.yaml"/>
@@ -40,8 +39,7 @@
   <group ns="glocal">
     <!-- Planner -->
     <node name="glocal_system" pkg="glocal_exploration_ros" type="glocal_system_node"
-          output="screen" args="--v $(arg verbosity) --alsologtostderr"
-          launch-prefix="$(arg launch_prefix)">
+          output="screen" args="--alsologtostderr" launch-prefix="$(arg launch_prefix)">
       <rosparam command="load" file="$(find glocal_exploration_ros)/config/$(arg planner_config)"/>
       <remap from="~pointcloud" to="/$(arg mav_name)/Lidar" />
       <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />

@@ -17,6 +17,7 @@ namespace glocal_exploration {
 class RHRRTStar : public LocalPlannerBase {
  public:
   struct Config {
+    int verbosity = 1;
     // sampling
     double local_sampling_radius = 1.5;   // m
     double global_sampling_radius = 100;  // m

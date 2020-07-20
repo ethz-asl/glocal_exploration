@@ -25,6 +25,7 @@ GlocalSystem::GlocalSystem(const ros::NodeHandle& nh,
 }
 
 void GlocalSystem::readParamsFromRos() {
+  nh_private_.param("verbosity", config_.verbosity, config_.verbosity);
   nh_private_.param("replan_position_threshold",
                     config_.replan_position_threshold,
                     config_.replan_position_threshold);
@@ -65,7 +66,8 @@ void GlocalSystem::buildComponents(const ros::NodeHandle& nh) {
 void GlocalSystem::mainLoop() {
   // This is the main loop, spinning is managed explicitly for efficiency
   // starting the main loop means everything is setup
-  VLOG(1) << "Glocal Exploration Planner set up successfully.";
+  LOG_IF(INFO, config_.verbosity >= 1)
+      << "Glocal Exploration Planner set up successfully.";
   comm_->stateMachine()->signalReady();
   run_srv_ = nh_private_.advertiseService("toggle_running",
                                           &GlocalSystem::runSrvCallback, this);
@@ -75,7 +77,8 @@ void GlocalSystem::mainLoop() {
     loopIteration();
     ros::spinOnce();
   }
-  VLOG(1) << "Glocal Exploration Planner finished planning.";
+  LOG_IF(INFO, config_.verbosity >= 1)
+      << "Glocal Exploration Planner finished planning.";
 }
 
 void GlocalSystem::loopIteration() {
@@ -182,7 +185,7 @@ bool GlocalSystem::runSrvCallback(std_srvs::SetBool::Request& req,
                                   std_srvs::SetBool::Response& res) {
   comm_->stateMachine()->signalLocalPlanning();
   if (comm_->stateMachine()->currentState() == StateMachine::kLocalPlanning) {
-    VLOG(1) << "Started Glocal Exploration.";
+    LOG_IF(INFO, config_.verbosity >= 1) << "Started Glocal Exploration.";
     comm_->setTargetReached(true);
     previous_time_ = ros::Time::now();
     previous_position_ = comm_->currentPose().position();
