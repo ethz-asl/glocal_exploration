@@ -39,8 +39,7 @@ class RHRRTStar : public LocalPlannerBase {
   };
 
   // setup
-  RHRRTStar(std::shared_ptr<MapBase> map,
-            std::shared_ptr<StateMachine> state_machine);
+  explicit RHRRTStar(std::shared_ptr<Communicator> communicator);
   virtual ~RHRRTStar() = default;
   bool setupFromConfig(LocalPlannerBase::Config* config) override;
 
@@ -60,8 +59,7 @@ class RHRRTStar : public LocalPlannerBase {
     size_t active_connection = 0;
 
     // helper methods
-    bool tryAddConnection(ViewPoint* target,
-                          const std::shared_ptr<MapBase>& map);
+    bool tryAddConnection(ViewPoint* target, MapBase* map);
     Connection* getActiveConnection();
     Connection const* getActiveConnection() const;
     ViewPoint* getConnectedViewPoint(size_t index);

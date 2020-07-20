@@ -21,7 +21,7 @@ class VoxgraphMap : public MapBase {
     double traversability_radius = 0.3;  // m
     double clearing_radius = 0.5;        // m
   };
-  explicit VoxgraphMap(const std::shared_ptr<StateMachine>& state_machine);
+  explicit VoxgraphMap(const std::shared_ptr<Communicator>& communicator);
   virtual ~VoxgraphMap() = default;
 
   bool setupFromConfig(MapBase::Config* config) override;

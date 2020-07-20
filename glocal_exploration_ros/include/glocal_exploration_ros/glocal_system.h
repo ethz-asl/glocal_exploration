@@ -7,9 +7,7 @@
 #include <ros/ros.h>
 #include <std_srvs/SetBool.h>
 
-#include "glocal_exploration/mapping/map_base.h"
-#include "glocal_exploration/planning/local/local_planner_base.h"
-#include "glocal_exploration/planning/state_machine.h"
+#include "glocal_exploration/state/communicator.h"
 #include "glocal_exploration_ros/visualization/local_planner_visualizer_base.h"
 
 namespace glocal_exploration {
@@ -45,12 +43,11 @@ class GlocalSystem {
 
   // Components
   Config config_;
-  const std::shared_ptr<StateMachine> state_machine_;
-  std::shared_ptr<MapBase> map_;
-  std::shared_ptr<LocalPlannerBase> local_planner_;
+  std::shared_ptr<Communicator> comm_;
   std::shared_ptr<LocalPlannerVisualizerBase> local_planner_visualizer_;
 
   // methods
+  void buildComponents(const ros::NodeHandle& nh);
   void loopIteration();
   void readParamsFromRos();
   void publishTargetPose();

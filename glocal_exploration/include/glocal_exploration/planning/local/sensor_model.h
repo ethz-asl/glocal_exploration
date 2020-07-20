@@ -7,6 +7,7 @@
 
 #include "glocal_exploration/mapping/map_base.h"
 #include "glocal_exploration/planning/waypoint.h"
+#include "glocal_exploration/state/region_of_interest.h"
 
 namespace glocal_exploration {
 
@@ -17,8 +18,8 @@ class SensorModel {
   };
 
   explicit SensorModel(std::shared_ptr<MapBase> map,
-                       std::shared_ptr<StateMachine> state_machine)
-      : map_(std::move(map)), state_machine_(std::move(state_machine)) {}
+                       std::shared_ptr<RegionOfInterest> roi)
+      : map_(std::move(map)), roi_(std::move(roi)) {}
   virtual ~SensorModel() = default;
 
   // Return the voxel centers of all visible voxels for that viewpoint
@@ -30,7 +31,7 @@ class SensorModel {
 
  protected:
   std::shared_ptr<MapBase> map_;
-  std::shared_ptr<StateMachine> state_machine_;
+  std::shared_ptr<RegionOfInterest> roi_;
 };
 
 }  // namespace glocal_exploration

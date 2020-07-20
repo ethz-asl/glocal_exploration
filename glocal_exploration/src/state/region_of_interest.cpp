@@ -1,4 +1,4 @@
-#include "glocal_exploration/planning/region_of_interest.h"
+#include "glocal_exploration/state/region_of_interest.h"
 
 namespace glocal_exploration {
 

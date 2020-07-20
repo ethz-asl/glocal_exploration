@@ -12,26 +12,12 @@ namespace glocal_exploration {
 
 GlocalSystem::GlocalSystem(const ros::NodeHandle& nh,
                            const ros::NodeHandle& nh_private)
-    : nh_(nh), nh_private_(nh_private), state_machine_(new StateMachine()) {
+    : nh_(nh), nh_private_(nh_private) {
   // params
   readParamsFromRos();
 
-  // setup the region of interest
-  ros::NodeHandle nh_roi(nh_private_, "region_of_interest");
-  std::shared_ptr<RegionOfInterest> roi =
-      ComponentFactoryROS::createRegionOfInterest(nh_roi);
-  state_machine_->setROI(roi);
-
-  // setup the map
-  ros::NodeHandle nh_mapping(nh_private_, "mapping");
-  map_ = ComponentFactoryROS::createMap(nh_mapping, state_machine_);
-
-  // setup the local planner
-  ros::NodeHandle nh_local_planner(nh_private_, "local_planner");
-  local_planner_ = ComponentFactoryROS::createLocalPlanner(
-      nh_local_planner, map_, state_machine_);
-  local_planner_visualizer_ = ComponentFactoryROS::createLocalPlannerVisualizer(
-      nh_local_planner, local_planner_);
+  // build communicator and components
+  buildComponents(nh_private_);
 
   // ROS
   target_pub_ = nh_.advertise<geometry_msgs::Pose>("command/pose", 10);
@@ -52,19 +38,41 @@ void GlocalSystem::readParamsFromRos() {
       << "Param 'replan_yaw_threshold' expected > 0";
 }
 
+void GlocalSystem::buildComponents(const ros::NodeHandle& nh) {
+  // Initialize the communicator
+  comm_ = std::make_shared<Communicator>();
+
+  // setup the state machine
+  comm_->setupStateMachine(std::make_shared<StateMachine>());
+
+  // setup the region of interest
+  ros::NodeHandle nh_roi(nh, "region_of_interest");
+  comm_->setupRegionOfInterest(
+      ComponentFactoryROS::createRegionOfInterest(nh_roi));
+
+  // setup the map
+  ros::NodeHandle nh_mapping(nh, "mapping");
+  comm_->setupMap(ComponentFactoryROS::createMap(nh_mapping, comm_));
+
+  // setup the local planner + visualizer
+  ros::NodeHandle nh_local_planner(nh, "local_planner");
+  comm_->setupLocalPlanner(
+      ComponentFactoryROS::createLocalPlanner(nh_local_planner, comm_));
+  local_planner_visualizer_ = ComponentFactoryROS::createLocalPlannerVisualizer(
+      nh_local_planner, comm_);
+}
+
 void GlocalSystem::mainLoop() {
-  // This is the main loop, spinning is managed explicitely for efficiency
+  // This is the main loop, spinning is managed explicitly for efficiency
   // starting the main loop means everything is setup
   VLOG(1) << "Glocal Exploration Planner set up successfully.";
-  state_machine_->signalReady();
+  comm_->stateMachine()->signalReady();
   run_srv_ = nh_private_.advertiseService("toggle_running",
                                           &GlocalSystem::runSrvCallback, this);
 
   while (ros::ok() &&
-         state_machine_->currentState() != StateMachine::Finished) {
-    if (state_machine_->currentState() != StateMachine::Ready) {
-      loopIteration();
-    }
+         comm_->stateMachine()->currentState() != StateMachine::kFinished) {
+    loopIteration();
     ros::spinOnce();
   }
   VLOG(1) << "Glocal Exploration Planner finished planning.";
@@ -72,24 +80,26 @@ void GlocalSystem::mainLoop() {
 
 void GlocalSystem::loopIteration() {
   // actions
-  switch (state_machine_->currentState()) {
-    case StateMachine::LocalPlanning: {
-      local_planner_->planningIteration();
+  switch (comm_->stateMachine()->currentState()) {
+    case StateMachine::kReady:
+      return;
+    case StateMachine::kLocalPlanning: {
+      comm_->localPlanner()->planningIteration();
       break;
     }
   }
 
   // move requests
   WayPoint next_point;
-  if (state_machine_->getNewWayPointIfRequested(&next_point)) {
+  if (comm_->getNewWayPointIfRequested(&next_point)) {
     target_position_ = next_point.position();
     target_yaw_ = next_point.yaw;
     publishTargetPose();
-    state_machine_->setTargetReached(false);
+    comm_->setTargetReached(false);
 
     // visualizations
-    switch (state_machine_->currentState()) {
-      case StateMachine::LocalPlanning: {
+    switch (comm_->stateMachine()->currentState()) {
+      case StateMachine::kLocalPlanning: {
         local_planner_visualizer_->visualize();
         break;
       }
@@ -127,10 +137,10 @@ void GlocalSystem::odomCallback(const nav_msgs::Odometry& msg) {
   current_point.y = current_position_.y();
   current_point.z = current_position_.z();
   current_point.yaw = yaw;
-  state_machine_->setCurrentPose(current_point);
+  comm_->setCurrentPose(current_point);
 
   // Check whether the goal pose is reached
-  if (!state_machine_->targetIsReached()) {
+  if (!comm_->targetIsReached()) {
     // check position
     if ((target_position_ - current_position_).norm() <=
         config_.replan_position_threshold) {
@@ -143,13 +153,13 @@ void GlocalSystem::odomCallback(const nav_msgs::Odometry& msg) {
         yaw_diff = 2.0 * M_PI - yaw_diff;
       }
       if (yaw_diff <= config_.replan_yaw_threshold * M_PI / 180.0) {
-        state_machine_->setTargetReached(true);
+        comm_->setTargetReached(true);
       }
     }
   }
 
   // check whether we're moving if we should be
-  if (config_.republish_waypoints && !state_machine_->targetIsReached() &&
+  if (config_.republish_waypoints && !comm_->targetIsReached() &&
       (msg.header.stamp - previous_time_).toSec() > 1.0) {
     double distance = (current_position_ - previous_position_).norm();
     double yaw_diff = previous_yaw_ - yaw;
@@ -170,13 +180,13 @@ void GlocalSystem::odomCallback(const nav_msgs::Odometry& msg) {
 
 bool GlocalSystem::runSrvCallback(std_srvs::SetBool::Request& req,
                                   std_srvs::SetBool::Response& res) {
-  state_machine_->signalLocalPlanning();
-  if (state_machine_->currentState() == StateMachine::LocalPlanning) {
+  comm_->stateMachine()->signalLocalPlanning();
+  if (comm_->stateMachine()->currentState() == StateMachine::kLocalPlanning) {
     VLOG(1) << "Started Glocal Exploration.";
-    state_machine_->setTargetReached(true);
+    comm_->setTargetReached(true);
     previous_time_ = ros::Time::now();
-    previous_position_ = current_position_;
-    previous_yaw_ = state_machine_->currentPose().yaw;
+    previous_position_ = comm_->currentPose().position();
+    previous_yaw_ = comm_->currentPose().yaw;
     res.success = true;
   } else {
     res.success = false;

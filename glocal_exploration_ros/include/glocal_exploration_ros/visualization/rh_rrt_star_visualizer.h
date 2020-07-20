@@ -21,12 +21,12 @@ class RHRRTStarVisualizer : public LocalPlannerVisualizerBase {
     Config isValid() const { return Config(*this); }
   };
   RHRRTStarVisualizer(const Config& config,
-                      const std::shared_ptr<LocalPlannerBase>& planner);
+                      const std::shared_ptr<Communicator>& communicator);
 
   void visualize() override;
 
  protected:
-  Config config_;
+  const Config config_;
   std::shared_ptr<RHRRTStar> planner_;
   ros::NodeHandle nh_;
   ros::Publisher pub_;

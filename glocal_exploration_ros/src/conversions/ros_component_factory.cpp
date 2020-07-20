@@ -15,15 +15,16 @@ std::string ComponentFactoryROS::getType(const ros::NodeHandle& nh) {
 }
 
 std::shared_ptr<MapBase> ComponentFactoryROS::createMap(
-    const ros::NodeHandle& nh, std::shared_ptr<StateMachine> state_machine) {
+    const ros::NodeHandle& nh,
+    const std::shared_ptr<Communicator>& communicator) {
   std::string type = getType(nh);
   if (type == "voxblox") {
-    auto map = std::make_shared<VoxbloxMap>(state_machine);
+    auto map = std::make_shared<VoxbloxMap>(communicator);
     VoxbloxMap::Config cfg = getVoxbloxMapConfigFromRos(nh);
     map->setupFromConfig(&cfg);
     return map;
   } else if (type == "voxgraph") {
-    auto map = std::make_shared<VoxgraphMap>(state_machine);
+    auto map = std::make_shared<VoxgraphMap>(communicator);
     VoxgraphMap::Config cfg = getVoxgraphMapConfigFromRos(nh);
     map->setupFromConfig(&cfg);
     return map;
@@ -34,11 +35,11 @@ std::shared_ptr<MapBase> ComponentFactoryROS::createMap(
 }
 
 std::shared_ptr<LocalPlannerBase> ComponentFactoryROS::createLocalPlanner(
-    const ros::NodeHandle& nh, std::shared_ptr<MapBase> map,
-    std::shared_ptr<StateMachine> state_machine) {
+    const ros::NodeHandle& nh,
+    const std::shared_ptr<Communicator>& communicator) {
   std::string type = getType(nh);
   if (type == "rh_rrt_star") {
-    auto planner = std::make_shared<RHRRTStar>(map, state_machine);
+    auto planner = std::make_shared<RHRRTStar>(communicator);
     RHRRTStar::Config cfg = getRHRRTStarConfigFromRos(nh);
     planner->setupFromConfig(&cfg);
     return planner;
@@ -51,15 +52,15 @@ std::shared_ptr<LocalPlannerBase> ComponentFactoryROS::createLocalPlanner(
 std::shared_ptr<LocalPlannerVisualizerBase>
 ComponentFactoryROS::createLocalPlannerVisualizer(
     const ros::NodeHandle& nh,
-    const std::shared_ptr<LocalPlannerBase>& planner) {
+    const std::shared_ptr<Communicator>& communicator) {
   std::string type = getType(nh);
   if (type == "rh_rrt_star") {
     RHRRTStarVisualizer::Config cfg = getRHRRTStarVisualizerConfigFromRos(nh);
-    return std::make_shared<RHRRTStarVisualizer>(cfg, planner);
+    return std::make_shared<RHRRTStarVisualizer>(cfg, communicator);
   } else {
     LOG(WARNING) << "Did not find a visualizer for local planner '" << type
                  << "'.";
-    return std::make_shared<LocalPlannerVisualizerBase>(planner);
+    return std::make_shared<LocalPlannerVisualizerBase>(communicator);
   }
 }
 

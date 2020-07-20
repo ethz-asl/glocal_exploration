@@ -25,7 +25,7 @@ class LidarModel : public SensorModel {
   };
 
   explicit LidarModel(std::shared_ptr<MapBase> map,
-                      std::shared_ptr<StateMachine> state_machine);
+                      std::shared_ptr<RegionOfInterest> roi);
   virtual ~LidarModel() = default;
 
   bool getVisibleVoxels(std::vector<Eigen::Vector3d>* result,

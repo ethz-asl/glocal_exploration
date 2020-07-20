@@ -2,10 +2,12 @@
 
 #include <memory>
 
+#include <glocal_exploration/state/communicator.h>
+
 namespace glocal_exploration {
 
-VoxgraphMap::VoxgraphMap(const std::shared_ptr<StateMachine>& state_machine)
-    : MapBase(state_machine) {}
+VoxgraphMap::VoxgraphMap(const std::shared_ptr<Communicator>& communicator)
+    : MapBase(communicator) {}
 
 bool VoxgraphMap::setupFromConfig(MapBase::Config* config) {
   CHECK_NOTNULL(config);
@@ -30,7 +32,7 @@ bool VoxgraphMap::setupFromConfig(MapBase::Config* config) {
 
 bool VoxgraphMap::isTraversableInActiveSubmap(
     const Eigen::Vector3d& position, const Eigen::Quaterniond& orientation) {
-  if (!state_machine_->pointInROI(position)) {
+  if (!comm_->regionOfInterest()->contains(position)) {
     return false;
   }
   double distance = 0.0;
@@ -39,7 +41,7 @@ bool VoxgraphMap::isTraversableInActiveSubmap(
     // This means the voxel is observed
     return (distance > config_.traversability_radius);
   }
-  return (position - state_machine_->currentPose().position()).norm() <
+  return (position - comm_->currentPose().position()).norm() <
          config_.clearing_radius;
 }
 
@@ -50,11 +52,11 @@ MapBase::VoxelState VoxgraphMap::getVoxelStateInLocalArea(
                                                               &distance)) {
     // This means the voxel is observed
     if (distance > c_voxel_size_) {
-      return VoxelState::Free;
+      return VoxelState::kFree;
     }
-    return VoxelState::Occupied;
+    return VoxelState::kOccupied;
   }
-  return VoxelState::Unknown;
+  return VoxelState::kUnknown;
 }
 
 Eigen::Vector3d VoxgraphMap::getVoxelCenterInLocalArea(

@@ -8,8 +8,8 @@
 namespace glocal_exploration {
 
 LidarModel::LidarModel(std::shared_ptr<MapBase> map,
-                       std::shared_ptr<StateMachine> state_machine)
-    : SensorModel(std::move(map), std::move(state_machine)) {}
+                       std::shared_ptr<RegionOfInterest> roi)
+    : SensorModel(std::move(map), std::move(roi)) {}
 
 bool LidarModel::setupFromConfig(SensorModel::Config* config) {
   CHECK_NOTNULL(config);
@@ -65,7 +65,7 @@ bool LidarModel::setupFromConfig(SensorModel::Config* config) {
 
 bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d>* result,
                                   const WayPoint& waypoint) {
-  // Setup ray table (contains at which segment to start, -1 if occluded
+  // Setup ray table (contains at which segment to start, -1 if occluded)
   ray_table_.setZero();
 
   // Ray-casting
@@ -100,8 +100,8 @@ bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d>* result,
 
           // Check voxel occupied
           if (map_->getVoxelStateInLocalArea(current_position) ==
-                  MapBase::Occupied ||
-              !state_machine_->pointInROI(current_position)) {
+                  MapBase::kOccupied ||
+              !roi_->contains(current_position)) {
             // Occlusion, mark neighboring rays as occluded
             markNeighboringRays(i, j, current_segment, -1);
             cast_ray = false;
