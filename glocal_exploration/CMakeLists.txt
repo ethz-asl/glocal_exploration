@@ -10,11 +10,16 @@ catkin_package()
 # Libraries #
 #############
 
-#cs_add_library(${PROJECT_NAME})
+cs_add_library(${PROJECT_NAME}
+        src/planning/state_machine.cpp
+        src/planning/local/rh_rrt_star.cpp
+        src/planning/local/lidar_model.cpp
+        src/planning/region_of_interest.cpp
+        )
 
 ##########
 # Export #
 ##########
 
 cs_install()
-cs_export(INCLUDE_DIRS ${CATKIN_DEVEL_PREFIX}/include)
+cs_export()
