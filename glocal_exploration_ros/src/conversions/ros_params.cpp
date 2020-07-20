@@ -1,14 +1,15 @@
 #include "glocal_exploration_ros/conversions/ros_params.h"
 
+#include <minkindr_conversions/kindr_xml.h>
+
 namespace glocal_exploration {
 
 VoxbloxMap::Config getVoxbloxMapConfigFromRos(const ros::NodeHandle& nh) {
   VoxbloxMap::Config config;
   config.nh_private_namespace = nh.getNamespace();
   nh.param("traversability_radius", config.traversability_radius,
-                   config.traversability_radius);
-  nh.param("clearing_radius", config.clearing_radius,
-                   config.clearing_radius);
+           config.traversability_radius);
+  nh.param("clearing_radius", config.clearing_radius, config.clearing_radius);
   return config;
 }
 
@@ -25,21 +26,14 @@ LidarModel::Config getLidarModelConfigFromRos(const ros::NodeHandle& nh) {
   nh.param("downsampling_factor", config.downsampling_factor,
            config.downsampling_factor);
 
-  // sensor model base
-  nh.param("mounting_position_x", config.mounting_position_x,
-           config.mounting_position_x);
-  nh.param("mounting_position_y", config.mounting_position_y,
-           config.mounting_position_y);
-  nh.param("mounting_position_z", config.mounting_position_z,
-           config.mounting_position_z);
-  nh.param("mounting_orientation_x", config.mounting_orientation_x,
-           config.mounting_orientation_x);
-  nh.param("mounting_orientation_y", config.mounting_orientation_y,
-           config.mounting_orientation_y);
-  nh.param("mounting_orientation_z", config.mounting_orientation_z,
-           config.mounting_orientation_z);
-  nh.param("mounting_orientation_w", config.mounting_orientation_w,
-           config.mounting_orientation_w);
+  // transformation
+  XmlRpc::XmlRpcValue T_baselink_sensor_xml;
+  if (nh.getParam("T_base_link_sensor", T_baselink_sensor_xml)) {
+    kindr::minimal::xmlRpcToKindr(T_baselink_sensor_xml,
+                                  &config.T_baselink_sensor);
+  } else {
+    config.T_baselink_sensor.setIdentity();
+  }
   return config;
 }
 

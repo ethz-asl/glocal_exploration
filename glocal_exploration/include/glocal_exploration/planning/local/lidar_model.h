@@ -1,6 +1,9 @@
 #ifndef GLOCAL_EXPLORATION_PLANNING_LOCAL_LIDAR_MODEL_H_
 #define GLOCAL_EXPLORATION_PLANNING_LOCAL_LIDAR_MODEL_H_
 
+#include <memory>
+#include <vector>
+
 #include "glocal_exploration/planning/local/sensor_model.h"
 
 namespace glocal_exploration {
@@ -17,6 +20,8 @@ class LidarModel : public SensorModel {
     double ray_step = 0;  // m, use 0 to use voxel size
     double downsampling_factor =
         1.0;  // reduce the number of checks by this factor
+
+    Transformation T_baselink_sensor;
   };
 
   explicit LidarModel(std::shared_ptr<MapBase> map,
@@ -40,8 +45,6 @@ class LidarModel : public SensorModel {
       c_split_distances_;            // distances where rays are duplicated
   std::vector<int> c_split_widths_;  // number of max distance rays that are
                                      // covered per split
-  Eigen::Vector3d mounting_position_;
-  Eigen::Quaterniond mounting_orientation_;
 
   // variables
   Eigen::ArrayXXi ray_table_;

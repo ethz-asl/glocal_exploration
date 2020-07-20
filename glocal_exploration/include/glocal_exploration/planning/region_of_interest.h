@@ -27,12 +27,12 @@ class RegionOfInterest {
 class BoundingBox : public RegionOfInterest {
  public:
   struct Config : public RegionOfInterest::Config {
-    double x_min = 0;
-    double y_min = 0;
-    double z_min = 0;
-    double x_max = 0;
-    double y_max = 0;
-    double z_max = 0;
+    double x_min = 0.0;
+    double y_min = 0.0;
+    double z_min = 0.0;
+    double x_max = 0.0;
+    double y_max = 0.0;
+    double z_max = 0.0;
   };
 
   bool contains(const Eigen::Vector3d& point) override;
