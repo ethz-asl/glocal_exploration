@@ -84,4 +84,16 @@ BoundingBox::Config getBoundingBoxConfigFromRos(const ros::NodeHandle& nh) {
   return config;
 }
 
+RHRRTStarVisualizer::Config getRHRRTStarVisualizerConfigFromRos(
+    const ros::NodeHandle& nh) {
+  RHRRTStarVisualizer::Config config;
+  config.nh_namespace = ros::names::parentNamespace(nh.getNamespace());
+  nh.param("visualize_gain", config.visualize_gain, config.visualize_gain);
+  nh.param("visualize_text", config.visualize_text, config.visualize_text);
+  nh.param("visualize_visible_voxels", config.visualize_visible_voxels,
+           config.visualize_visible_voxels);
+  nh.param("visualize_value", config.visualize_value, config.visualize_value);
+  return config;
+}
+
 }  // namespace glocal_exploration

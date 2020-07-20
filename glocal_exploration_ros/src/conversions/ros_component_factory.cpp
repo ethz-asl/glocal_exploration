@@ -54,11 +54,12 @@ ComponentFactoryROS::createLocalPlannerVisualizer(
     const std::shared_ptr<LocalPlannerBase>& planner) {
   std::string type = getType(nh);
   if (type == "rh_rrt_star") {
-    return std::make_shared<RHRRTStarVisualizer>(nh, planner);
+    RHRRTStarVisualizer::Config cfg = getRHRRTStarVisualizerConfigFromRos(nh);
+    return std::make_shared<RHRRTStarVisualizer>(cfg, planner);
   } else {
     LOG(WARNING) << "Did not find a visualizer for local planner '" << type
                  << "'.";
-    return std::make_shared<LocalPlannerVisualizerBase>(nh, planner);
+    return std::make_shared<LocalPlannerVisualizerBase>(planner);
   }
 }
 
