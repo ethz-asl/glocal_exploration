@@ -33,13 +33,13 @@ mapping:
   use_weight_dropoff: false
   max_consecutive_ray_collisions: 1  # Only affects the fast integrator
   pointcloud_queue_size: 2
-  # Integrator settings: projective integrator
+  # Integrator settings projective integrator
   sensor_horizontal_resolution: 200
   sensor_vertical_resolution: 32
   sensor_vertical_field_of_view_degrees: 45
   integrator_threads: 4
   use_missing_points_for_clearing: true
-  # Integrator settings: temporal window (for compatibility with voxgraph)
+  # Integrator settings temporal window (for compatibility with voxgraph)
   pointcloud_deintegration_queue_length: 40
   publish_map_every_n_sec: 20.0
   publish_map_with_trajectory: true
@@ -118,6 +118,9 @@ local_planner:
   horizontal_resolution: 10000 # 1024 / 200
   ray_step: 0.4 # m
   downsampling_factor: 3
-  mounting_orientation_y: 0.2164396 # 25deg pitch
-  mounting_orientation_w: 0.976296
+  T_baselink_sensor:  # 25 deg pitch
+   - [ 0.9063078,  0.0000000,  0.4226183,  0.0]
+   - [ 0.0000000,  1.0000000,  0.0000000,  0.0]
+   - [-0.4226183,  0.0000000,  0.9063078,  0.0]
+   - [ 0.0,        0.0,        0.0,        1.0]
     
