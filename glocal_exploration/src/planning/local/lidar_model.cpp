@@ -1,8 +1,8 @@
 #include "glocal_exploration/planning/local/lidar_model.h"
 
+#include <algorithm>
 #include <memory>
 #include <utility>
-#include <algorithm>
 #include <vector>
 
 namespace glocal_exploration {
@@ -23,13 +23,13 @@ bool LidarModel::setupFromConfig(SensorModel::Config* config) {
 
   // params
   CHECK_GT(config_.vertical_fov, 0)
-    << "The vertical field of view is expected > 0";
+      << "The vertical field of view is expected > 0";
   CHECK_GT(config_.horizontal_fov, 0)
-    << "The horizontal field of view is expected > 0";
+      << "The horizontal field of view is expected > 0";
   CHECK_GT(config_.vertical_resolution, 0)
-    << "The vertical resolution is expected > 0";
+      << "The vertical resolution is expected > 0";
   CHECK_GT(config_.horizontal_resolution, 0)
-    << "The horizontal resolution is expected > 0";
+      << "The horizontal resolution is expected > 0";
   CHECK_GT(config_.ray_length, 0) << "The ray length is expected > 0";
   if (config_.ray_step <= 0.0) {
     config_.ray_step = map_->getVoxelSize();
@@ -39,12 +39,12 @@ bool LidarModel::setupFromConfig(SensorModel::Config* config) {
   c_fov_x_ = config_.horizontal_fov / 180.0 * M_PI;
   c_fov_y_ = config_.vertical_fov / 180.0 * M_PI;
   c_res_x_ = std::min(static_cast<int>(ceil(config_.ray_length * c_fov_x_ /
-                          (map_->getVoxelSize() *
-                              config_.downsampling_factor))),
+                                            (map_->getVoxelSize() *
+                                             config_.downsampling_factor))),
                       config_.vertical_resolution);
   c_res_y_ = std::min(static_cast<int>(ceil(config_.ray_length * c_fov_y_ /
-                          (map_->getVoxelSize() *
-                              config_.downsampling_factor))),
+                                            (map_->getVoxelSize() *
+                                             config_.downsampling_factor))),
                       config_.horizontal_resolution);
   ray_table_ = Eigen::ArrayXXi::Zero(c_res_x_, c_res_y_);
 
@@ -54,8 +54,8 @@ bool LidarModel::setupFromConfig(SensorModel::Config* config) {
   c_split_widths_.push_back(0);
   for (int i = 0; i < c_n_sections_; ++i) {
     c_split_widths_.push_back(std::pow(2, i));
-    c_split_distances_.push_back(
-        config_.ray_length / std::pow(2.0, static_cast<double>(i)));
+    c_split_distances_.push_back(config_.ray_length /
+                                 std::pow(2.0, static_cast<double>(i)));
   }
   c_split_distances_.push_back(0.0);
   std::reverse(c_split_distances_.begin(), c_split_distances_.end());
@@ -71,7 +71,7 @@ bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d>* result,
   // Ray-casting
   Eigen::Quaterniond orientation =
       Eigen::AngleAxisd(waypoint.yaw, Eigen::Vector3d::UnitZ()) *
-          config_.T_baselink_sensor.getEigenQuaternion();
+      config_.T_baselink_sensor.getEigenQuaternion();
   Eigen::Vector3d position =
       waypoint.position() + config_.T_baselink_sensor.getPosition();
   Eigen::Vector3d camera_direction;
@@ -85,11 +85,10 @@ bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d>* result,
       if (current_segment < 0) {
         continue;  // already occluded ray
       }
-      LidarModel::getDirectionVector(&camera_direction,
-                                     static_cast<double>(i) /
-                                         (static_cast<double>(c_res_x_) - 1.0),
-                                     static_cast<double>(j) /
-                                         (static_cast<double>(c_res_y_) - 1.0));
+      LidarModel::getDirectionVector(
+          &camera_direction,
+          static_cast<double>(i) / (static_cast<double>(c_res_x_) - 1.0),
+          static_cast<double>(j) / (static_cast<double>(c_res_y_) - 1.0));
       direction = orientation * camera_direction;
       distance = c_split_distances_[current_segment];
       cast_ray = true;
@@ -101,7 +100,7 @@ bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d>* result,
 
           // Check voxel occupied
           if (map_->getVoxelStateInLocalArea(current_position) ==
-              MapBase::Occupied ||
+                  MapBase::Occupied ||
               !state_machine_->pointInROI(current_position)) {
             // Occlusion, mark neighboring rays as occluded
             markNeighboringRays(i, j, current_segment, -1);
