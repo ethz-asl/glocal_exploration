@@ -14,14 +14,6 @@ class SensorModel {
  public:
   struct Config {
     virtual ~Config() = default;
-
-    double mounting_position_x = 0;
-    double mounting_position_y = 0;
-    double mounting_position_z = 0;
-    double mounting_orientation_x = 0;
-    double mounting_orientation_y = 0;
-    double mounting_orientation_z = 0;
-    double mounting_orientation_w = 1;
   };
 
   explicit SensorModel(std::shared_ptr<MapBase> map,
