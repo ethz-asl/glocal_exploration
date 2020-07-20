@@ -4,9 +4,9 @@
 #include <memory>
 #include <string>
 
-#include <voxblox_ros/esdf_server.h>
+#include <glocal_exploration/mapping/map_base.h>
 
-#include "glocal_exploration/mapping/map_base.h"
+#include "glocal_exploration_ros/mapping/threadsafe_wrappers/threadsafe_voxblox_server.h"
 
 namespace glocal_exploration {
 /**
@@ -35,7 +35,7 @@ class VoxbloxMap : public MapBase {
 
  protected:
   Config config_;
-  std::unique_ptr<voxblox::EsdfServer> server_;
+  std::unique_ptr<ThreadsafeVoxbloxServer> server_;
 
   // cached constants
   double c_block_size_;

@@ -124,7 +124,8 @@ bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d>* result,
     }
   }
   // remove duplicates (faster than looking these up during ray casting)
-  std::sort(result->begin(), result->end());
+  // TODO(schmluk): duplicates are only removed when sorted, find mean to
+  // sort and check this.
   result->erase(std::unique(result->begin(), result->end()), result->end());
   return true;
 }

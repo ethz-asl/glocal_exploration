@@ -7,8 +7,13 @@
 
 namespace glocal_exploration {
 
-// transformations
-using Transformation = kindr::minimal::QuatTransformationTemplate<double>;
+// floating point accuracy
+typedef double FloatingPoint;
+
+// Vector types
+typedef Eigen::Matrix<FloatingPoint, 3, 1> Point;
+typedef kindr::minimal::QuatTransformationTemplate<FloatingPoint>
+    Transformation;
 
 }  // namespace glocal_exploration
 

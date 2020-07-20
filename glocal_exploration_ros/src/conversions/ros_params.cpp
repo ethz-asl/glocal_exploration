@@ -13,6 +13,15 @@ VoxbloxMap::Config getVoxbloxMapConfigFromRos(const ros::NodeHandle& nh) {
   return config;
 }
 
+VoxgraphMap::Config getVoxgraphMapConfigFromRos(const ros::NodeHandle& nh) {
+  VoxgraphMap::Config config;
+  config.nh_private_namespace = nh.getNamespace();
+  nh.param("traversability_radius", config.traversability_radius,
+           config.traversability_radius);
+  nh.param("clearing_radius", config.clearing_radius, config.clearing_radius);
+  return config;
+}
+
 LidarModel::Config getLidarModelConfigFromRos(const ros::NodeHandle& nh) {
   LidarModel::Config config;
   nh.param("ray_length", config.ray_length, config.ray_length);
@@ -67,6 +76,18 @@ BoundingBox::Config getBoundingBoxConfigFromRos(const ros::NodeHandle& nh) {
   nh.param("x_max", config.x_max, config.x_max);
   nh.param("y_max", config.y_max, config.y_max);
   nh.param("z_max", config.z_max, config.z_max);
+  return config;
+}
+
+RHRRTStarVisualizer::Config getRHRRTStarVisualizerConfigFromRos(
+    const ros::NodeHandle& nh) {
+  RHRRTStarVisualizer::Config config;
+  config.nh_namespace = nh.getNamespace();
+  nh.param("visualize_gain", config.visualize_gain, config.visualize_gain);
+  nh.param("visualize_text", config.visualize_text, config.visualize_text);
+  nh.param("visualize_visible_voxels", config.visualize_visible_voxels,
+           config.visualize_visible_voxels);
+  nh.param("visualize_value", config.visualize_value, config.visualize_value);
   return config;
 }
 

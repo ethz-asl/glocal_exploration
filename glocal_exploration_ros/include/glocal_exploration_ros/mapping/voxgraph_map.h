@@ -4,10 +4,10 @@
 #include <memory>
 #include <string>
 
-#include <voxblox_ros/esdf_server.h>
-#include <voxgraph/frontend/voxgraph_mapper.h>
+#include <glocal_exploration/mapping/map_base.h>
 
-#include "glocal_exploration/mapping/map_base.h"
+#include "glocal_exploration_ros/mapping/threadsafe_wrappers/threadsafe_voxblox_server.h"
+#include "glocal_exploration_ros/mapping/threadsafe_wrappers/threadsafe_voxgraph_server.h"
 
 namespace glocal_exploration {
 /**
@@ -25,18 +25,21 @@ class VoxgraphMap : public MapBase {
   virtual ~VoxgraphMap() = default;
 
   bool setupFromConfig(MapBase::Config* config) override;
-  double getVoxelSize() override;
+
   bool isTraversableInActiveSubmap(
       const Eigen::Vector3d& position,
       const Eigen::Quaterniond& orientation) override;
   VoxelState getVoxelStateInLocalArea(const Eigen::Vector3d& point) override;
+
+  double getVoxelSize() override { return c_voxel_size_; }
   Eigen::Vector3d getVoxelCenterInLocalArea(
       const Eigen::Vector3d& point) override;
 
  protected:
   Config config_;
-  std::unique_ptr<voxgraph::VoxgraphMapper> voxgraph_server_;
-  std::unique_ptr<voxblox::EsdfServer> voxblox_server_;
+
+  std::unique_ptr<ThreadsafeVoxbloxServer> voxblox_server_;
+  std::unique_ptr<ThreadsafeVoxgraphServer> voxgraph_server_;
 
   // cached constants
   double c_block_size_;

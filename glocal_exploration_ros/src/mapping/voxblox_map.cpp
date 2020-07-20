@@ -2,6 +2,8 @@
 
 #include <memory>
 
+#include <glocal_exploration/common.h>
+
 namespace glocal_exploration {
 
 VoxbloxMap::VoxbloxMap(const std::shared_ptr<StateMachine>& state_machine)
@@ -18,7 +20,7 @@ bool VoxbloxMap::setupFromConfig(MapBase::Config* config) {
   config_ = *cfg;
   ros::NodeHandle nh_private(config_.nh_private_namespace);
   ros::NodeHandle nh(ros::names::parentNamespace(config_.nh_private_namespace));
-  server_ = std::make_unique<voxblox::EsdfServer>(nh, nh_private);
+  server_ = std::make_unique<ThreadsafeVoxbloxServer>(nh, nh_private);
   c_voxel_size_ = server_->getEsdfMapPtr()->voxel_size();
   c_block_size_ = server_->getEsdfMapPtr()->block_size();
 }
