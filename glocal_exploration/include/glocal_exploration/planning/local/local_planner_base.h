@@ -12,22 +12,13 @@ class Communicator;
 /**
  * Defines the interface of a local planner.
  */
-
 class LocalPlannerBase {
  public:
-  // Defines a baseclass for map configurations
-  struct Config {
-    virtual ~Config() = default;
-  };
   explicit LocalPlannerBase(std::shared_ptr<Communicator> communicator)
       : comm_(std::move(communicator)) {}
   virtual ~LocalPlannerBase() = default;
 
-  /* Setup */
-  // Can pass derived configs here by base pointer to setup the map.
-  virtual bool setupFromConfig(Config* config) = 0;
-
-  /* General and Accessors */
+  // interface
   virtual void planningIteration() = 0;
 
  protected:

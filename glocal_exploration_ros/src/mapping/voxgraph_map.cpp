@@ -6,19 +6,16 @@
 
 namespace glocal_exploration {
 
-VoxgraphMap::VoxgraphMap(const std::shared_ptr<Communicator>& communicator)
-    : MapBase(communicator) {}
+VoxgraphMap::Config VoxgraphMap::Config::isValid() const {
+  // TODO(victorr): check param validity
+  CHECK_GT(traversability_radius, 0)
+      << "The traversability radius is expected > 0.";
+  return Config(*this);
+}
 
-bool VoxgraphMap::setupFromConfig(MapBase::Config* config) {
-  CHECK_NOTNULL(config);
-  auto cfg = dynamic_cast<Config*>(config);
-  if (!cfg) {
-    LOG(ERROR)
-        << "Failed to setup: config is not of type 'VoxgraphMap::Config'.";
-    return false;
-  }
-  config_ = *cfg;
-
+VoxgraphMap::VoxgraphMap(const Config& config,
+                         const std::shared_ptr<Communicator>& communicator)
+    : MapBase(communicator), config_(config.isValid()) {
   // Launch the sliding window local map and global map servers
   ros::NodeHandle nh(ros::names::parentNamespace(config_.nh_private_namespace));
   ros::NodeHandle nh_private(config_.nh_private_namespace);

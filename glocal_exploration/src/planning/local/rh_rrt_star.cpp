@@ -5,7 +5,6 @@
 #include <iostream>
 #include <limits>
 #include <memory>
-#include <numeric>
 #include <queue>
 #include <random>
 #include <utility>
@@ -13,24 +12,22 @@
 
 namespace glocal_exploration {
 
-RHRRTStar::RHRRTStar(std::shared_ptr<Communicator> communicator)
-    : LocalPlannerBase(std::move(communicator)) {}
+RHRRTStar::RHRRTStar(const Config& config,
+                     std::shared_ptr<Communicator> communicator)
+    : LocalPlannerBase(std::move(communicator)), config_(config.isValid()) {
+  // initialize the sensor model
+  sensor_model_ = std::make_unique<LidarModel>(config_.lidar_config, comm_);
+}
 
-bool RHRRTStar::setupFromConfig(LocalPlannerBase::Config* config) {
-  CHECK_NOTNULL(config);
-  auto cfg = dynamic_cast<Config*>(config);
-  if (!cfg) {
-    LOG(ERROR) << "Failed to setup: config is not of type 'RHRRTStar::Config'.";
-    return false;
-  }
-  config_ = *cfg;
-
-  // setup the sensor
-  std::shared_ptr<MapBase> map(comm_->map());
-  std::shared_ptr<RegionOfInterest> roi(comm_->regionOfInterest());
-  sensor_model_ = std::make_unique<LidarModel>(map, roi);
-  sensor_model_->setupFromConfig(&(config_.lidar_config));
-  return true;
+RHRRTStar::Config RHRRTStar::Config::isValid() const {
+  CHECK_GT(max_path_length, 0.0) << "The maximal path length is expected > 0.";
+  CHECK_GT(path_cropping_length, 0.0)
+      << "The path cropping length is expected > 0.";
+  CHECK_GT(max_number_of_neighbors, 0)
+      << "The maximal number of neighbors is expected > 0.";
+  CHECK_GT(maximum_rewiring_iterations, 0)
+      << "The maximal number of rewiring iterations is expected > 0.";
+  return Config(*this);
 }
 
 void RHRRTStar::planningIteration() {
@@ -419,7 +416,8 @@ double RHRRTStar::computeGain(
     const std::vector<Eigen::Vector3d>& visible_voxels) {
   double gain = 0.0;
   for (auto& point : visible_voxels) {
-    if (comm_->map()->getVoxelStateInLocalArea(point) == MapBase::kUnknown) {
+    if (comm_->map()->getVoxelStateInLocalArea(point) ==
+        MapBase::VoxelState::kUnknown) {
       gain += 1.0;
     }
   }
@@ -560,12 +558,13 @@ void RHRRTStar::visualizeGain(std::vector<Eigen::Vector3d>* voxels,
   CHECK_NOTNULL(scale);
   // get voxels
   sensor_model_->getVisibleVoxels(voxels, pose);
-  voxels->erase(std::remove_if(voxels->begin(), voxels->end(),
-                               [this](const Eigen::Vector3d& pt) {
-                                 return comm_->map()->getVoxelStateInLocalArea(
-                                            pt) != MapBase::kUnknown;
-                               }),
-                voxels->end());
+  voxels->erase(
+      std::remove_if(voxels->begin(), voxels->end(),
+                     [this](const Eigen::Vector3d& pt) {
+                       return comm_->map()->getVoxelStateInLocalArea(pt) !=
+                              MapBase::VoxelState::kUnknown;
+                     }),
+      voxels->end());
 
   // uniform coloring [0, 1]
   colors->assign(voxels->size(), Eigen::Vector3d(1, 0.8, 0));

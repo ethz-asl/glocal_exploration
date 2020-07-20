@@ -7,29 +7,19 @@
 #include "glocal_exploration/common.h"
 
 namespace glocal_exploration {
-/**
- * Defines the interface of a map module that is needed by the planner.
- */
 
 class Communicator;
 
+/**
+ * Defines the interface of a map module that is needed by the planner.
+ */
 class MapBase {
  public:
-  // Defines a baseclass for map configurations
-  struct Config {
-    virtual ~Config() = default;
-  };
+  enum class VoxelState { kUnknown, kOccupied, kFree };
 
-  enum VoxelState { kUnknown, kOccupied, kFree };
-
-  // Constructors
   explicit MapBase(std::shared_ptr<Communicator> communicator)
       : comm_(std::move(communicator)) {}
   virtual ~MapBase() = default;
-
-  /* Setup */
-  // Can pass derived configs here by base pointer to setup the map.
-  virtual bool setupFromConfig(Config* config) = 0;
 
   /* General and Accessors */
   virtual double getVoxelSize() = 0;
@@ -50,5 +40,7 @@ class MapBase {
 };
 
 }  // namespace glocal_exploration
+
+#include "glocal_exploration/state/communicator.h"
 
 #endif  // GLOCAL_EXPLORATION_MAPPING_MAP_BASE_H_

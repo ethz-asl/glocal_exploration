@@ -10,15 +10,10 @@ namespace glocal_exploration {
  */
 class RegionOfInterest {
  public:
-  struct Config {
-    virtual ~Config() = default;
-  };
   RegionOfInterest() = default;
   virtual ~RegionOfInterest() = default;
 
   virtual bool contains(const Eigen::Vector3d& point) = 0;
-
-  virtual bool setupFromConfig(Config* config) = 0;
 };
 
 /**
@@ -26,7 +21,7 @@ class RegionOfInterest {
  */
 class BoundingBox : public RegionOfInterest {
  public:
-  struct Config : public RegionOfInterest::Config {
+  struct Config {
     double x_min = 0.0;
     double y_min = 0.0;
     double z_min = 0.0;
@@ -35,12 +30,13 @@ class BoundingBox : public RegionOfInterest {
     double z_max = 0.0;
   };
 
+  explicit BoundingBox(const Config& config);
+  virtual ~BoundingBox() = default;
+
   bool contains(const Eigen::Vector3d& point) override;
 
-  bool setupFromConfig(RegionOfInterest::Config* config) override;
-
  protected:
-  Config config_;
+  const Config config_;
 };
 
 }  // namespace glocal_exploration

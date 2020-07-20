@@ -7,21 +7,21 @@
 
 namespace glocal_exploration {
 
-VoxbloxMap::VoxbloxMap(const std::shared_ptr<Communicator>& communicator)
-    : MapBase(communicator) {}
+VoxbloxMap::Config VoxbloxMap::Config::isValid() const {
+  CHECK_GT(traversability_radius, 0)
+      << "The traversability radius is expected > 0.";
+  return Config(*this);
+}
 
-bool VoxbloxMap::setupFromConfig(MapBase::Config* config) {
-  CHECK_NOTNULL(config);
-  auto cfg = dynamic_cast<Config*>(config);
-  if (!cfg) {
-    LOG(ERROR)
-        << "Failed to setup: config is not of type 'VoxbloxMap::Config'.";
-    return false;
-  }
-  config_ = *cfg;
+VoxbloxMap::VoxbloxMap(const Config& config,
+                       const std::shared_ptr<Communicator>& communicator)
+    : MapBase(communicator), config_(config.isValid()) {
+  // create a voxblox server
   ros::NodeHandle nh_private(config_.nh_private_namespace);
   ros::NodeHandle nh(ros::names::parentNamespace(config_.nh_private_namespace));
   server_ = std::make_unique<ThreadsafeVoxbloxServer>(nh, nh_private);
+
+  // cache important values
   c_voxel_size_ = server_->getEsdfMapPtr()->voxel_size();
   c_block_size_ = server_->getEsdfMapPtr()->block_size();
 }

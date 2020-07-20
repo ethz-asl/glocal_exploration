@@ -18,7 +18,7 @@ class LocalPlannerVisualizerBase {
       : comm_(std::move(communicator)) {}
   virtual ~LocalPlannerVisualizerBase() = default;
 
-  // Interface
+  // Interface (the default implementation does not visualize anything).
   virtual void visualize() {}
 
  protected:

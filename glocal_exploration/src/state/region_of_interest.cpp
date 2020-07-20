@@ -21,15 +21,7 @@ bool BoundingBox::contains(const Eigen::Vector3d& point) {
   return point.z() >= config_.z_min;
 }
 
-bool BoundingBox::setupFromConfig(RegionOfInterest::Config* config) {
-  CHECK_NOTNULL(config);
-  auto cfg = dynamic_cast<Config*>(config);
-  if (!cfg) {
-    LOG(ERROR)
-        << "Failed to setup: config is not of type 'BoundingBox::Config'.";
-    return false;
-  }
-  config_ = *cfg;
-}
+BoundingBox::BoundingBox(const Config& config)
+    : RegionOfInterest(), config_(config) {}
 
 }  // namespace glocal_exploration
