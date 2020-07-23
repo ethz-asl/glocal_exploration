@@ -8,6 +8,7 @@
 
 #include "glocal_exploration_ros/mapping/threadsafe_wrappers/threadsafe_voxblox_server.h"
 #include "glocal_exploration_ros/mapping/threadsafe_wrappers/threadsafe_voxgraph_server.h"
+#include "glocal_exploration_ros/mapping/voxgraph_local_area.h"
 
 namespace glocal_exploration {
 /**
@@ -29,7 +30,7 @@ class VoxgraphMap : public MapBase {
   bool isTraversableInActiveSubmap(
       const Eigen::Vector3d& position,
       const Eigen::Quaterniond& orientation) override;
-  VoxelState getVoxelStateInLocalArea(const Eigen::Vector3d& point) override;
+  VoxelState getVoxelStateInLocalArea(const Eigen::Vector3d& position) override;
 
   double getVoxelSize() override { return c_voxel_size_; }
   Eigen::Vector3d getVoxelCenterInLocalArea(
@@ -40,6 +41,13 @@ class VoxgraphMap : public MapBase {
 
   std::unique_ptr<ThreadsafeVoxbloxServer> voxblox_server_;
   std::unique_ptr<ThreadsafeVoxgraphServer> voxgraph_server_;
+
+  std::unique_ptr<VoxgraphLocalArea> local_area_;
+  bool local_area_needs_update_;
+  void updateLocalArea();
+  static constexpr double local_area_pruning_period_s_ = 10.0;
+  ros::Timer local_area_pruning_timer_;
+  ros::Publisher local_area_pub_;
 
   // cached constants
   double c_block_size_;
