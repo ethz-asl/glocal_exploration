@@ -2,10 +2,10 @@
 
 #include <memory>
 
+#include <glocal_exploration/state/communicator.h>
 #include <pcl/conversions.h>
 #include <pcl/point_types.h>
-#include "voxblox_ros/ptcloud_vis.h"
-#include <glocal_exploration/state/communicator.h>
+#include <voxblox_ros/ptcloud_vis.h>
 
 namespace glocal_exploration {
 
@@ -15,12 +15,12 @@ VoxgraphMap::Config VoxgraphMap::Config::isValid() const {
       << "The traversability radius is expected > 0.";
   return Config(*this);
 }
-VoxgraphMap::VoxgraphMap(const std::shared_ptr<StateMachine>& state_machine)
-    : MapBase(state_machine), local_area_needs_update_(false) {}
 
 VoxgraphMap::VoxgraphMap(const Config& config,
                          const std::shared_ptr<Communicator>& communicator)
-    : MapBase(communicator), config_(config.isValid()) {
+    : MapBase(communicator),
+      config_(config.isValid()),
+      local_area_needs_update_(false) {
   // Launch the sliding window local map and global map servers
   ros::NodeHandle nh(ros::names::parentNamespace(config_.nh_private_namespace));
   ros::NodeHandle nh_private(config_.nh_private_namespace);
