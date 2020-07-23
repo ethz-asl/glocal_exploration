@@ -108,7 +108,7 @@ void VoxgraphLocalArea::prune() {
     }
   }
 
-  LOG(INFO) << "Pruned " << num_pruned_blocks << " local area blocks";
+  VLOG(3) << "Pruned " << num_pruned_blocks << " local area blocks";
 }
 
 VoxgraphLocalArea::VoxelState VoxgraphLocalArea::getVoxelStateAtPosition(
@@ -177,11 +177,6 @@ void VoxgraphLocalArea::integrateSubmap(
   for (const voxblox::BlockIndex& submap_block_index : submap_blocks) {
     const voxblox::Block<TsdfVoxel>& submap_block =
         world_frame_submap_tsdf.getBlockByIndex(submap_block_index);
-    if (!submap_block.has_data()) {
-      LOG(INFO) << "Encountered submap block with no data. Skipping.";
-      continue;
-    }
-
     voxblox::Block<TsdfVoxel>::Ptr local_area_block =
         local_area_layer_.allocateBlockPtrByIndex(submap_block_index);
     CHECK(local_area_block) << "Local area block allocation failed";
