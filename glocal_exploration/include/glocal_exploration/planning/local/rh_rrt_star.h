@@ -127,7 +127,8 @@ class RHRRTStar : public LocalPlannerBase {
 
   // compute gains
   void evaluateViewPoint(ViewPoint* view_point);
-  double computeGain(const std::vector<Eigen::Vector3d>& visible_voxels);
+  double computeGain(const std::vector<Eigen::Vector3d>& centers,
+                     const std::vector<MapBase::VoxelState>& states);
   double computeCost(const Connection& connection);
 
   // extract best viewpoint
@@ -137,18 +138,21 @@ class RHRRTStar : public LocalPlannerBase {
   static double computeGNVStep(ViewPoint* view_point, double gain, double cost);
 
   // updating
-  void updateTree();
   void updateCollision();
   void updateGains();
   void computePointsConnectedToRoot(bool count_only_active_connections);
 
   /* variables */
   int local_sampled_points_;
-  int num_previous_points_;
-  int next_root_index_;  // -1 if there is no next root, >=0 if tree should
-                         // update
+  bool should_update_;
   ViewPoint* root_;  // root pointer so it does not need to be searched for all
-                     // the time
+  // the time
+  Connection*
+      current_connection_;  // the connection that is currently being executed
+
+  // stats
+  int pruned_points_;
+  int new_points_;
 };
 
 }  // namespace glocal_exploration

@@ -57,7 +57,8 @@ LidarModel::LidarModel(const Config& config,
   std::reverse(c_split_widths_.begin(), c_split_widths_.end());
 }
 
-bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d>* result,
+bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d>* centers,
+                                  std::vector<MapBase::VoxelState>* states,
                                   const WayPoint& waypoint) {
   // Setup ray table (contains at which segment to start, -1 if occluded)
   ray_table_.setZero();
@@ -93,8 +94,9 @@ bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d>* result,
           distance += config_.ray_step;
 
           // Check voxel occupied
-          if (comm_->map()->getVoxelStateInLocalArea(current_position) ==
-                  MapBase::VoxelState::kOccupied ||
+          MapBase::VoxelState state =
+              comm_->map()->getVoxelStateInLocalArea(current_position);
+          if (state == MapBase::VoxelState::kOccupied ||
               !comm_->regionOfInterest()->contains(current_position)) {
             // Occlusion, mark neighboring rays as occluded
             markNeighboringRays(i, j, current_segment, -1);
@@ -103,8 +105,9 @@ bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d>* result,
           }
 
           // add point
-          result->push_back(
+          centers->push_back(
               comm_->map()->getVoxelCenterInLocalArea(current_position));
+          states->push_back(state);
         }
         if (cast_ray) {
           current_segment++;
@@ -118,6 +121,7 @@ bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d>* result,
       }
     }
   }
+  // TODO(schmluk): Maybe check for duplicates here, double check theory
   return true;
 }
 

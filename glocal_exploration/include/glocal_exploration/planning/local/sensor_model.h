@@ -18,7 +18,8 @@ class SensorModel {
   virtual ~SensorModel() = default;
 
   // Return the voxel centers of all visible voxels for that viewpoint
-  virtual bool getVisibleVoxels(std::vector<Eigen::Vector3d>* result,
+  virtual bool getVisibleVoxels(std::vector<Eigen::Vector3d>* centers,
+                                std::vector<MapBase::VoxelState>* states,
                                 const WayPoint& waypoint) = 0;
 
  protected:

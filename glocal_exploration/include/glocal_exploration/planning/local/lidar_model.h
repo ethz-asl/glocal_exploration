@@ -29,7 +29,8 @@ class LidarModel : public SensorModel {
                       std::shared_ptr<Communicator> communicator);
   virtual ~LidarModel() = default;
 
-  bool getVisibleVoxels(std::vector<Eigen::Vector3d>* result,
+  bool getVisibleVoxels(std::vector<Eigen::Vector3d>* centers,
+                        std::vector<MapBase::VoxelState>* states,
                         const WayPoint& waypoint) override;
 
  protected:
