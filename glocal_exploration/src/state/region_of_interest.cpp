@@ -2,6 +2,13 @@
 
 namespace glocal_exploration {
 
+BoundingBox::Config BoundingBox::Config::isValid() const {
+  CHECK_GT(x_max, x_min) << "The bounding box encompasses no volume.";
+  CHECK_GT(y_max, y_min) << "The bounding box encompasses no volume.";
+  CHECK_GT(z_max, z_min) << "The bounding box encompasses no volume.";
+  return Config(*this);
+}
+
 bool BoundingBox::contains(const Eigen::Vector3d& point) {
   if (point.x() > config_.x_max) {
     return false;
@@ -22,6 +29,6 @@ bool BoundingBox::contains(const Eigen::Vector3d& point) {
 }
 
 BoundingBox::BoundingBox(const Config& config)
-    : RegionOfInterest(), config_(config) {}
+    : RegionOfInterest(), config_(config.isValid()) {}
 
 }  // namespace glocal_exploration
