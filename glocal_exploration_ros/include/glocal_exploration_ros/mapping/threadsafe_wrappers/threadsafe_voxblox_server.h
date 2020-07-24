@@ -1,6 +1,7 @@
 #ifndef GLOCAL_EXPLORATION_ROS_MAPPING_THREADSAFE_WRAPPERS_THREADSAFE_VOXBLOX_SERVER_H_
 #define GLOCAL_EXPLORATION_ROS_MAPPING_THREADSAFE_WRAPPERS_THREADSAFE_VOXBLOX_SERVER_H_
 
+#include <functional>
 #include <utility>
 
 #include <voxblox_ros/esdf_server.h>
@@ -11,6 +12,8 @@
 namespace glocal_exploration {
 class ThreadsafeVoxbloxServer : public voxblox::EsdfServer {
  public:
+  using Function = std::function<void()>;
+
   template <typename... Args>
   ThreadsafeVoxbloxServer(const ros::NodeHandle& nh,
                           const ros::NodeHandle& nh_private, Args&&... args)
@@ -37,10 +40,18 @@ class ThreadsafeVoxbloxServer : public voxblox::EsdfServer {
     //                very high rate.
     *safe_esdf_map_->getEsdfLayerPtr() = esdf_map_->getEsdfLayer();
     voxblox::EsdfServer::newPoseCallback(T_G_C);
+
+    external_new_pose_callback_();
+  }
+
+  void setExternalNewPoseCallback(Function callback) {
+    external_new_pose_callback_ = callback;
   }
 
  protected:
   voxblox::EsdfMap::Ptr safe_esdf_map_;
+
+  Function external_new_pose_callback_;
 
   ros::CallbackQueue callback_queue_;
   ros::AsyncSpinner spinner_;
