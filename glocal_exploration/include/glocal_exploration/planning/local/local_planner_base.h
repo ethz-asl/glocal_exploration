@@ -5,36 +5,28 @@
 #include <utility>
 
 #include "glocal_exploration/common.h"
-#include "glocal_exploration/mapping/map_base.h"
-#include "glocal_exploration/planning/state_machine.h"
 
 namespace glocal_exploration {
+class Communicator;
+
 /**
  * Defines the interface of a local planner.
  */
 class LocalPlannerBase {
  public:
-  // Defines a baseclass for map configurations
-  struct Config {
-    virtual ~Config() = default;
-  };
-  LocalPlannerBase(std::shared_ptr<MapBase> map,
-                   std::shared_ptr<StateMachine> state_machine)
-      : map_(std::move(map)), state_machine_(std::move(state_machine)) {}
+  explicit LocalPlannerBase(std::shared_ptr<Communicator> communicator)
+      : comm_(std::move(communicator)) {}
   virtual ~LocalPlannerBase() = default;
 
-  /* Setup */
-  // Can pass derived configs here by base pointer to setup the map.
-  virtual bool setupFromConfig(Config* config) = 0;
-
-  /* General and Accessors */
+  // interface
   virtual void planningIteration() = 0;
 
  protected:
-  const std::shared_ptr<MapBase> map_;
-  const std::shared_ptr<StateMachine> state_machine_;
+  const std::shared_ptr<Communicator> comm_;
 };
 
 }  // namespace glocal_exploration
+
+#include "glocal_exploration/state/communicator.h"
 
 #endif  // GLOCAL_EXPLORATION_PLANNING_LOCAL_LOCAL_PLANNER_BASE_H_

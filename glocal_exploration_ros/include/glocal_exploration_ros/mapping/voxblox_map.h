@@ -14,17 +14,20 @@ namespace glocal_exploration {
  */
 class VoxbloxMap : public MapBase {
  public:
-  struct Config : MapBase::Config {
+  struct Config {
     // Since this is a ros-class anyways we make it easy and just get the nh.
     std::string nh_private_namespace = "~";
     double traversability_radius = 0.3;  // m
     double clearing_radius = 0.5;        // m
+
+    bool isValid() const;
+    Config checkValid() const;
   };
 
-  explicit VoxbloxMap(const std::shared_ptr<StateMachine>& state_machine);
+  explicit VoxbloxMap(const Config& config,
+                      const std::shared_ptr<Communicator>& communicator);
   virtual ~VoxbloxMap() = default;
 
-  bool setupFromConfig(MapBase::Config* config) override;
   double getVoxelSize() override;
   bool isTraversableInActiveSubmap(
       const Eigen::Vector3d& position,
@@ -34,7 +37,7 @@ class VoxbloxMap : public MapBase {
       const Eigen::Vector3d& point) override;
 
  protected:
-  Config config_;
+  const Config config_;
   std::unique_ptr<ThreadsafeVoxbloxServer> server_;
 
   // cached constants

@@ -5,7 +5,6 @@
 #include <iostream>
 #include <limits>
 #include <memory>
-#include <numeric>
 #include <queue>
 #include <random>
 #include <utility>
@@ -13,30 +12,46 @@
 
 namespace glocal_exploration {
 
-RHRRTStar::RHRRTStar(std::shared_ptr<MapBase> map,
-                     std::shared_ptr<StateMachine> state_machine)
-    : LocalPlannerBase(std::move(map), std::move(state_machine)) {}
+RHRRTStar::RHRRTStar(const Config& config,
+                     std::shared_ptr<Communicator> communicator)
+    : LocalPlannerBase(std::move(communicator)), config_(config.checkValid()) {
+  // initialize the sensor model
+  sensor_model_ = std::make_unique<LidarModel>(config_.lidar_config, comm_);
+}
 
-bool RHRRTStar::setupFromConfig(LocalPlannerBase::Config* config) {
-  CHECK_NOTNULL(config);
-  auto cfg = dynamic_cast<Config*>(config);
-  if (!cfg) {
-    LOG(ERROR) << "Failed to setup: config is not of type 'RHRRTStar::Config'.";
-    return false;
+bool RHRRTStar::Config::isValid() const {
+  bool is_valid = true;
+  if (max_path_length <= 0.0) {
+    LOG(WARNING) << "The maximal path length is expected > 0.0.";
+    is_valid = false;
   }
-  config_ = *cfg;
+  if (path_cropping_length <= 0.0) {
+    LOG(WARNING) << "The path cropping length is expected > 0.0.";
+    is_valid = false;
+  }
+  if (max_number_of_neighbors <= 0) {
+    LOG(WARNING) << "The maximal number of neighbors is expected > 0.";
+    is_valid = false;
+  }
+  if (maximum_rewiring_iterations <= 0) {
+    LOG(WARNING)
+        << "The maximal number of rewiring iterations is expected > 0.";
+    is_valid = false;
+  }
+  return is_valid;
+}
 
-  // setup the sensor
-  sensor_model_ = std::make_unique<LidarModel>(map_, state_machine_);
-  sensor_model_->setupFromConfig(&(config_.lidar_config));
-  return true;
+RHRRTStar::Config RHRRTStar::Config::checkValid() const {
+  CHECK(isValid());
+  return Config(*this);
 }
 
 void RHRRTStar::planningIteration() {
   // Newly started local planning
-  if (state_machine_->previousState() != StateMachine::LocalPlanning) {
-    resetPlanner(state_machine_->currentPose());
-    state_machine_->signalLocalPlanning();
+  if (comm_->stateMachine()->previousState() !=
+      StateMachine::State::kLocalPlanning) {
+    resetPlanner(comm_->currentPose());
+    comm_->stateMachine()->signalLocalPlanning();
   }
 
   // Requested a view point so update
@@ -49,10 +64,10 @@ void RHRRTStar::planningIteration() {
   expandTree();
 
   // Goal reached: request next point if there is a valid candidate
-  if (state_machine_->targetIsReached()) {
+  if (comm_->targetIsReached()) {
     WayPoint next_waypoint;
     if (selectNextBestWayPoint(&next_waypoint)) {
-      state_machine_->requestWayPoint(next_waypoint);
+      comm_->requestWayPoint(next_waypoint);
     }
   }
 
@@ -151,11 +166,11 @@ bool RHRRTStar::selectNextBestWayPoint(WayPoint* next_waypoint) {
     }
   }
   auto t_end = std::chrono::high_resolution_clock::now();
-  VLOG(3) << "Optimized the tree in "
-          << std::chrono::duration_cast<std::chrono::milliseconds>(t_end -
-                                                                   t_start)
-                 .count()
-          << "ms, " << iterations << " iterations.";
+  LOG_IF(INFO, config_.verbosity >= 3)
+      << "Optimized the tree in "
+      << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start)
+             .count()
+      << "ms, " << iterations << " iterations.";
 
   // select the best node from the current root
   int next_point = -1;
@@ -215,13 +230,13 @@ void RHRRTStar::updateTree() {
 
   // logging
   auto t_end = std::chrono::high_resolution_clock::now();
-  VLOG(2) << "Update took "
-          << std::chrono::duration_cast<std::chrono::milliseconds>(t_end -
-                                                                   t_start)
-                 .count()
-          << "ms: " << points_before_update - num_previous_points_ << " new, "
-          << points_before_update - tree_data_.points.size() << " killed, "
-          << tree_data_.points.size() << " total.";
+  LOG_IF(INFO, config_.verbosity >= 2)
+      << "Update took "
+      << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start)
+             .count()
+      << "ms: " << points_before_update - num_previous_points_ << " new, "
+      << points_before_update - tree_data_.points.size() << " killed, "
+      << tree_data_.points.size() << " total.";
   num_previous_points_ = tree_data_.points.size();
 }
 
@@ -249,7 +264,7 @@ void RHRRTStar::updateCollision() {
         // check collision
         bool collided = false;
         for (auto& path_point : connection->path_points) {
-          if (!map_->isTraversableInActiveSubmap(path_point)) {
+          if (!comm_->map()->isTraversableInActiveSubmap(path_point)) {
             collided = true;
             break;
           }
@@ -362,7 +377,8 @@ bool RHRRTStar::connectViewPoint(ViewPoint* view_point) {
         distance < config_.min_path_length) {
       continue;
     }
-    if (view_point->tryAddConnection(tree_data_.points[index].get(), map_)) {
+    if (view_point->tryAddConnection(tree_data_.points[index].get(),
+                                     comm_->map())) {
       view_point->connections.back().second->cost =
           computeCost(*view_point->connections.back().second.get());
       connection_found = true;
@@ -417,7 +433,8 @@ double RHRRTStar::computeGain(
     const std::vector<Eigen::Vector3d>& visible_voxels) {
   double gain = 0.0;
   for (auto& point : visible_voxels) {
-    if (map_->getVoxelStateInLocalArea(point) == MapBase::Unknown) {
+    if (comm_->map()->getVoxelStateInLocalArea(point) ==
+        MapBase::VoxelState::kUnknown) {
       gain += 1.0;
     }
   }
@@ -485,7 +502,7 @@ bool RHRRTStar::sampleNewPoint(ViewPoint* point) {
                                          : config_.global_sampling_radius;
   Eigen::Vector3d goal = rho * Eigen::Vector3d(sin(phi) * cos(theta),
                                                sin(phi) * sin(theta), cos(phi));
-  goal += state_machine_->currentPose().position();
+  goal += comm_->currentPose().position();
 
   // Find the nearest neighbor
   std::vector<size_t> nearest_viewpoint;
@@ -500,12 +517,12 @@ bool RHRRTStar::sampleNewPoint(ViewPoint* point) {
       config_.path_cropping_length;
 
   // verify and crop the sampled path
-  double range_increment = map_->getVoxelSize();
+  double range_increment = comm_->map()->getVoxelSize();
   double range = range_increment;
   auto orientation = Eigen::Quaterniond();
   Eigen::Vector3d direction = (goal - origin).normalized();
-  while (map_->isTraversableInActiveSubmap(origin + range * direction,
-                                           orientation) &&
+  while (comm_->map()->isTraversableInActiveSubmap(origin + range * direction,
+                                                   orientation) &&
          range < distance_max) {
     range += range_increment;
   }
@@ -558,22 +575,22 @@ void RHRRTStar::visualizeGain(std::vector<Eigen::Vector3d>* voxels,
   CHECK_NOTNULL(scale);
   // get voxels
   sensor_model_->getVisibleVoxels(voxels, pose);
-  voxels->erase(std::remove_if(voxels->begin(), voxels->end(),
-                               [this](const Eigen::Vector3d& pt) {
-                                 return map_->getVoxelStateInLocalArea(pt) !=
-                                        MapBase::Unknown;
-                               }),
-                voxels->end());
+  voxels->erase(
+      std::remove_if(voxels->begin(), voxels->end(),
+                     [this](const Eigen::Vector3d& pt) {
+                       return comm_->map()->getVoxelStateInLocalArea(pt) !=
+                              MapBase::VoxelState::kUnknown;
+                     }),
+      voxels->end());
 
   // uniform coloring [0, 1]
   colors->assign(voxels->size(), Eigen::Vector3d(1, 0.8, 0));
 
   // voxel size
-  *scale = map_->getVoxelSize();
+  *scale = comm_->map()->getVoxelSize();
 }
 
-bool RHRRTStar::ViewPoint::tryAddConnection(
-    ViewPoint* target, const std::shared_ptr<MapBase>& map) {
+bool RHRRTStar::ViewPoint::tryAddConnection(ViewPoint* target, MapBase* map) {
   // Check traversability
   Eigen::Vector3d origin = pose.position();
   Eigen::Vector3d direction = target->pose.position() - origin;

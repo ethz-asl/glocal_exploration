@@ -4,6 +4,18 @@
 
 namespace glocal_exploration {
 
+GlocalSystem::Config getGlocalSystemConfigFromRos(const ros::NodeHandle& nh) {
+  GlocalSystem::Config config;
+  nh.param("verbosity", config.verbosity, config.verbosity);
+  nh.param("replan_position_threshold", config.replan_position_threshold,
+           config.replan_position_threshold);
+  nh.param("replan_yaw_threshold", config.replan_yaw_threshold,
+           config.replan_yaw_threshold);
+  nh.param("republish_waypoints", config.republish_waypoints,
+           config.republish_waypoints);
+  return config;
+}
+
 VoxbloxMap::Config getVoxbloxMapConfigFromRos(const ros::NodeHandle& nh) {
   VoxbloxMap::Config config;
   config.nh_private_namespace = nh.getNamespace();
@@ -48,6 +60,7 @@ LidarModel::Config getLidarModelConfigFromRos(const ros::NodeHandle& nh) {
 
 RHRRTStar::Config getRHRRTStarConfigFromRos(const ros::NodeHandle& nh) {
   RHRRTStar::Config config;
+  nh.param("verbosity", config.verbosity, config.verbosity);
   nh.param("local_sampling_radius", config.local_sampling_radius,
            config.local_sampling_radius);
   nh.param("global_sampling_radius", config.global_sampling_radius,

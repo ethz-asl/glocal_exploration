@@ -7,30 +7,22 @@
 
 #include "glocal_exploration/mapping/map_base.h"
 #include "glocal_exploration/planning/waypoint.h"
+#include "glocal_exploration/state/region_of_interest.h"
 
 namespace glocal_exploration {
 
 class SensorModel {
  public:
-  struct Config {
-    virtual ~Config() = default;
-  };
-
-  explicit SensorModel(std::shared_ptr<MapBase> map,
-                       std::shared_ptr<StateMachine> state_machine)
-      : map_(std::move(map)), state_machine_(std::move(state_machine)) {}
+  explicit SensorModel(std::shared_ptr<Communicator> communicator)
+      : comm_(std::move(communicator)) {}
   virtual ~SensorModel() = default;
 
   // Return the voxel centers of all visible voxels for that viewpoint
   virtual bool getVisibleVoxels(std::vector<Eigen::Vector3d>* result,
                                 const WayPoint& waypoint) = 0;
 
-  // setup from a config, these are also allowed to be derived configs
-  virtual bool setupFromConfig(Config* config) = 0;
-
  protected:
-  std::shared_ptr<MapBase> map_;
-  std::shared_ptr<StateMachine> state_machine_;
+  std::shared_ptr<Communicator> comm_;
 };
 
 }  // namespace glocal_exploration

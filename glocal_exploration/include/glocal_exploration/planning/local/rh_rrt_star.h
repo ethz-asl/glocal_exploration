@@ -16,7 +16,8 @@ namespace glocal_exploration {
 
 class RHRRTStar : public LocalPlannerBase {
  public:
-  struct Config : LocalPlannerBase::Config {
+  struct Config {
+    int verbosity = 1;
     // sampling
     double local_sampling_radius = 1.5;   // m
     double global_sampling_radius = 100;  // m
@@ -36,13 +37,15 @@ class RHRRTStar : public LocalPlannerBase {
 
     // sensor model (currently just use lidar)
     LidarModel::Config lidar_config;
+
+    bool isValid() const;
+    Config checkValid() const;
   };
 
   // setup
-  RHRRTStar(std::shared_ptr<MapBase> map,
-            std::shared_ptr<StateMachine> state_machine);
+  explicit RHRRTStar(const Config& config,
+                     std::shared_ptr<Communicator> communicator);
   virtual ~RHRRTStar() = default;
-  bool setupFromConfig(LocalPlannerBase::Config* config) override;
 
   // planning
   void planningIteration() override;
@@ -60,8 +63,7 @@ class RHRRTStar : public LocalPlannerBase {
     size_t active_connection = 0;
 
     // helper methods
-    bool tryAddConnection(ViewPoint* target,
-                          const std::shared_ptr<MapBase>& map);
+    bool tryAddConnection(ViewPoint* target, MapBase* map);
     Connection* getActiveConnection();
     Connection const* getActiveConnection() const;
     ViewPoint* getConnectedViewPoint(size_t index);
@@ -109,7 +111,7 @@ class RHRRTStar : public LocalPlannerBase {
 
  protected:
   /* components */
-  Config config_;
+  const Config config_;
   TreeData tree_data_;
   std::unique_ptr<KDTree> kdtree_;
   std::unique_ptr<SensorModel> sensor_model_;

@@ -12,17 +12,19 @@
 
 namespace glocal_exploration {
 
-RHRRTStarVisualizer::RHRRTStarVisualizer(
-    const Config& config, const std::shared_ptr<LocalPlannerBase>& planner)
-    : LocalPlannerVisualizerBase(planner) {
-  // config
-  config_ = config.isValid();
+RHRRTStarVisualizer::Config RHRRTStarVisualizer::Config::checkValid() const {
+  CHECK(isValid());
+  return Config(*this);
+}
 
+RHRRTStarVisualizer::RHRRTStarVisualizer(
+    const Config& config, const std::shared_ptr<Communicator>& communicator)
+    : LocalPlannerVisualizerBase(communicator), config_(config.checkValid()) {
   // reference planner
-  planner_ = std::dynamic_pointer_cast<RHRRTStar>(planner);
-  if (!planner) {
-    LOG(FATAL) << "Can not setup 'RHRRTStarVisualizer' with planner that is "
-                  "not of type 'RHRRTStar'";
+  planner_.reset(dynamic_cast<RHRRTStar*>(comm_->localPlanner()));
+  if (!planner_) {
+    LOG(FATAL) << "Can not setup 'RHRRTStarVisualizer' with a local planner "
+                  "that is not of type 'RHRRTStar'";
   }
 
   // ROS

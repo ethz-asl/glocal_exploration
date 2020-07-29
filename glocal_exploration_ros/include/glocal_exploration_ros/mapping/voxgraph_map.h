@@ -16,16 +16,19 @@ namespace glocal_exploration {
  */
 class VoxgraphMap : public MapBase {
  public:
-  struct Config : MapBase::Config {
+  struct Config {
     // Since this is a ros-class anyways we make it easy and just get the nh.
     std::string nh_private_namespace = "~";
     double traversability_radius = 0.3;  // m
     double clearing_radius = 0.5;        // m
-  };
-  explicit VoxgraphMap(const std::shared_ptr<StateMachine>& state_machine);
-  virtual ~VoxgraphMap() = default;
 
-  bool setupFromConfig(MapBase::Config* config) override;
+    bool isValid() const;
+    Config checkValid() const;
+  };
+
+  explicit VoxgraphMap(const Config& config,
+                       const std::shared_ptr<Communicator>& communicator);
+  virtual ~VoxgraphMap() = default;
 
   bool isTraversableInActiveSubmap(
       const Eigen::Vector3d& position,
@@ -37,7 +40,7 @@ class VoxgraphMap : public MapBase {
       const Eigen::Vector3d& point) override;
 
  protected:
-  Config config_;
+  const Config config_;
 
   std::unique_ptr<ThreadsafeVoxbloxServer> voxblox_server_;
   std::unique_ptr<ThreadsafeVoxgraphServer> voxgraph_server_;

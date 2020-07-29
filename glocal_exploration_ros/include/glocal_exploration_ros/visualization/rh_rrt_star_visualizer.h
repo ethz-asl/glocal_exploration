@@ -18,15 +18,17 @@ class RHRRTStarVisualizer : public LocalPlannerVisualizerBase {
     bool visualize_visible_voxels = true;
     bool visualize_value = true;
 
-    Config isValid() const { return Config(*this); }
+    bool isValid() const { return true; }
+    Config checkValid() const;
   };
+
   RHRRTStarVisualizer(const Config& config,
-                      const std::shared_ptr<LocalPlannerBase>& planner);
+                      const std::shared_ptr<Communicator>& communicator);
 
   void visualize() override;
 
  protected:
-  Config config_;
+  const Config config_;
   std::shared_ptr<RHRRTStar> planner_;
   ros::NodeHandle nh_;
   ros::Publisher pub_;

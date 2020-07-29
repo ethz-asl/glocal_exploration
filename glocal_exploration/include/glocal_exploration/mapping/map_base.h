@@ -5,30 +5,21 @@
 #include <utility>
 
 #include "glocal_exploration/common.h"
-#include "glocal_exploration/planning/state_machine.h"
 
 namespace glocal_exploration {
+
+class Communicator;
+
 /**
  * Defines the interface of a map module that is needed by the planner.
  */
-
 class MapBase {
  public:
-  // Defines a baseclass for map configurations
-  struct Config {
-    virtual ~Config() = default;
-  };
+  enum class VoxelState { kUnknown, kOccupied, kFree };
 
-  enum VoxelState { Unknown, Occupied, Free };
-
-  // Constructors
-  explicit MapBase(std::shared_ptr<StateMachine> state_machine)
-      : state_machine_(std::move(state_machine)) {}
+  explicit MapBase(std::shared_ptr<Communicator> communicator)
+      : comm_(std::move(communicator)) {}
   virtual ~MapBase() = default;
-
-  /* Setup */
-  // Can pass derived configs here by base pointer to setup the map.
-  virtual bool setupFromConfig(Config* config) = 0;
 
   /* General and Accessors */
   virtual double getVoxelSize() = 0;
@@ -45,9 +36,11 @@ class MapBase {
   virtual VoxelState getVoxelStateInLocalArea(const Eigen::Vector3d& point) = 0;
 
  protected:
-  const std::shared_ptr<StateMachine> state_machine_;
+  const std::shared_ptr<Communicator> comm_;
 };
 
 }  // namespace glocal_exploration
+
+#include "glocal_exploration/state/communicator.h"
 
 #endif  // GLOCAL_EXPLORATION_MAPPING_MAP_BASE_H_

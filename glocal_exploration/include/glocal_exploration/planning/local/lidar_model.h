@@ -10,47 +10,49 @@ namespace glocal_exploration {
 
 class LidarModel : public SensorModel {
  public:
-  struct Config : SensorModel::Config {
+  struct Config {
     double ray_length = 5.0;   // m
     double vertical_fov = 45;  // Total fields of view [deg], expected symmetric
-                               // w.r.t. sensor facing direction
+    // w.r.t. sensor facing direction
     double horizontal_fov = 360;
     int vertical_resolution = 64;
     int horizontal_resolution = 1024;
-    double ray_step = 0;  // m, use 0 to use voxel size
+    double ray_step = 0.0;  // m, use 0 to default to voxel size
     double downsampling_factor =
         1.0;  // reduce the number of checks by this factor
-
     Transformation T_baselink_sensor;
+
+    bool isValid() const;
+    Config checkValid() const;
   };
 
-  explicit LidarModel(std::shared_ptr<MapBase> map,
-                      std::shared_ptr<StateMachine> state_machine);
+  explicit LidarModel(const Config& config,
+                      std::shared_ptr<Communicator> communicator);
   virtual ~LidarModel() = default;
 
   bool getVisibleVoxels(std::vector<Eigen::Vector3d>* result,
                         const WayPoint& waypoint) override;
-  bool setupFromConfig(SensorModel::Config* config) override;
 
  protected:
-  Config config_;
+  const Config config_;
 
-  // constants
-  int c_res_x_;  // factual resolution that is used for ray casting
-  int c_res_y_;
-  double c_fov_x_;  // fov in rad
-  double c_fov_y_;
+  // cached constants
+  const double kFovX_;  // fov in rad
+  const double kFovY_;
+  const int kResolutionX_;  // factual resolution that is used for ray casting
+  const int kResolutionY_;
   int c_n_sections_;  // number of ray duplications
   std::vector<double>
       c_split_distances_;            // distances where rays are duplicated
   std::vector<int> c_split_widths_;  // number of max distance rays that are
-                                     // covered per split
+  // covered per split
 
   // variables
   Eigen::ArrayXXi ray_table_;
 
   // methods
   void markNeighboringRays(int x, int y, int segment, int value);
+  // x and y are cylindrical image coordinates scaled to [0, 1]
   void getDirectionVector(Eigen::Vector3d* result, double relative_x,
                           double relative_y) const;
 };

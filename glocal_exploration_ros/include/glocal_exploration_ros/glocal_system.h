@@ -7,9 +7,7 @@
 #include <ros/ros.h>
 #include <std_srvs/SetBool.h>
 
-#include "glocal_exploration/mapping/map_base.h"
-#include "glocal_exploration/planning/local/local_planner_base.h"
-#include "glocal_exploration/planning/state_machine.h"
+#include "glocal_exploration/state/communicator.h"
 #include "glocal_exploration_ros/visualization/local_planner_visualizer_base.h"
 
 namespace glocal_exploration {
@@ -17,13 +15,19 @@ namespace glocal_exploration {
 class GlocalSystem {
  public:
   struct Config {
+    int verbosity = 1;
     double replan_position_threshold = 0.2;  // m
     double replan_yaw_threshold = 10;        // deg
     bool republish_waypoints = false;
+
+    bool isValid() const;
+    Config checkValid() const;
   };
 
   // Constructor
   GlocalSystem(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
+  GlocalSystem(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
+               const Config& config);
   virtual ~GlocalSystem() = default;
 
   // ROS callbacks
@@ -44,13 +48,12 @@ class GlocalSystem {
   ros::ServiceServer run_srv_;
 
   // Components
-  Config config_;
-  const std::shared_ptr<StateMachine> state_machine_;
-  std::shared_ptr<MapBase> map_;
-  std::shared_ptr<LocalPlannerBase> local_planner_;
+  const Config config_;
+  std::shared_ptr<Communicator> comm_;
   std::shared_ptr<LocalPlannerVisualizerBase> local_planner_visualizer_;
 
   // methods
+  void buildComponents(const ros::NodeHandle& nh);
   void loopIteration();
   void readParamsFromRos();
   void publishTargetPose();
