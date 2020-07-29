@@ -10,46 +10,28 @@
 #include <utility>
 #include <vector>
 
+#include "glocal_exploration/utility/config_checker.h"
+
 namespace glocal_exploration {
 
-RHRRTStar::RHRRTStar(const Config& config,
-                     std::shared_ptr<Communicator> communicator)
-    : LocalPlannerBase(std::move(communicator)), config_(config.checkValid()) {
-  // initialize the sensor model
-  sensor_model_ = std::make_unique<LidarModel>(config_.lidar_config, comm_);
-}
-
 bool RHRRTStar::Config::isValid() const {
-  bool is_valid = true;
-  if (max_path_length <= 0.0) {
-    LOG(WARNING) << "The maximal path length is expected > 0.0.";
-    is_valid = false;
-  }
-  if (path_cropping_length <= 0.0) {
-    LOG(WARNING) << "The path cropping length is expected > 0.0.";
-    is_valid = false;
-  }
-  if (max_number_of_neighbors <= 0) {
-    LOG(WARNING) << "The maximal number of neighbors is expected > 0.";
-    is_valid = false;
-  }
-  if (maximum_rewiring_iterations <= 0) {
-    LOG(WARNING)
-        << "The maximal number of rewiring iterations is expected > 0.";
-    is_valid = false;
-  }
-  return is_valid;
+  ConfigChecker checker("RHRRTStar");
+  checker.check_gt(max_path_length, 0.0, "max_path_length");
+  checker.check_gt(path_cropping_length, 0.0, "path_cropping_length");
+  checker.check_gt(max_number_of_neighbors, 0, "max_number_of_neighbors");
+  checker.check_gt(maximum_rewiring_iterations, 0,
+                   "maximum_rewiring_iterations");
+  return checker.isValid();
 }
 
 RHRRTStar::Config RHRRTStar::Config::checkValid() const {
   CHECK(isValid());
->>>>>>> 1bf1cdbfe193766c3e1255aa35582574ee52cb3f
   return Config(*this);
 }
 
 RHRRTStar::RHRRTStar(const Config& config,
                      std::shared_ptr<Communicator> communicator)
-    : LocalPlannerBase(std::move(communicator)), config_(config.isValid()) {
+    : LocalPlannerBase(std::move(communicator)), config_(config.checkValid()) {
   // initialize the sensor model
   sensor_model_ = std::make_unique<LidarModel>(config_.lidar_config, comm_);
 }
