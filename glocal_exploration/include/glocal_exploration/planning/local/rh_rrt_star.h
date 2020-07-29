@@ -37,7 +37,9 @@ class RHRRTStar : public LocalPlannerBase {
 
     // sensor model (currently just use lidar)
     LidarModel::Config lidar_config;
-    Config isValid() const;
+
+    bool isValid() const;
+    Config checkValid() const;
   };
 
   // setup

@@ -28,6 +28,9 @@ class BoundingBox : public RegionOfInterest {
     double x_max = 0.0;
     double y_max = 0.0;
     double z_max = 0.0;
+
+    bool isValid() const;
+    Config checkValid() const;
   };
 
   explicit BoundingBox(const Config& config);

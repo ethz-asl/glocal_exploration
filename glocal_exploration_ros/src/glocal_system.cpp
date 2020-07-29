@@ -5,38 +5,39 @@
 #include <geometry_msgs/Pose.h>
 #include <tf2/utils.h>
 
+#include <glocal_exploration/utility/config_checker.h>
+
 #include "glocal_exploration_ros/conversions/ros_component_factory.h"
 #include "glocal_exploration_ros/conversions/ros_params.h"
 
 namespace glocal_exploration {
 
+bool GlocalSystem::Config::isValid() const {
+  ConfigChecker checker("GlocalSystem");
+  checker.check_gt(replan_position_threshold, 0.0, "replan_position_threshold");
+  checker.check_gt(replan_yaw_threshold, 0.0, "replan_yaw_threshold");
+  return checker.isValid();
+}
+
+GlocalSystem::Config GlocalSystem::Config::checkValid() const {
+  CHECK(isValid());
+  return Config(*this);
+}
+
 GlocalSystem::GlocalSystem(const ros::NodeHandle& nh,
                            const ros::NodeHandle& nh_private)
-    : nh_(nh), nh_private_(nh_private) {
-  // params
-  readParamsFromRos();
+    : GlocalSystem(nh, nh_private, getGlocalSystemConfigFromRos(nh_private)) {}
 
+GlocalSystem::GlocalSystem(const ros::NodeHandle& nh,
+                           const ros::NodeHandle& nh_private,
+                           const Config& config)
+    : nh_(nh), nh_private_(nh_private), config_(config.checkValid()) {
   // build communicator and components
   buildComponents(nh_private_);
 
   // ROS
   target_pub_ = nh_.advertise<geometry_msgs::Pose>("command/pose", 10);
   odom_sub_ = nh_.subscribe("odometry", 1, &GlocalSystem::odomCallback, this);
-}
-
-void GlocalSystem::readParamsFromRos() {
-  nh_private_.param("verbosity", config_.verbosity, config_.verbosity);
-  nh_private_.param("replan_position_threshold",
-                    config_.replan_position_threshold,
-                    config_.replan_position_threshold);
-  nh_private_.param("replan_yaw_threshold", config_.replan_yaw_threshold,
-                    config_.replan_yaw_threshold);
-  nh_private_.param("republish_waypoints", config_.republish_waypoints,
-                    config_.republish_waypoints);
-  CHECK_GT(config_.replan_position_threshold, 0)
-      << "Param 'replan_position_threshold' expected > 0";
-  CHECK_GT(config_.replan_yaw_threshold, 0)
-      << "Param 'replan_yaw_threshold' expected > 0";
 }
 
 void GlocalSystem::buildComponents(const ros::NodeHandle& nh) {
@@ -72,8 +73,8 @@ void GlocalSystem::mainLoop() {
   run_srv_ = nh_private_.advertiseService("toggle_running",
                                           &GlocalSystem::runSrvCallback, this);
 
-  while (ros::ok() &&
-         comm_->stateMachine()->currentState() != StateMachine::kFinished) {
+  while (ros::ok() && comm_->stateMachine()->currentState() !=
+                          StateMachine::State::kFinished) {
     loopIteration();
     ros::spinOnce();
   }
@@ -84,9 +85,9 @@ void GlocalSystem::mainLoop() {
 void GlocalSystem::loopIteration() {
   // actions
   switch (comm_->stateMachine()->currentState()) {
-    case StateMachine::kReady:
+    case StateMachine::State::kReady:
       return;
-    case StateMachine::kLocalPlanning: {
+    case StateMachine::State::kLocalPlanning: {
       comm_->localPlanner()->planningIteration();
       break;
     }
@@ -102,7 +103,7 @@ void GlocalSystem::loopIteration() {
 
     // visualizations
     switch (comm_->stateMachine()->currentState()) {
-      case StateMachine::kLocalPlanning: {
+      case StateMachine::State::kLocalPlanning: {
         local_planner_visualizer_->visualize();
         break;
       }
@@ -184,7 +185,8 @@ void GlocalSystem::odomCallback(const nav_msgs::Odometry& msg) {
 bool GlocalSystem::runSrvCallback(std_srvs::SetBool::Request& req,
                                   std_srvs::SetBool::Response& res) {
   comm_->stateMachine()->signalLocalPlanning();
-  if (comm_->stateMachine()->currentState() == StateMachine::kLocalPlanning) {
+  if (comm_->stateMachine()->currentState() ==
+      StateMachine::State::kLocalPlanning) {
     LOG_IF(INFO, config_.verbosity >= 1) << "Started Glocal Exploration.";
     comm_->setTargetReached(true);
     previous_time_ = ros::Time::now();

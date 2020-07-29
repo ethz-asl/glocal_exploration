@@ -20,7 +20,8 @@ class VoxbloxMap : public MapBase {
     double traversability_radius = 0.3;  // m
     double clearing_radius = 0.5;        // m
 
-    Config isValid() const;
+    bool isValid() const;
+    Config checkValid() const;
   };
 
   explicit VoxbloxMap(const Config& config,

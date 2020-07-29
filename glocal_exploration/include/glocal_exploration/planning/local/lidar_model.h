@@ -22,7 +22,8 @@ class LidarModel : public SensorModel {
         1.0;  // reduce the number of checks by this factor
     Transformation T_baselink_sensor;
 
-    Config isValid() const;
+    bool isValid() const;
+    Config checkValid() const;
   };
 
   explicit LidarModel(const Config& config,

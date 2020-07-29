@@ -5,19 +5,19 @@
 namespace glocal_exploration {
 
 StateMachine::StateMachine()
-    : state_(kSettingUp), previous_state_(kSettingUp) {}
+    : state_(State::kSettingUp), previous_state_(State::kSettingUp) {}
 
 void StateMachine::signalState(const State& state) {
   switch (state) {
-    case kSettingUp:
+    case State::kSettingUp:
       LOG(WARNING) << "Can not signal transition to kSettingUp";
-    case kReady:
+    case State::kReady:
       return signalReady();
-    case kLocalPlanning:
+    case State::kLocalPlanning:
       return signalLocalPlanning();
-    case kGlobalPlanning:
+    case State::kGlobalPlanning:
       return signalGlobalPlanning();
-    case kFinished:
+    case State::kFinished:
       return signalFinished();
   }
 }
@@ -27,7 +27,7 @@ void StateMachine::signalFinished() {
     LOG(WARNING) << "Can not transition from '" << stateToString(state_)
                  << " to 'kFinished'.";
   } else {
-    setState(kFinished);
+    setState(State::kFinished);
   }
 }
 
@@ -36,25 +36,25 @@ void StateMachine::signalReady() {
     LOG(WARNING) << "Can not transition from '" << stateToString(state_)
                  << " to 'kReady'.";
   } else {
-    setState(kReady);
+    setState(State::kReady);
   }
 }
 
 void StateMachine::signalLocalPlanning() {
-  if (state_ == State::kSettingUp || state_ == kFinished) {
+  if (state_ == State::kSettingUp || state_ == State::kFinished) {
     LOG(WARNING) << "Can not transition from '" << stateToString(state_)
                  << " to 'LocalPlanning'.";
   } else {
-    setState(kLocalPlanning);
+    setState(State::kLocalPlanning);
   }
 }
 
 void StateMachine::signalGlobalPlanning() {
-  if (state_ == State::kSettingUp || state_ == kFinished) {
+  if (state_ == State::kSettingUp || state_ == State::kFinished) {
     LOG(WARNING) << "Can not transition from '" << stateToString(state_)
                  << " to 'GlobalPlanning'.";
   } else {
-    setState(kGlobalPlanning);
+    setState(State::kGlobalPlanning);
   }
 }
 
@@ -65,15 +65,15 @@ void StateMachine::setState(State state) {
 
 std::string StateMachine::stateToString(State state) {
   switch (state) {
-    case kSettingUp:
+    case State::kSettingUp:
       return "SettingUp";
-    case kReady:
+    case State::kReady:
       return "Ready";
-    case kLocalPlanning:
+    case State::kLocalPlanning:
       return "LocalPlanning";
-    case kGlobalPlanning:
+    case State::kGlobalPlanning:
       return "GlobalPlanning";
-    case kFinished:
+    case State::kFinished:
       return "Finished";
     default:
       return "UnknownState";

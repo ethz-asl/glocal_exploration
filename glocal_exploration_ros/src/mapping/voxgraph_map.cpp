@@ -3,19 +3,25 @@
 #include <memory>
 
 #include <glocal_exploration/state/communicator.h>
+#include <glocal_exploration/utility/config_checker.h>
 
 namespace glocal_exploration {
 
-VoxgraphMap::Config VoxgraphMap::Config::isValid() const {
-  // TODO(victorr): check param validity
-  CHECK_GT(traversability_radius, 0)
-      << "The traversability radius is expected > 0.";
+bool VoxgraphMap::Config::isValid() const {
+  ConfigChecker checker("VoxgraphMap");
+  // TODO(@victorr): check param validity
+  checker.check_gt(traversability_radius, 0.0, "traversability_radius");
+  return checker.isValid();
+}
+
+VoxgraphMap::Config VoxgraphMap::Config::checkValid() const {
+  CHECK(isValid());
   return Config(*this);
 }
 
 VoxgraphMap::VoxgraphMap(const Config& config,
                          const std::shared_ptr<Communicator>& communicator)
-    : MapBase(communicator), config_(config.isValid()) {
+    : MapBase(communicator), config_(config.checkValid()) {
   // Launch the sliding window local map and global map servers
   ros::NodeHandle nh(ros::names::parentNamespace(config_.nh_private_namespace));
   ros::NodeHandle nh_private(config_.nh_private_namespace);

@@ -6,27 +6,30 @@
 #include <vector>
 
 #include "glocal_exploration/state/communicator.h"
+#include "glocal_exploration/utility/config_checker.h"
 
 namespace glocal_exploration {
 
-LidarModel::Config LidarModel::Config::isValid() const {
-  CHECK_GT(vertical_fov, 0) << "The vertical field of view is expected > 0.";
-  CHECK_GT(horizontal_fov, 0)
-      << "The horizontal field of view is expected > 0.";
-  CHECK_GT(vertical_resolution, 0)
-      << "The vertical resolution is expected > 0.";
-  CHECK_GT(horizontal_resolution, 0)
-      << "The horizontal resolution is expected > 0.";
-  CHECK_GT(ray_length, 0) << "The ray length is expected > 0.";
-  CHECK_GT(downsampling_factor, 0)
-      << "The downsampling factor is expected > 0.";
+bool LidarModel::Config::isValid() const {
+  ConfigChecker checker("LidarModel");
+  checker.check_gt(vertical_fov, 0.0, "vertical_fov");
+  checker.check_gt(horizontal_fov, 0.0, "horizontal_fov");
+  checker.check_gt(vertical_resolution, 0, "vertical_resolution");
+  checker.check_gt(horizontal_resolution, 0, "horizontal_resolution");
+  checker.check_gt(ray_length, 0.0, "ray_length");
+  checker.check_gt(downsampling_factor, 0.0, "downsampling_factor");
+  return checker.isValid();
+}
+
+LidarModel::Config LidarModel::Config::checkValid() const {
+  CHECK(isValid());
   return Config(*this);
 }
 
 LidarModel::LidarModel(const Config& config,
                        std::shared_ptr<Communicator> communicator)
     : SensorModel(std::move(communicator)),
-      config_(config.isValid()),
+      config_(config.checkValid()),
       kFovX_(config_.horizontal_fov / 180.0 * M_PI),
       kFovY_(config_.vertical_fov / 180.0 * M_PI),
       kResolutionX_(std::min(

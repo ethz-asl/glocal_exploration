@@ -18,8 +18,10 @@ class RHRRTStarVisualizer : public LocalPlannerVisualizerBase {
     bool visualize_visible_voxels = true;
     bool visualize_value = true;
 
-    Config isValid() const { return Config(*this); }
+    bool isValid() const { return true; }
+    Config checkValid() const;
   };
+
   RHRRTStarVisualizer(const Config& config,
                       const std::shared_ptr<Communicator>& communicator);
 
