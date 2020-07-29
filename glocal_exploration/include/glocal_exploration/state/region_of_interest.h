@@ -29,7 +29,8 @@ class BoundingBox : public RegionOfInterest {
     double y_max = 0.0;
     double z_max = 0.0;
 
-    [[nodiscard]] Config isValid() const;
+    bool isValid() const;
+    Config checkValid() const;
   };
 
   explicit BoundingBox(const Config& config);

@@ -8,12 +8,12 @@
 namespace glocal_exploration {
 
 // floating point accuracy
-typedef double FloatingPoint;
+using FloatingPoint = double;
 
 // Vector types
-typedef Eigen::Matrix<FloatingPoint, 3, 1> Point;
-typedef kindr::minimal::QuatTransformationTemplate<FloatingPoint>
-    Transformation;
+using Point = Eigen::Matrix<FloatingPoint, 3, 1>;
+using Transformation =
+    kindr::minimal::QuatTransformationTemplate<FloatingPoint>;
 
 }  // namespace glocal_exploration
 

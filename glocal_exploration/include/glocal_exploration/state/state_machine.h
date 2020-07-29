@@ -16,14 +16,23 @@ namespace glocal_exploration {
  */
 class StateMachine {
  public:
-  enum State { kSettingUp, kReady, kLocalPlanning, kGlobalPlanning, kFinished };
+  enum class State {
+    kSettingUp,
+    kReady,
+    kLocalPlanning,
+    kGlobalPlanning,
+    kFinished
+  };
 
   StateMachine();
   virtual ~StateMachine() = default;
 
   // access
-  const State& currentState() const { return state_; }
-  const State& previousState() const { return previous_state_; }
+  [[nodiscard]] const State& currentState() const {
+    return state_;
+  }[[nodiscard]] const State& previousState() const {
+    return previous_state_;
+  }
 
   // interactions
   void signalReady();

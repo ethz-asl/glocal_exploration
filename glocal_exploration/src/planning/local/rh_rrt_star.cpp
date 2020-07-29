@@ -12,14 +12,38 @@
 
 namespace glocal_exploration {
 
-RHRRTStar::Config RHRRTStar::Config::isValid() const {
-  CHECK_GT(max_path_length, 0.0) << "The maximal path length is expected > 0.";
-  CHECK_GT(path_cropping_length, 0.0)
-      << "The path cropping length is expected > 0.";
-  CHECK_GT(max_number_of_neighbors, 0)
-      << "The maximal number of neighbors is expected > 0.";
-  CHECK_GT(maximum_rewiring_iterations, 0)
-      << "The maximal number of rewiring iterations is expected > 0.";
+RHRRTStar::RHRRTStar(const Config& config,
+                     std::shared_ptr<Communicator> communicator)
+    : LocalPlannerBase(std::move(communicator)), config_(config.checkValid()) {
+  // initialize the sensor model
+  sensor_model_ = std::make_unique<LidarModel>(config_.lidar_config, comm_);
+}
+
+bool RHRRTStar::Config::isValid() const {
+  bool is_valid = true;
+  if (max_path_length <= 0.0) {
+    LOG(WARNING) << "The maximal path length is expected > 0.0.";
+    is_valid = false;
+  }
+  if (path_cropping_length <= 0.0) {
+    LOG(WARNING) << "The path cropping length is expected > 0.0.";
+    is_valid = false;
+  }
+  if (max_number_of_neighbors <= 0) {
+    LOG(WARNING) << "The maximal number of neighbors is expected > 0.";
+    is_valid = false;
+  }
+  if (maximum_rewiring_iterations <= 0) {
+    LOG(WARNING)
+        << "The maximal number of rewiring iterations is expected > 0.";
+    is_valid = false;
+  }
+  return is_valid;
+}
+
+RHRRTStar::Config RHRRTStar::Config::checkValid() const {
+  CHECK(isValid());
+>>>>>>> 1bf1cdbfe193766c3e1255aa35582574ee52cb3f
   return Config(*this);
 }
 
@@ -32,7 +56,8 @@ RHRRTStar::RHRRTStar(const Config& config,
 
 void RHRRTStar::planningIteration() {
   // Newly started local planning
-  if (comm_->stateMachine()->previousState() != StateMachine::kLocalPlanning) {
+  if (comm_->stateMachine()->previousState() !=
+      StateMachine::State::kLocalPlanning) {
     resetPlanner(comm_->currentPose());
     comm_->stateMachine()->signalLocalPlanning();
   }

@@ -12,9 +12,14 @@
 
 namespace glocal_exploration {
 
+RHRRTStarVisualizer::Config RHRRTStarVisualizer::Config::checkValid() const {
+  CHECK(isValid());
+  return Config(*this);
+}
+
 RHRRTStarVisualizer::RHRRTStarVisualizer(
     const Config& config, const std::shared_ptr<Communicator>& communicator)
-    : LocalPlannerVisualizerBase(communicator), config_(config.isValid()) {
+    : LocalPlannerVisualizerBase(communicator), config_(config.checkValid()) {
   // reference planner
   planner_.reset(dynamic_cast<RHRRTStar*>(comm_->localPlanner()));
   if (!planner_) {

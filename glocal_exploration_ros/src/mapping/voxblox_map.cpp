@@ -4,18 +4,24 @@
 
 #include <glocal_exploration/common.h>
 #include <glocal_exploration/state/communicator.h>
+#include <glocal_exploration/utility/config_checker.h>
 
 namespace glocal_exploration {
 
-VoxbloxMap::Config VoxbloxMap::Config::isValid() const {
-  CHECK_GT(traversability_radius, 0)
-      << "The traversability radius is expected > 0.";
+bool VoxbloxMap::Config::isValid() const {
+  ConfigChecker checker("VoxbloxMap");
+  checker.check_gt(traversability_radius, 0.0, "traversability_radius");
+  return checker.isValid();
+}
+
+VoxbloxMap::Config VoxbloxMap::Config::checkValid() const {
+  CHECK(isValid());
   return Config(*this);
 }
 
 VoxbloxMap::VoxbloxMap(const Config& config,
                        const std::shared_ptr<Communicator>& communicator)
-    : MapBase(communicator), config_(config.isValid()) {
+    : MapBase(communicator), config_(config.checkValid()) {
   // create a voxblox server
   ros::NodeHandle nh_private(config_.nh_private_namespace);
   ros::NodeHandle nh(ros::names::parentNamespace(config_.nh_private_namespace));

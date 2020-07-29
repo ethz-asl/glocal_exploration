@@ -1,11 +1,19 @@
 #include "glocal_exploration/state/region_of_interest.h"
 
+#include "glocal_exploration/utility/config_checker.h"
+
 namespace glocal_exploration {
 
-BoundingBox::Config BoundingBox::Config::isValid() const {
-  CHECK_GT(x_max, x_min) << "The bounding box encompasses no volume.";
-  CHECK_GT(y_max, y_min) << "The bounding box encompasses no volume.";
-  CHECK_GT(z_max, z_min) << "The bounding box encompasses no volume.";
+bool BoundingBox::Config::isValid() const {
+  ConfigChecker checker("BoundingBox");
+  checker.check(x_max > x_min, "x_max is expected > x_min.");
+  checker.check(y_max > y_min, "y_max is expected > y_min.");
+  checker.check(z_max > z_min, "z_max is expected > z_min.");
+  return checker.isValid();
+}
+
+BoundingBox::Config BoundingBox::Config::checkValid() const {
+  CHECK(isValid());
   return Config(*this);
 }
 
@@ -29,6 +37,10 @@ bool BoundingBox::contains(const Eigen::Vector3d& point) {
 }
 
 BoundingBox::BoundingBox(const Config& config)
+<<<<<<< HEAD
     : RegionOfInterest(), config_(config.isValid()) {}
+=======
+    : RegionOfInterest(), config_(config.checkValid()) {}
+>>>>>>> 1bf1cdbfe193766c3e1255aa35582574ee52cb3f
 
 }  // namespace glocal_exploration

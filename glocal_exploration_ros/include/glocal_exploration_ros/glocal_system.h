@@ -19,10 +19,15 @@ class GlocalSystem {
     double replan_position_threshold = 0.2;  // m
     double replan_yaw_threshold = 10;        // deg
     bool republish_waypoints = false;
+
+    bool isValid() const;
+    Config checkValid() const;
   };
 
   // Constructor
   GlocalSystem(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
+  GlocalSystem(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
+               const Config& config);
   virtual ~GlocalSystem() = default;
 
   // ROS callbacks
@@ -43,7 +48,7 @@ class GlocalSystem {
   ros::ServiceServer run_srv_;
 
   // Components
-  Config config_;
+  const Config config_;
   std::shared_ptr<Communicator> comm_;
   std::shared_ptr<LocalPlannerVisualizerBase> local_planner_visualizer_;
 
