@@ -1,28 +1,30 @@
-#ifndef GLOCAL_EXPLORATION_VISUALIZATION_LOCAL_PLANNER_VISUALIZER_
-#define GLOCAL_EXPLORATION_VISUALIZATION_LOCAL_PLANNER_VISUALIZER_
+#ifndef GLOCAL_EXPLORATION_ROS_VISUALIZATION_LOCAL_PLANNER_VISUALIZER_BASE_H_
+#define GLOCAL_EXPLORATION_ROS_VISUALIZATION_LOCAL_PLANNER_VISUALIZER_BASE_H_
 
 #include <memory>
+#include <utility>
 
 #include <ros/ros.h>
 
-#include "glocal_exploration/planning/local_planner/local_planner_base.h"
+#include <glocal_exploration/planning/local/local_planner_base.h>
+#include <glocal_exploration/state/communicator.h>
 
 namespace glocal_exploration {
 
 class LocalPlannerVisualizerBase {
  public:
-  LocalPlannerVisualizerBase(const ros::NodeHandle& nh,
-                             const std::shared_ptr<LocalPlannerBase>& planner)
-      : nh_(nh) {}
+  explicit LocalPlannerVisualizerBase(
+      std::shared_ptr<Communicator> communicator)
+      : comm_(std::move(communicator)) {}
   virtual ~LocalPlannerVisualizerBase() = default;
 
-  // Interface
+  // Interface (the default implementation does not visualize anything).
   virtual void visualize() {}
 
  protected:
-  ros::NodeHandle nh_;
+  std::shared_ptr<Communicator> comm_;
 };
 
 }  // namespace glocal_exploration
 
-#endif  // GLOCAL_EXPLORATION_VISUALIZATION_LOCAL_PLANNER_VISUALIZER_
+#endif  // GLOCAL_EXPLORATION_ROS_VISUALIZATION_LOCAL_PLANNER_VISUALIZER_BASE_H_

@@ -3,7 +3,7 @@ state_refresh_rate: 100
 ViewMode: Manual
 ClockSpeed: 1.0
 publish_sensor_transforms: true # this uses gt transform
-velocity: 1.0
+velocity: 0.7
  
 sensors:   
   Lidar:

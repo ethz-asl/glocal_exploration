@@ -22,4 +22,4 @@ struct WayPoint {
 
 }  // namespace glocal_exploration
 
-#endif  // GLOCAL_EXPLORATION_COMMON_H_
+#endif  // GLOCAL_EXPLORATION_PLANNING_WAYPOINT_H_

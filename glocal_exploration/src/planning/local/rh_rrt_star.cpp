@@ -1,54 +1,65 @@
-#include "glocal_exploration/planning/local_planner/rh_rrt_star.h"
+#include "glocal_exploration/planning/local/rh_rrt_star.h"
 
 #include <algorithm>
 #include <chrono>
 #include <iostream>
-#include <numeric>
+#include <limits>
+#include <memory>
 #include <queue>
 #include <random>
+#include <utility>
+#include <vector>
+
+#include "glocal_exploration/utility/config_checker.h"
 
 namespace glocal_exploration {
 
-RHRRTStar::RHRRTStar(std::shared_ptr<MapBase> map,
-                     std::shared_ptr<StateMachine> state_machine)
-    : LocalPlannerBase(std::move(map), std::move(state_machine)) {}
+bool RHRRTStar::Config::isValid() const {
+  ConfigChecker checker("RHRRTStar");
+  checker.check_gt(max_path_length, 0.0, "max_path_length");
+  checker.check_gt(path_cropping_length, 0.0, "path_cropping_length");
+  checker.check_gt(max_number_of_neighbors, 0, "max_number_of_neighbors");
+  checker.check_gt(maximum_rewiring_iterations, 0,
+                   "maximum_rewiring_iterations");
+  return checker.isValid();
+}
 
-bool RHRRTStar::setupFromConfig(LocalPlannerBase::Config* config) {
-  CHECK_NOTNULL(config);
-  auto cfg = dynamic_cast<Config*>(config);
-  if (!cfg) {
-    LOG(ERROR) << "Failed to setup: config is not of type 'RHRRTStar::Config'.";
-    return false;
-  }
-  config_ = *cfg;
+RHRRTStar::Config RHRRTStar::Config::checkValid() const {
+  CHECK(isValid());
+  return Config(*this);
+}
 
-  // setup the sensor
-  sensor_model_ = std::make_unique<LidarModel>(map_, state_machine_);
-  sensor_model_->setupFromConfig(&(config_.lidar_config));
-  return true;
+RHRRTStar::RHRRTStar(const Config& config,
+                     std::shared_ptr<Communicator> communicator)
+    : LocalPlannerBase(std::move(communicator)), config_(config.checkValid()) {
+  // initialize the sensor model
+  sensor_model_ = std::make_unique<LidarModel>(config_.lidar_config, comm_);
 }
 
 void RHRRTStar::planningIteration() {
   // Newly started local planning
-  if (state_machine_->previousState() != StateMachine::LocalPlanning) {
-    resetPlanner(state_machine_->currentPose());
-    state_machine_->signalLocalPlanning();
+  if (comm_->stateMachine()->previousState() !=
+      StateMachine::State::kLocalPlanning) {
+    resetPlanner(comm_->currentPose());
+    comm_->stateMachine()->signalLocalPlanning();
   }
 
   // Requested a view point so update
-  if (next_root_index_ > -1) {
-    updateTree();
-    next_root_index_ = -1;
+  if (should_update_) {
+    updateGains();
+    should_update_ = false;
   }
 
   // expansion step
   expandTree();
 
   // Goal reached: request next point if there is a valid candidate
-  if (state_machine_->targetIsReached()) {
+  if (comm_->targetIsReached()) {
     WayPoint next_waypoint;
+    updateCollision();
     if (selectNextBestWayPoint(&next_waypoint)) {
-      state_machine_->requestWayPoint(next_waypoint);
+      comm_->requestWayPoint(next_waypoint);
+      should_update_ = true;
     }
   }
 
@@ -67,9 +78,11 @@ void RHRRTStar::resetPlanner(const WayPoint& origin) {
 
   // reset counters
   root_ = tree_data_.points[0].get();
+  current_connection_ = nullptr;
   local_sampled_points_ = config_.min_local_points;
-  num_previous_points_ = 1;
-  next_root_index_ = -1;
+  should_update_ = false;
+  pruned_points_ = 0;
+  new_points_ = 0;
 }
 
 void RHRRTStar::expandTree() {
@@ -92,15 +105,19 @@ void RHRRTStar::expandTree() {
   tree_data_.points.push_back(std::move(new_point));
   kdtree_->addPoints(tree_data_.points.size() - 1,
                      tree_data_.points.size() - 1);
+
+  // update tracking and stats
   if (local_sampled_points_ > 0) {
     local_sampled_points_ -= 1;
   }
+  new_points_++;
 }
 
 bool RHRRTStar::selectNextBestWayPoint(WayPoint* next_waypoint) {
   if (tree_data_.points.size() < 2) {
     return false;
   }
+
   // set up
   int iterations = 0;
   auto t_start = std::chrono::high_resolution_clock::now();
@@ -147,52 +164,40 @@ bool RHRRTStar::selectNextBestWayPoint(WayPoint* next_waypoint) {
     }
   }
   auto t_end = std::chrono::high_resolution_clock::now();
-  VLOG(3) << "Optimized the tree in "
-          << std::chrono::duration_cast<std::chrono::milliseconds>(t_end -
-                                                                   t_start)
-                 .count()
-          << "ms, " << iterations << " iterations.";
+  LOG_IF(INFO, config_.verbosity >= 3)
+      << "Optimized the tree in "
+      << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start)
+             .count()
+      << "ms, " << iterations << " iterations.";
 
   // select the best node from the current root
-  int next_point = -1;
+  int next_point_idx = -1;
   double best_value = -std::numeric_limits<double>::max();
   for (size_t i = 0; i < root_->connections.size(); ++i) {
     ViewPoint* target = root_->getConnectedViewPoint(i);
     if (target->getConnectedViewPoint(target->active_connection) == root_) {
+      // the candidate is wired to the root
       if (target->value > best_value) {
         best_value = target->value;
-        next_point = i;
+        next_point_idx = i;
       }
     }
   }
-  if (next_point < 0) {
+  if (next_point_idx < 0) {
+    // This should never happen as the previous segment should remain active.
     return false;
   }
 
   // result
-  next_root_index_ = next_point;
-  *next_waypoint = root_->getConnectedViewPoint(next_root_index_)->pose;
-  return true;
-}
+  *next_waypoint = root_->getConnectedViewPoint(next_point_idx)->pose;
 
-void RHRRTStar::updateTree() {
-  // NOTE: this method requires the next_root_index_ to be computed by
-  // selectNextBestWayPoint() previously. counting
-  int points_before_update = tree_data_.points.size();
-  auto t_start = std::chrono::high_resolution_clock::now();
-
-  // update collision
-  updateCollision();
-
-  // update gains
-  updateGains();
-
-  // reset the root (after the gains so the correct nodes get updated)
-  ViewPoint* new_root = root_->getConnectedViewPoint(next_root_index_);
+  // update the roots
+  ViewPoint* new_root = root_->getConnectedViewPoint(next_point_idx);
   root_->is_root = false;
   new_root->is_root = true;
   root_->active_connection =
-      next_root_index_;  // make the old root connect to the new root
+      next_point_idx;  // make the old root connect to the new root
+  current_connection_ = root_->connections[next_point_idx].second.get();
   root_ = new_root;
 
   // refresh the number of local points
@@ -210,22 +215,17 @@ void RHRRTStar::updateTree() {
   }
 
   // logging
-  auto t_end = std::chrono::high_resolution_clock::now();
-  VLOG(2) << "Update took "
-          << std::chrono::duration_cast<std::chrono::milliseconds>(t_end -
-                                                                   t_start)
-                 .count()
-          << "ms: " << points_before_update - num_previous_points_ << " new, "
-          << points_before_update - tree_data_.points.size() << " killed, "
-          << tree_data_.points.size() << " total.";
-  num_previous_points_ = tree_data_.points.size();
+  LOG_IF(INFO, config_.verbosity >= 2)
+      << "Published next segment: " << new_points_ << " new, " << pruned_points_
+      << " killed, " << tree_data_.points.size() << " total.";
+  pruned_points_ = 0;
+  new_points_ = 0;
+
+  return true;
 }
 
 void RHRRTStar::updateCollision() {
-  // cache the next connection so the index can be corrected after pruning
-  Connection* next_connection =
-      root_->connections[next_root_index_].second.get();
-
+  int num_previous_points = tree_data_.points.size();
   // update all connections
   for (auto& viewpoint : tree_data_.points) {
     int offset = 0;
@@ -235,8 +235,7 @@ void RHRRTStar::updateCollision() {
       // update every connection only once (by the parent)
       if (viewpoint->connections[i].first) {
         Connection* connection = viewpoint->connections[i].second.get();
-        ViewPoint* target = connection->target;
-        if (connection == next_connection) {
+        if (connection == current_connection_) {
           // don't update the currently executed connection, this always allows
           // backtracking as well.
           continue;
@@ -245,7 +244,7 @@ void RHRRTStar::updateCollision() {
         // check collision
         bool collided = false;
         for (auto& path_point : connection->path_points) {
-          if (!map_->isTraversableInActiveSubmap(path_point)) {
+          if (!comm_->map()->isTraversableInActiveSubmap(path_point)) {
             collided = true;
             break;
           }
@@ -253,6 +252,7 @@ void RHRRTStar::updateCollision() {
 
         // remove these connections
         if (collided) {
+          ViewPoint* target = connection->target;
           target->connections.erase(std::remove_if(target->connections.begin(),
                                                    target->connections.end(),
                                                    [connection](auto& c) {
@@ -280,13 +280,8 @@ void RHRRTStar::updateCollision() {
   kdtree_ = std::make_unique<KDTree>(3, tree_data_);
   kdtree_->addPoints(0, tree_data_.points.size() - 1);
 
-  // adjust the next_root index
-  for (size_t i = 0; i < root_->connections.size(); ++i) {
-    if (root_->connections[i].second.get() == next_connection) {
-      next_root_index_ = i;
-      break;
-    }
-  }
+  // track stats
+  pruned_points_ += num_previous_points - tree_data_.points.size();
 }
 
 void RHRRTStar::computePointsConnectedToRoot(
@@ -330,15 +325,25 @@ void RHRRTStar::computePointsConnectedToRoot(
 }
 
 void RHRRTStar::updateGains() {
+  auto t_start = std::chrono::high_resolution_clock::now();
+
+  // update all relevant points
   for (auto& point : tree_data_.points) {
-    if (point->is_root ||
-        point.get() == root_->getConnectedViewPoint(next_root_index_)) {
+    if (point->getActiveConnection() == current_connection_) {
       // don't update the old or new root
       point->gain = 0.0;
       continue;
     }
     evaluateViewPoint(point.get());
   }
+
+  // logging
+  auto t_end = std::chrono::high_resolution_clock::now();
+  LOG_IF(INFO, config_.verbosity >= 3)
+      << "Updated all gains in "
+      << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start)
+             .count()
+      << "ms.";
 }
 
 bool RHRRTStar::connectViewPoint(ViewPoint* view_point) {
@@ -358,7 +363,8 @@ bool RHRRTStar::connectViewPoint(ViewPoint* view_point) {
         distance < config_.min_path_length) {
       continue;
     }
-    if (view_point->tryAddConnection(tree_data_.points[index].get(), map_)) {
+    if (view_point->tryAddConnection(tree_data_.points[index].get(),
+                                     comm_->map())) {
       view_point->connections.back().second->cost =
           computeCost(*view_point->connections.back().second.get());
       connection_found = true;
@@ -409,11 +415,11 @@ bool RHRRTStar::selectBestConnection(ViewPoint* view_point) {
   return true;
 }
 
-double RHRRTStar::computeGain(
-    const std::vector<Eigen::Vector3d>& visible_voxels) {
+double RHRRTStar::computeGain(const std::vector<Eigen::Vector3d>& centers,
+                              const std::vector<MapBase::VoxelState>& states) {
   double gain = 0.0;
-  for (auto& point : visible_voxels) {
-    if (map_->getVoxelStateInLocalArea(point) == MapBase::Unknown) {
+  for (auto& state : states) {
+    if (state == MapBase::VoxelState::kUnknown) {
       gain += 1.0;
     }
   }
@@ -473,13 +479,15 @@ double RHRRTStar::computeGNVStep(ViewPoint* view_point, double gain,
 
 bool RHRRTStar::sampleNewPoint(ViewPoint* point) {
   // sample the goal point
-  double theta = 2.0 * M_PI * (double)std::rand() / (double)RAND_MAX;
-  double phi = acos(1.0 - 2.0 * (double)std::rand() / (double)RAND_MAX);
+  double theta = 2.0 * M_PI * static_cast<double>(std::rand()) /
+                 static_cast<double>(RAND_MAX);
+  double phi = acos(1.0 - 2.0 * static_cast<double>(std::rand()) /
+                              static_cast<double>(RAND_MAX));
   double rho = local_sampled_points_ > 0 ? config_.local_sampling_radius
                                          : config_.global_sampling_radius;
   Eigen::Vector3d goal = rho * Eigen::Vector3d(sin(phi) * cos(theta),
                                                sin(phi) * sin(theta), cos(phi));
-  goal += state_machine_->currentPose().position();
+  goal += comm_->currentPose().position();
 
   // Find the nearest neighbor
   std::vector<size_t> nearest_viewpoint;
@@ -494,12 +502,12 @@ bool RHRRTStar::sampleNewPoint(ViewPoint* point) {
       config_.path_cropping_length;
 
   // verify and crop the sampled path
-  double range_increment = map_->getVoxelSize();
+  double range_increment = comm_->map()->getVoxelSize();
   double range = range_increment;
   auto orientation = Eigen::Quaterniond();
   Eigen::Vector3d direction = (goal - origin).normalized();
-  while (map_->isTraversableInActiveSubmap(origin + range * direction,
-                                           orientation) &&
+  while (comm_->map()->isTraversableInActiveSubmap(origin + range * direction,
+                                                   orientation) &&
          range < distance_max) {
     range += range_increment;
   }
@@ -513,7 +521,8 @@ bool RHRRTStar::sampleNewPoint(ViewPoint* point) {
   point->pose.x = goal.x();
   point->pose.y = goal.y();
   point->pose.z = goal.z();
-  point->pose.yaw = 2.0 * M_PI * (double)std::rand() / (double)RAND_MAX;
+  point->pose.yaw = 2.0 * M_PI * static_cast<double>(std::rand()) /
+                    static_cast<double>(RAND_MAX);
   return true;
 }
 
@@ -523,8 +532,8 @@ bool RHRRTStar::findNearestNeighbors(Eigen::Vector3d position,
   // how to use nanoflann (:
   // Returns the indices of the neighbors in tree data
   double query_pt[3] = {position.x(), position.y(), position.z()};
-  std::size_t ret_index[n_neighbors];
-  double out_dist[n_neighbors];
+  std::size_t ret_index[n_neighbors];  // NOLINT
+  double out_dist[n_neighbors];        // NOLINT
   nanoflann::KNNResultSet<double> resultSet(n_neighbors);
   resultSet.init(ret_index, out_dist);
   kdtree_->findNeighbors(resultSet, query_pt, nanoflann::SearchParams(10));
@@ -539,8 +548,9 @@ bool RHRRTStar::findNearestNeighbors(Eigen::Vector3d position,
 
 void RHRRTStar::evaluateViewPoint(ViewPoint* view_point) {
   std::vector<Eigen::Vector3d> visible_voxels;
-  sensor_model_->getVisibleVoxels(&visible_voxels, view_point->pose);
-  view_point->gain = computeGain(visible_voxels);
+  std::vector<MapBase::VoxelState> states;
+  sensor_model_->getVisibleVoxels(&visible_voxels, &states, view_point->pose);
+  view_point->gain = computeGain(visible_voxels, states);
 }
 
 void RHRRTStar::visualizeGain(std::vector<Eigen::Vector3d>* voxels,
@@ -549,24 +559,28 @@ void RHRRTStar::visualizeGain(std::vector<Eigen::Vector3d>* voxels,
   CHECK_NOTNULL(voxels);
   CHECK_NOTNULL(colors);
   CHECK_NOTNULL(scale);
+  // TODO(schmluk): This is neither beautiful nor efficient but it doesn't get
+  //  called often...
+
   // get voxels
-  sensor_model_->getVisibleVoxels(voxels, pose);
-  voxels->erase(std::remove_if(voxels->begin(), voxels->end(),
-                               [this](const Eigen::Vector3d& pt) {
-                                 return map_->getVoxelStateInLocalArea(pt) !=
-                                        MapBase::Unknown;
-                               }),
-                voxels->end());
+  std::vector<MapBase::VoxelState> states;
+  sensor_model_->getVisibleVoxels(voxels, &states, pose);
+  voxels->erase(
+      std::remove_if(voxels->begin(), voxels->end(),
+                     [this](const Eigen::Vector3d& pt) {
+                       return comm_->map()->getVoxelStateInLocalArea(pt) !=
+                              MapBase::VoxelState::kUnknown;
+                     }),
+      voxels->end());
 
   // uniform coloring [0, 1]
   colors->assign(voxels->size(), Eigen::Vector3d(1, 0.8, 0));
 
   // voxel size
-  *scale = map_->getVoxelSize();
+  *scale = comm_->map()->getVoxelSize();
 }
 
-bool RHRRTStar::ViewPoint::tryAddConnection(
-    ViewPoint* target, const std::shared_ptr<MapBase>& map) {
+bool RHRRTStar::ViewPoint::tryAddConnection(ViewPoint* target, MapBase* map) {
   // Check traversability
   Eigen::Vector3d origin = pose.position();
   Eigen::Vector3d direction = target->pose.position() - origin;
@@ -575,7 +589,7 @@ bool RHRRTStar::ViewPoint::tryAddConnection(
   std::vector<Eigen::Vector3d> path_points;
   path_points.resize(n_points);
   for (size_t i = 0; i < n_points; ++i) {
-    path_points[i] = origin + (double)i / n_points * direction;
+    path_points[i] = origin + static_cast<double>(i) / n_points * direction;
     if (!map->isTraversableInActiveSubmap(path_points[i])) {
       return false;
     }
@@ -592,10 +606,16 @@ bool RHRRTStar::ViewPoint::tryAddConnection(
 }
 
 RHRRTStar::Connection* RHRRTStar::ViewPoint::getActiveConnection() {
+  if (active_connection < 0 || active_connection >= connections.size()) {
+    return nullptr;
+  }
   return connections[active_connection].second.get();
 }
 
 RHRRTStar::Connection const* RHRRTStar::ViewPoint::getActiveConnection() const {
+  if (active_connection < 0 || active_connection >= connections.size()) {
+    return nullptr;
+  }
   return connections[active_connection].second.get();
 }
 

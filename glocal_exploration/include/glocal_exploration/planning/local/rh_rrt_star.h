@@ -1,5 +1,5 @@
-#ifndef GLOCAL_EXPLORATION_PLANNING_LOCAL_PLANNER_RH_RRT_STAR_H_
-#define GLOCAL_EXPLORATION_PLANNING_LOCAL_PLANNER_RH_RRT_STAR_H_
+#ifndef GLOCAL_EXPLORATION_PLANNING_LOCAL_RH_RRT_STAR_H_
+#define GLOCAL_EXPLORATION_PLANNING_LOCAL_RH_RRT_STAR_H_
 
 #include <memory>
 #include <utility>
@@ -8,15 +8,16 @@
 #include <3rd_party/nanoflann.hpp>
 
 #include "glocal_exploration/common.h"
-#include "glocal_exploration/planning/local_planner/lidar_model.h"
-#include "glocal_exploration/planning/local_planner/local_planner_base.h"
-#include "glocal_exploration/planning/local_planner/sensor_model.h"
+#include "glocal_exploration/planning/local/lidar_model.h"
+#include "glocal_exploration/planning/local/local_planner_base.h"
+#include "glocal_exploration/planning/local/sensor_model.h"
 
 namespace glocal_exploration {
 
 class RHRRTStar : public LocalPlannerBase {
  public:
-  struct Config : LocalPlannerBase::Config {
+  struct Config {
+    int verbosity = 1;
     // sampling
     double local_sampling_radius = 1.5;   // m
     double global_sampling_radius = 100;  // m
@@ -36,13 +37,15 @@ class RHRRTStar : public LocalPlannerBase {
 
     // sensor model (currently just use lidar)
     LidarModel::Config lidar_config;
+
+    bool isValid() const;
+    Config checkValid() const;
   };
 
   // setup
-  RHRRTStar(std::shared_ptr<MapBase> map,
-            std::shared_ptr<StateMachine> state_machine);
+  explicit RHRRTStar(const Config& config,
+                     std::shared_ptr<Communicator> communicator);
   virtual ~RHRRTStar() = default;
-  bool setupFromConfig(LocalPlannerBase::Config* config) override;
 
   // planning
   void planningIteration() override;
@@ -60,8 +63,7 @@ class RHRRTStar : public LocalPlannerBase {
     size_t active_connection = 0;
 
     // helper methods
-    bool tryAddConnection(ViewPoint* target,
-                          const std::shared_ptr<MapBase>& map);
+    bool tryAddConnection(ViewPoint* target, MapBase* map);
     Connection* getActiveConnection();
     Connection const* getActiveConnection() const;
     ViewPoint* getConnectedViewPoint(size_t index);
@@ -109,7 +111,7 @@ class RHRRTStar : public LocalPlannerBase {
 
  protected:
   /* components */
-  Config config_;
+  const Config config_;
   TreeData tree_data_;
   std::unique_ptr<KDTree> kdtree_;
   std::unique_ptr<SensorModel> sensor_model_;
@@ -127,7 +129,8 @@ class RHRRTStar : public LocalPlannerBase {
 
   // compute gains
   void evaluateViewPoint(ViewPoint* view_point);
-  double computeGain(const std::vector<Eigen::Vector3d>& visible_voxels);
+  double computeGain(const std::vector<Eigen::Vector3d>& centers,
+                     const std::vector<MapBase::VoxelState>& states);
   double computeCost(const Connection& connection);
 
   // extract best viewpoint
@@ -137,20 +140,23 @@ class RHRRTStar : public LocalPlannerBase {
   static double computeGNVStep(ViewPoint* view_point, double gain, double cost);
 
   // updating
-  void updateTree();
   void updateCollision();
   void updateGains();
   void computePointsConnectedToRoot(bool count_only_active_connections);
 
   /* variables */
   int local_sampled_points_;
-  int num_previous_points_;
-  int next_root_index_;  // -1 if there is no next root, >=0 if tree should
-                         // update
+  bool should_update_;
   ViewPoint* root_;  // root pointer so it does not need to be searched for all
-                     // the time
+  // the time
+  Connection*
+      current_connection_;  // the connection that is currently being executed
+
+  // stats
+  int pruned_points_;
+  int new_points_;
 };
 
 }  // namespace glocal_exploration
 
-#endif  // GLOCAL_EXPLORATION_PLANNING_LOCAL_PLANNER_RH_RRT_STAR_H_
+#endif  // GLOCAL_EXPLORATION_PLANNING_LOCAL_RH_RRT_STAR_H_

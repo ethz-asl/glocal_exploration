@@ -2,7 +2,7 @@
 #include <glog/logging.h>
 #include <ros/ros.h>
 
-#include "glocal_exploration_ros/planning/glocal_planner.h"
+#include "glocal_exploration_ros/glocal_system.h"
 
 int main(int argc, char** argv) {
   // Setup logging
@@ -23,8 +23,8 @@ int main(int argc, char** argv) {
   spinner.start();
 
   // Run node
-  glocal_exploration::GlocalPlanner planner(nh, nh_private);
-  planner.planningLoop();  // the planner manages spinning
+  glocal_exploration::GlocalSystem glocal(nh, nh_private);
+  glocal.mainLoop();  // the planner manages spinning
 
   return 0;
 }

@@ -1,46 +1,54 @@
 #include "glocal_exploration_ros/visualization/rh_rrt_star_visualizer.h"
 
+#include <algorithm>
+#include <limits>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include <eigen_conversions/eigen_msg.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <visualization_msgs/MarkerArray.h>
 
 namespace glocal_exploration {
 
+RHRRTStarVisualizer::Config RHRRTStarVisualizer::Config::checkValid() const {
+  CHECK(isValid());
+  return Config(*this);
+}
+
 RHRRTStarVisualizer::RHRRTStarVisualizer(
-    const ros::NodeHandle& nh, const std::shared_ptr<LocalPlannerBase>& planner)
-    : LocalPlannerVisualizerBase(nh, planner),
-      num_previous_msgs_(0),
-      num_previous_visible_voxels_(0),
-      visualize_gain_(true),
-      visualize_value_(true),
-      visualize_text_(true),
-      visualize_visible_voxels_(true) {
-  planner_ = std::dynamic_pointer_cast<RHRRTStar>(planner);
-  if (!planner) {
-    LOG(FATAL) << "Can not setup 'RHRRTStarVisualizer' with planner that is "
-                  "not of type 'RHRRTStar'";
+    const Config& config, const std::shared_ptr<Communicator>& communicator)
+    : LocalPlannerVisualizerBase(communicator), config_(config.checkValid()) {
+  // reference planner
+  planner_.reset(dynamic_cast<RHRRTStar*>(comm_->localPlanner()));
+  if (!planner_) {
+    LOG(FATAL) << "Can not setup 'RHRRTStarVisualizer' with a local planner "
+                  "that is not of type 'RHRRTStar'";
   }
 
-  // params
-  nh.param("visualize_gain", visualize_gain_, visualize_gain_);
-  nh.param("visualize_value", visualize_value_, visualize_value_);
-  nh.param("visualize_text", visualize_text_, visualize_text_);
-  nh.param("visualize_visible_voxels", visualize_visible_voxels_,
-           visualize_visible_voxels_);
-
   // ROS
+  nh_ = ros::NodeHandle(config_.nh_namespace);
   pub_ = nh_.advertise<visualization_msgs::MarkerArray>("visualization", 100);
 }
 
 void RHRRTStarVisualizer::visualize() {
+  // initialize data
   auto& points = planner_->getTreeData().points;
+  if (points.empty()) {
+    return;
+  }
+
+  // cached headers for all msgs
   ros::Time now = ros::Time::now();
   std::string frame_id = "world";
+
   // Display all trajectories in the input and erase previous ones
-  double max_value = points[0]->value;
-  double min_value = points[0]->value;
-  double max_gain = points[0]->gain;
-  double min_gain = points[0]->gain;
-  for (size_t i = 1; i < points.size(); ++i) {
+  double max_value = std::numeric_limits<double>::min();
+  double min_value = std::numeric_limits<double>::max();
+  double max_gain = std::numeric_limits<double>::min();
+  double min_gain = std::numeric_limits<double>::max();
+  for (size_t i = 0; i < points.size(); ++i) {
     if (points[i]->value >= max_value) {
       max_value = points[i]->value;
     }
@@ -55,20 +63,55 @@ void RHRRTStarVisualizer::visualize() {
     }
   }
 
+  // clear previous visualizations
+  auto msg_array = visualization_msgs::MarkerArray();
+  if (config_.visualize_value) {
+    auto msg = visualization_msgs::Marker();
+    msg.ns = value_ns_;
+    msg.action = visualization_msgs::Marker::DELETEALL;
+    msg.header.frame_id = frame_id;
+    msg.header.stamp = now;
+    msg_array.markers.push_back(msg);
+  }
+  if (config_.visualize_gain) {
+    auto msg = visualization_msgs::Marker();
+    msg.action = visualization_msgs::Marker::DELETEALL;
+    msg.header.frame_id = frame_id;
+    msg.header.stamp = now;
+    msg.ns = gain_ns_;
+    msg_array.markers.push_back(msg);
+  }
+  if (config_.visualize_text) {
+    auto msg = visualization_msgs::Marker();
+    msg.action = visualization_msgs::Marker::DELETEALL;
+    msg.header.frame_id = frame_id;
+    msg.header.stamp = now;
+    msg.ns = text_ns_;
+    msg_array.markers.push_back(msg);
+  }
+  if (config_.visualize_text) {
+    auto msg = visualization_msgs::Marker();
+    msg.action = visualization_msgs::Marker::DELETEALL;
+    msg.header.frame_id = frame_id;
+    msg.header.stamp = now;
+    msg.ns = voxel_ns_;
+    msg_array.markers.push_back(msg);
+  }
+  pub_.publish(msg_array);
+
   visualization_msgs::MarkerArray value_markers, gain_markers, text_markers,
       visible_voxels;
-  visualization_msgs::Marker msg;
   for (int i = 0; i < points.size(); ++i) {
     // visualize value
-    if (visualize_value_) {
+    if (config_.visualize_value) {
       // Setup marker message
-      msg = visualization_msgs::Marker();
+      auto msg = visualization_msgs::Marker();
       msg.header.frame_id = frame_id;
       msg.header.stamp = now;
       msg.pose.orientation.w = 1.0;
       msg.type = visualization_msgs::Marker::LINE_STRIP;
       msg.id = i;
-      msg.ns = "candidate_trajectories";
+      msg.ns = value_ns_;
       msg.scale.x = 0.08;
       msg.color.a = 1;
       msg.action = visualization_msgs::Marker::ADD;
@@ -94,13 +137,16 @@ void RHRRTStarVisualizer::visualize() {
         pt.y = start.y();
         pt.z = start.z();
         msg.points.push_back(pt);
-        const Eigen::Vector3d& end =
-            points[i]
-                ->getConnectedViewPoint(points[i]->active_connection)
-                ->pose.position();
-        pt.x = end.x();
-        pt.y = end.y();
-        pt.z = end.z();
+        RHRRTStar::ViewPoint* viewpoint_end =
+            points[i]->getConnectedViewPoint(points[i]->active_connection);
+        if (viewpoint_end) {
+          const Eigen::Vector3d& end = viewpoint_end->pose.position();
+          tf::pointEigenToMsg(end, pt);
+        } else {
+          LOG(WARNING) << "Tried to visualize a view point without valid "
+                          "connected view point.";
+          tf::pointEigenToMsg(Eigen::Vector3d::Zero(), pt);
+        }
         msg.points.push_back(pt);
       } else {
         msg.points.push_back(geometry_msgs::Point());  // suppress rviz warnings
@@ -110,14 +156,14 @@ void RHRRTStarVisualizer::visualize() {
     }
 
     // visualize gain
-    if (visualize_gain_) {
-      msg = visualization_msgs::Marker();
+    if (config_.visualize_gain) {
+      auto msg = visualization_msgs::Marker();
       msg.header.frame_id = frame_id;
       msg.header.stamp = now;
       msg.type = visualization_msgs::Marker::ARROW;
       msg.action = visualization_msgs::Marker::ADD;
       msg.id = i;
-      msg.ns = "candidate_gains";
+      msg.ns = gain_ns_;
       msg.scale.x = 0.2;
       msg.scale.y = 0.1;
       msg.scale.z = 0.1;
@@ -147,11 +193,11 @@ void RHRRTStarVisualizer::visualize() {
     }
 
     // Text
-    if (visualize_text_) {
-      msg = visualization_msgs::Marker();
+    if (config_.visualize_text) {
+      auto msg = visualization_msgs::Marker();
       msg.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
       msg.id = i;
-      msg.ns = "candidate_text";
+      msg.ns = text_ns_;
       msg.header.stamp = now;
       msg.header.frame_id = frame_id;
       msg.scale.z = 0.3;
@@ -163,7 +209,16 @@ void RHRRTStarVisualizer::visualize() {
       msg.pose.position.y = points[i]->pose.y;
       msg.pose.position.z = points[i]->pose.z;
       double g = points[i]->gain;
-      double c = points[i]->getActiveConnection()->cost;
+      double c;
+      RHRRTStar::Connection* active_connection =
+          points[i]->getActiveConnection();
+      if (active_connection) {
+        c = active_connection->cost;
+      } else {
+        LOG(WARNING) << "Tried to visualize a view point without valid "
+                        "active connection.";
+        c = -1.0;
+      }
       double v = points[i]->value;
       std::stringstream stream;
       stream << "g: " << std::fixed << std::setprecision(1)
@@ -178,7 +233,7 @@ void RHRRTStarVisualizer::visualize() {
     }
   }
 
-  if (visualize_visible_voxels_) {
+  if (config_.visualize_visible_voxels) {
     // compute visualization
     RHRRTStar::ViewPoint* view_point =
         std::find_if(points.begin(), points.end(),
@@ -193,12 +248,12 @@ void RHRRTStarVisualizer::visualize() {
 
     // add voxels
     for (size_t i = 0; i < voxels.size(); ++i) {
-      msg = visualization_msgs::Marker();
+      auto msg = visualization_msgs::Marker();
       msg.header.frame_id = frame_id;
       msg.header.stamp = now;
       msg.pose.orientation.w = 1.0;
       msg.type = visualization_msgs::Marker::CUBE;
-      msg.ns = "visible_voxels";
+      msg.ns = voxel_ns_;
       msg.id = i;
       msg.action = visualization_msgs::Marker::ADD;
       msg.scale.x = scale;
@@ -213,60 +268,13 @@ void RHRRTStarVisualizer::visualize() {
       msg.color.a = 0.5;
       visible_voxels.markers.push_back(msg);
     }
-
-    // clear deleted markers
-    for (size_t i = visible_voxels.markers.size();
-         i < num_previous_visible_voxels_; ++i) {
-      msg = visualization_msgs::Marker();
-      msg.id = i;
-      msg.ns = "visible_voxels";
-      msg.action = visualization_msgs::Marker::DELETE;
-      msg.header.frame_id = frame_id;
-      msg.header.stamp = now;
-      visible_voxels.markers.push_back(msg);
-    }
-
-    // publish
-    num_previous_visible_voxels_ = voxels.size();
-    pub_.publish(visible_voxels);
   }
-
-  // clear previous vis
-  for (size_t i = points.size(); i < num_previous_msgs_; ++i) {
-    if (visualize_value_) {
-      msg = visualization_msgs::Marker();
-      msg.id = i;
-      msg.ns = "candidate_trajectories";
-      msg.action = visualization_msgs::Marker::DELETE;
-      msg.header.frame_id = frame_id;
-      msg.header.stamp = now;
-      value_markers.markers.push_back(msg);
-    }
-    if (visualize_gain_) {
-      msg = visualization_msgs::Marker();
-      msg.action = visualization_msgs::Marker::DELETE;
-      msg.header.frame_id = frame_id;
-      msg.header.stamp = now;
-      msg.id = i;
-      msg.ns = "candidate_gains";
-      gain_markers.markers.push_back(msg);
-    }
-    if (visualize_text_) {
-      msg = visualization_msgs::Marker();
-      msg.action = visualization_msgs::Marker::DELETE;
-      msg.header.frame_id = frame_id;
-      msg.header.stamp = now;
-      msg.id = i;
-      msg.ns = "candidate_text";
-      text_markers.markers.push_back(msg);
-    }
-  }
-  num_previous_msgs_ = points.size();
 
   // visualize
   pub_.publish(value_markers);
   pub_.publish(gain_markers);
   pub_.publish(text_markers);
+  pub_.publish(visible_voxels);
 }
 
 }  // namespace glocal_exploration

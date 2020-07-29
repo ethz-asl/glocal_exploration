@@ -1,5 +1,8 @@
 #include "glocal_exploration_ros/conversions/ros_component_factory.h"
 
+#include <memory>
+#include <string>
+
 #include "glocal_exploration_ros/conversions/ros_params.h"
 #include "glocal_exploration_ros/visualization/rh_rrt_star_visualizer.h"
 
@@ -12,18 +15,15 @@ std::string ComponentFactoryROS::getType(const ros::NodeHandle &nh) {
 }
 
 std::shared_ptr<MapBase> ComponentFactoryROS::createMap(
-    const ros::NodeHandle &nh, std::shared_ptr<StateMachine> state_machine) {
+    const ros::NodeHandle& nh,
+    const std::shared_ptr<Communicator>& communicator) {
   std::string type = getType(nh);
   if (type == "voxblox") {
-    auto map = std::make_shared<VoxbloxMap>(state_machine);
-    VoxbloxMap::Config cfg = getVoxbloxMapConfigFromRos(nh);
-    map->setupFromConfig(&cfg);
-    return map;
+    return std::make_shared<VoxbloxMap>(getVoxbloxMapConfigFromRos(nh),
+                                        communicator);
   } else if (type == "voxgraph") {
-    auto map = std::make_shared<VoxgraphMap>(state_machine);
-    VoxgraphMap::Config cfg = getVoxgraphMapConfigFromRos(nh);
-    map->setupFromConfig(&cfg);
-    return map;
+    return std::make_shared<VoxgraphMap>(getVoxgraphMapConfigFromRos(nh),
+                                         communicator);
   } else {
     LOG(ERROR) << "Unknown map type '" << type << "'.";
     return nullptr;
@@ -31,14 +31,12 @@ std::shared_ptr<MapBase> ComponentFactoryROS::createMap(
 }
 
 std::shared_ptr<LocalPlannerBase> ComponentFactoryROS::createLocalPlanner(
-    const ros::NodeHandle &nh, std::shared_ptr<MapBase> map,
-    std::shared_ptr<StateMachine> state_machine) {
+    const ros::NodeHandle& nh,
+    const std::shared_ptr<Communicator>& communicator) {
   std::string type = getType(nh);
   if (type == "rh_rrt_star") {
-    auto planner = std::make_shared<RHRRTStar>(map, state_machine);
-    RHRRTStar::Config cfg = getRHRRTStarConfigFromRos(nh);
-    planner->setupFromConfig(&cfg);
-    return planner;
+    return std::make_shared<RHRRTStar>(getRHRRTStarConfigFromRos(nh),
+                                       communicator);
   } else {
     LOG(ERROR) << "Unknown local planner type '" << type << "'.";
     return nullptr;
@@ -47,15 +45,16 @@ std::shared_ptr<LocalPlannerBase> ComponentFactoryROS::createLocalPlanner(
 
 std::shared_ptr<LocalPlannerVisualizerBase>
 ComponentFactoryROS::createLocalPlannerVisualizer(
-    const ros::NodeHandle &nh,
-    const std::shared_ptr<LocalPlannerBase> &planner) {
+    const ros::NodeHandle& nh,
+    const std::shared_ptr<Communicator>& communicator) {
   std::string type = getType(nh);
   if (type == "rh_rrt_star") {
-    return std::make_shared<RHRRTStarVisualizer>(nh, planner);
+    return std::make_shared<RHRRTStarVisualizer>(
+        getRHRRTStarVisualizerConfigFromRos(nh), communicator);
   } else {
     LOG(WARNING) << "Did not find a visualizer for local planner '" << type
                  << "'.";
-    return std::make_shared<LocalPlannerVisualizerBase>(nh, planner);
+    return std::make_shared<LocalPlannerVisualizerBase>(communicator);
   }
 }
 
@@ -63,10 +62,7 @@ std::shared_ptr<RegionOfInterest> ComponentFactoryROS::createRegionOfInterest(
     const ros::NodeHandle &nh) {
   std::string type = getType(nh);
   if (type == "bounding_box") {
-    auto roi = std::make_shared<BoundingBox>();
-    BoundingBox::Config cfg = getBoundingBoxConfigFromRos(nh);
-    roi->setupFromConfig(&cfg);
-    return roi;
+    return std::make_shared<BoundingBox>(getBoundingBoxConfigFromRos(nh));
   } else {
     LOG(ERROR) << "Unknown region of interest type '" << type << "'.";
     return nullptr;
