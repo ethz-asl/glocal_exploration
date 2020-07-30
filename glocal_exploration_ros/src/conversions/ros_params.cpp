@@ -11,8 +11,8 @@ GlocalSystem::Config getGlocalSystemConfigFromRos(const ros::NodeHandle& nh) {
            config.replan_position_threshold);
   nh.param("replan_yaw_threshold", config.replan_yaw_threshold,
            config.replan_yaw_threshold);
-  nh.param("republish_waypoints", config.republish_waypoints,
-           config.republish_waypoints);
+  nh.param("waypoint_timeout", config.waypoint_timeout,
+           config.waypoint_timeout);
   return config;
 }
 

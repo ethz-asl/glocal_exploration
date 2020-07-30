@@ -1,8 +1,8 @@
 # Config for the Planner
 # General params
-replan_position_threshold: 0.35  # m
+replan_position_threshold: 0.3  # m
 replan_yaw_threshold: 5   # deg
-republish_waypoints: true
+waypoint_timeout: 5
 verbosity: 2
 
 region_of_interest:

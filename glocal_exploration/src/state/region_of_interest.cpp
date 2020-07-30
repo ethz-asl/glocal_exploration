@@ -37,10 +37,6 @@ bool BoundingBox::contains(const Eigen::Vector3d& point) {
 }
 
 BoundingBox::BoundingBox(const Config& config)
-<<<<<<< HEAD
-    : RegionOfInterest(), config_(config.isValid()) {}
-=======
     : RegionOfInterest(), config_(config.checkValid()) {}
->>>>>>> 1bf1cdbfe193766c3e1255aa35582574ee52cb3f
 
 }  // namespace glocal_exploration
