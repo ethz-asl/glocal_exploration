@@ -2,8 +2,12 @@
 
 #include <algorithm>
 #include <memory>
+#include <unordered_set>
 #include <utility>
 #include <vector>
+
+#include <voxblox/core/block_hash.h>
+#include <voxblox/core/common.h>
 
 #include "glocal_exploration/state/communicator.h"
 #include "glocal_exploration/utility/config_checker.h"
@@ -58,11 +62,14 @@ LidarModel::LidarModel(const Config& config,
   c_split_distances_.push_back(0.0);
   std::reverse(c_split_distances_.begin(), c_split_distances_.end());
   std::reverse(c_split_widths_.begin(), c_split_widths_.end());
+  c_voxel_size_inv_ = 1.0 / comm_->map()->getVoxelSize();
 }
 
 bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d>* centers,
                                   std::vector<MapBase::VoxelState>* states,
                                   const WayPoint& waypoint) {
+  // NOTE(schmluk): Legacy raycasting for general gain computations.
+
   // Setup ray table (contains at which segment to start, -1 if occluded)
   ray_table_.setZero();
 
@@ -126,6 +133,75 @@ bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d>* centers,
   }
   // TODO(schmluk): Maybe check for duplicates here, double check theory
   return true;
+}
+
+void LidarModel::getVisibleUnknownVoxels(voxblox::LongIndexSet* voxels,
+                                         const WayPoint& waypoint) {
+  // NOTE(schmluk): This is a slightly more specialized version for gain
+  // computation that is still independent of the map representation.
+
+  // Setup ray table (contains at which segment to start, -1 if occluded)
+  ray_table_.setZero();
+
+  // Ray-casting
+  Eigen::Quaterniond orientation =
+      Eigen::AngleAxisd(waypoint.yaw, Eigen::Vector3d::UnitZ()) *
+      config_.T_baselink_sensor.getEigenQuaternion();
+  Eigen::Vector3d position =
+      waypoint.position() + config_.T_baselink_sensor.getPosition();
+  Eigen::Vector3d camera_direction;
+  Eigen::Vector3d direction;
+  Eigen::Vector3d current_position;
+  double distance;
+  bool cast_ray;
+  for (int i = 0; i < kResolutionX_; ++i) {
+    for (int j = 0; j < kResolutionY_; ++j) {
+      int current_segment = ray_table_(i, j);  // get ray starting segment
+      if (current_segment < 0) {
+        continue;  // already occluded ray
+      }
+      LidarModel::getDirectionVector(
+          &camera_direction,
+          static_cast<double>(i) / (static_cast<double>(kResolutionX_) - 1.0),
+          static_cast<double>(j) / (static_cast<double>(kResolutionY_) - 1.0));
+      direction = orientation * camera_direction;
+      distance = c_split_distances_[current_segment];
+      cast_ray = true;
+      while (cast_ray) {
+        // iterate through all splits (segments)
+        while (distance < c_split_distances_[current_segment + 1]) {
+          current_position = position + distance * direction;
+          distance += config_.ray_step;
+
+          // Check voxel occupied
+          MapBase::VoxelState state =
+              comm_->map()->getVoxelStateInLocalArea(current_position);
+          if (state == MapBase::VoxelState::kOccupied ||
+              !comm_->regionOfInterest()->contains(current_position)) {
+            // Occlusion, mark neighboring rays as occluded
+            markNeighboringRays(i, j, current_segment, -1);
+            cast_ray = false;
+            break;
+          } else if (state == MapBase::VoxelState::kUnknown) {
+            // This should handle duplicates.
+            auto idx = voxblox::getGridIndexFromPoint<voxblox::GlobalIndex>(
+                (current_position).cast<voxblox::FloatingPoint>(),
+                c_voxel_size_inv_);
+            voxels->insert(idx);
+          }
+        }
+        if (cast_ray) {
+          current_segment++;
+          if (current_segment >= c_n_sections_) {
+            cast_ray = false;  // done
+          } else {
+            // update ray starts of neighboring rays
+            markNeighboringRays(i, j, current_segment - 1, current_segment);
+          }
+        }
+      }
+    }
+  }
 }
 
 void LidarModel::markNeighboringRays(int x, int y, int segment, int value) {

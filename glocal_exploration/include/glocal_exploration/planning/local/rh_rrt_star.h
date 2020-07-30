@@ -38,14 +38,14 @@ class RHRRTStar : public LocalPlannerBase {
     // sensor model (currently just use lidar)
     LidarModel::Config lidar_config;
 
-    bool isValid() const;
-    Config checkValid() const;
+    [[nodiscard]] bool isValid() const;
+    [[nodiscard]] Config checkValid() const;
   };
 
   // setup
   explicit RHRRTStar(const Config& config,
                      std::shared_ptr<Communicator> communicator);
-  virtual ~RHRRTStar() = default;
+  ~RHRRTStar() override = default;
 
   // planning
   void planningIteration() override;
@@ -65,7 +65,7 @@ class RHRRTStar : public LocalPlannerBase {
     // helper methods
     bool tryAddConnection(ViewPoint* target, MapBase* map);
     Connection* getActiveConnection();
-    Connection const* getActiveConnection() const;
+    [[nodiscard]] Connection const* getActiveConnection() const;
     ViewPoint* getConnectedViewPoint(size_t index);
   };
 
@@ -103,8 +103,11 @@ class RHRRTStar : public LocalPlannerBase {
       KDTree;
 
   // accessors for visualization
-  const Config& getConfig() const { return config_; }
-  const TreeData& getTreeData() const { return tree_data_; }
+  [[nodiscard]] const Config& getConfig() const {
+    return config_;
+  }[[nodiscard]] const TreeData& getTreeData() const {
+    return tree_data_;
+  }
   void visualizeGain(std::vector<Eigen::Vector3d>* voxels,
                      std::vector<Eigen::Vector3d>* colors, double* scale,
                      const WayPoint& pose) const;
@@ -129,8 +132,6 @@ class RHRRTStar : public LocalPlannerBase {
 
   // compute gains
   void evaluateViewPoint(ViewPoint* view_point);
-  double computeGain(const std::vector<Eigen::Vector3d>& centers,
-                     const std::vector<MapBase::VoxelState>& states);
   double computeCost(const Connection& connection);
 
   // extract best viewpoint

@@ -2,7 +2,11 @@
 #define GLOCAL_EXPLORATION_PLANNING_LOCAL_LIDAR_MODEL_H_
 
 #include <memory>
+#include <unordered_set>
 #include <vector>
+
+#include <voxblox/core/block_hash.h>
+#include <voxblox/core/common.h>
 
 #include "glocal_exploration/planning/local/sensor_model.h"
 
@@ -22,17 +26,21 @@ class LidarModel : public SensorModel {
         1.0;  // reduce the number of checks by this factor
     Transformation T_baselink_sensor;
 
-    bool isValid() const;
-    Config checkValid() const;
+    [[nodiscard]] bool isValid() const;
+    [[nodiscard]] Config checkValid() const;
   };
 
   explicit LidarModel(const Config& config,
                       std::shared_ptr<Communicator> communicator);
-  virtual ~LidarModel() = default;
+  ~LidarModel() override = default;
 
+  // Legacy method
   bool getVisibleVoxels(std::vector<Eigen::Vector3d>* centers,
                         std::vector<MapBase::VoxelState>* states,
                         const WayPoint& waypoint) override;
+
+  void getVisibleUnknownVoxels(voxblox::LongIndexSet* voxels,
+                               const WayPoint& waypoint) override;
 
  protected:
   const Config config_;
@@ -47,6 +55,7 @@ class LidarModel : public SensorModel {
       c_split_distances_;            // distances where rays are duplicated
   std::vector<int> c_split_widths_;  // number of max distance rays that are
   // covered per split
+  double c_voxel_size_inv_;
 
   // variables
   Eigen::ArrayXXi ray_table_;

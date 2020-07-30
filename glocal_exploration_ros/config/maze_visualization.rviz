@@ -29,7 +29,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: Reprojected pointcloud
+    SyncSource: Local area
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -434,7 +434,7 @@ Visualization Manager:
                   Marker Topic: /glocal/glocal_system/mapping/combined_mesh
                   Name: Merged submaps
                   Namespaces:
-                    {}
+                    mesh: true
                   Queue Size: 100
                   Value: true
                 - Class: rviz/Marker
@@ -461,12 +461,12 @@ Visualization Manager:
           Color: 52; 101; 164
           Color Transformer: Intensity
           Decay Time: 0
-          Enabled: true
+          Enabled: false
           Invert Rainbow: false
           Max Color: 0; 125; 255
-          Max Intensity: -999999
+          Max Intensity: 0.600000262260437
           Min Color: 204; 0; 0
-          Min Intensity: 999999
+          Min Intensity: -0.5999760627746582
           Name: Local area
           Position Transformer: XYZ
           Queue Size: 10
@@ -478,7 +478,7 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: false
-          Value: true
+          Value: false
       Enabled: true
       Name: Voxgraph
   Enabled: true
@@ -509,7 +509,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 79.25287628173828
+      Distance: 50.230384826660156
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1

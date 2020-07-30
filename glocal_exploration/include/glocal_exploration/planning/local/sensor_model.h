@@ -22,6 +22,9 @@ class SensorModel {
                                 std::vector<MapBase::VoxelState>* states,
                                 const WayPoint& waypoint) = 0;
 
+  virtual void getVisibleUnknownVoxels(voxblox::LongIndexSet* voxels,
+                                       const WayPoint& waypoint) {}
+
  protected:
   std::shared_ptr<Communicator> comm_;
 };
