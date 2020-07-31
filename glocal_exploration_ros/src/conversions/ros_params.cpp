@@ -10,6 +10,8 @@ SubmapFrontierEvaluator::Config getSubmapFrontierEvaluatorConfigFromRos(
   nh.param("verbosity", config.verbosity, config.verbosity);
   nh.param("min_frontier_size", config.min_frontier_size,
            config.min_frontier_size);
+  nh.param("submaps_are_frozen", config.submaps_are_frozen,
+           config.submaps_are_frozen);
   return config;
 }
 

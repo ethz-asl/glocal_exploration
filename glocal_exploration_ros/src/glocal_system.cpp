@@ -105,6 +105,12 @@ void GlocalSystem::loopIteration() {
     }
   }
 
+  // TEST(schmluk): force global planning
+  if (comm_->newWayPointIsRequested()) {
+    comm_->globalPlanner()->planningIteration();
+    global_planner_visualizer_->visualize();
+  }
+
   // move requests
   if (comm_->newWayPointIsRequested()) {
     WayPoint next_point = comm_->getRequestedWayPoint();

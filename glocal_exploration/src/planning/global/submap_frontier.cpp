@@ -2,7 +2,6 @@
 
 #include <vector>
 
-
 namespace glocal_exploration {
 
 void Frontier::addPoint(const Point& point) {

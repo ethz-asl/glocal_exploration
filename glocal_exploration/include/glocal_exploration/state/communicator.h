@@ -35,17 +35,19 @@ class Communicator {
       // componet accessors
       [[nodiscard]] const std::shared_ptr<StateMachine>& stateMachine() const {
     return state_machine_;
-  }[[nodiscard]] const std::shared_ptr<RegionOfInterest>& regionOfInterest()
+  }
+  [[nodiscard]] const std::shared_ptr<RegionOfInterest>& regionOfInterest()
       const {
-    return roi_;
-  }
-  [[nodiscard]] const std::shared_ptr<MapBase>& map() const {
+        return roi_;
+      }[[nodiscard]] const std::shared_ptr<MapBase>& map() const {
     return map_;
-  }[[nodiscard]] const std::shared_ptr<LocalPlannerBase>& localPlanner() const {
-    return local_planner_;
   }
-  [[nodiscard]] const std::shared_ptr<GlobalPlannerBase>& globalPlanner()
-      const { return global_planner_; }
+  [[nodiscard]] const std::shared_ptr<LocalPlannerBase>& localPlanner() const {
+    return local_planner_;
+  }[[nodiscard]] const std::shared_ptr<GlobalPlannerBase>& globalPlanner()
+      const {
+    return global_planner_;
+  }
 
   // requests
   void requestWayPoint(const WayPoint& way_point);

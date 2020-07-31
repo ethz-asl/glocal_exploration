@@ -17,7 +17,6 @@ namespace glocal_exploration {
  */
 class SkeletonPlanner : public SubmapFrontierEvaluator {
  public:
-  // Defines a baseclass for map configurations
   struct Config {
     std::string nh_namespace = "skeleton_global_planner";
     std::string service_name;
@@ -31,7 +30,6 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
                   std::shared_ptr<Communicator> communicator);
   ~SkeletonPlanner() override = default;
 
-  /* General and Accessors */
   void planningIteration() override;
 
  protected:

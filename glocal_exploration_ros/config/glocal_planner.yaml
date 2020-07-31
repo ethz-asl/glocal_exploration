@@ -15,10 +15,10 @@ region_of_interest:
   z_max: 1.5
 
 mapping:
-  type: voxgraph
+  type: voxblox
 
-  clearing_radius: 1.0
-  traversability_radius: 1.4
+  clearing_radius: 0.5
+  traversability_radius: 1.0
 
   # VOXBLOX sliding window
   # Grid settings
@@ -134,6 +134,7 @@ global_planner:
   
   # Submap Frontiers Evaluator
   min_frontier_size: 1
+  submaps_are_frozen: false
   
   # Visualization
     

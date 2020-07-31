@@ -1,7 +1,9 @@
 #include "glocal_exploration_ros/planning/global/skeleton_planner.h"
 
 #include <memory>
+#include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include <mav_planning_msgs/PlannerService.h>
 
@@ -17,7 +19,7 @@ SkeletonPlanner::Config SkeletonPlanner::Config::checkValid() const {
 SkeletonPlanner::SkeletonPlanner(const Config& config,
                                  std::shared_ptr<Communicator> communicator)
     : config_(config.checkValid()),
-      SubmapFrontierEvaluator(config.submap_frontier_config.checkValid(),
+      SubmapFrontierEvaluator(config.submap_frontier_config,
                               std::move(communicator)) {
   // setup servers
   nh_ = ros::NodeHandle(ros::names::parentNamespace(config_.nh_namespace));
@@ -26,6 +28,17 @@ SkeletonPlanner::SkeletonPlanner(const Config& config,
 }
 
 void SkeletonPlanner::planningIteration() {
+  // TEST: compute all frontiers.
+  std::vector<MapBase::SubmapData> data;
+  comm_->map()->getAllSubmapData(&data);
+  std::unordered_map<int, Transformation> update_list;
+  for (const auto& datum : data) {
+    computeFrontiersForSubmap(datum, Point(0, 0, 0));
+    update_list[datum.id] = datum.T_M_S;
+  }
+  updateFrontiers(update_list);
+  return;
+
   // Newly started global planning
   if (comm_->stateMachine()->previousState() !=
       StateMachine::State::kGlobalPlanning) {
@@ -89,21 +102,23 @@ bool SkeletonPlanner::computePathToGoal() {
   mav_planning_msgs::PlannerService srv;
 
   // Set the current pose transformed in Mission frame
-//  Point current_position_M = voxgraph_map_ptr_->get_T_M_O() *
-//      voxblox::Point(current_position_.x(), current_position_.y(), current_position_.z());
-//  srv.request.start_pose.pose.position.x = current_position_M.x();
-//  srv.request.start_pose.pose.position.y = current_position_M.y();
-//  srv.request.start_pose.pose.position.z = current_position_M.z();
+  //  Point current_position_M = voxgraph_map_ptr_->get_T_M_O() *
+  //      voxblox::Point(current_position_.x(), current_position_.y(),
+  //      current_position_.z());
+  //  srv.request.start_pose.pose.position.x = current_position_M.x();
+  //  srv.request.start_pose.pose.position.y = current_position_M.y();
+  //  srv.request.start_pose.pose.position.z = current_position_M.z();
 
   // Set the goal pose transformed in Mission frame
-//  voxblox::Point goal_point_M = voxgraph_map_ptr_->get_T_M_O() *
-//      voxblox::Point(goal_point.pose.position.x, goal_point.pose.position.y, goal_point.pose.position.z);
-//  srv.request.goal_pose.pose.position.x = goal_point_M.x();
-//  srv.request.goal_pose.pose.position.y = goal_point_M.y();
-//  srv.request.goal_pose.pose.position.z = goal_point_M.z();
-//  srv.request.goal_pose.pose.position.x = goal_point_M.x();
-//  srv.request.goal_pose.pose.position.y = goal_point_M.y();
-//  srv.request.goal_pose.pose.position.z = goal_point_M.z();
+  //  voxblox::Point goal_point_M = voxgraph_map_ptr_->get_T_M_O() *
+  //      voxblox::Point(goal_point.pose.position.x, goal_point.pose.position.y,
+  //      goal_point.pose.position.z);
+  //  srv.request.goal_pose.pose.position.x = goal_point_M.x();
+  //  srv.request.goal_pose.pose.position.y = goal_point_M.y();
+  //  srv.request.goal_pose.pose.position.z = goal_point_M.z();
+  //  srv.request.goal_pose.pose.position.x = goal_point_M.x();
+  //  srv.request.goal_pose.pose.position.y = goal_point_M.y();
+  //  srv.request.goal_pose.pose.position.z = goal_point_M.z();
 
   // Global planning
   skeleton_planner_srv_.call(srv);

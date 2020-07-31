@@ -2,10 +2,9 @@
 
 #include <chrono>
 #include <memory>
+#include <unordered_map>
 #include <utility>
 #include <vector>
-#include <unordered_map>
-
 
 namespace glocal_exploration {
 
@@ -23,18 +22,16 @@ SubmapFrontierEvaluator::SubmapFrontierEvaluator(
       GlobalPlannerBase(std::move(communicator)) {}
 
 void SubmapFrontierEvaluator::computeFrontiersForSubmap(
-    const voxblox::Layer<voxblox::TsdfVoxel>& tsdf_layer, int submap_id,
-    const Point& initial_point, const Transformation& T_M_S) {
+    const MapBase::SubmapData& data, const Point& initial_point) {
   // Initialize all frontier candidates for the given layer and id.
-  // NOTE(schmluk): If the id exists it will be overwritten and recomputed.
 
   // Setup the frontier collection.
-  auto it = frontiers_.find(submap_id);
+  auto it = frontiers_.find(data.id);
   if (it == frontiers_.end()) {
-    it = frontiers_.insert(std::make_pair(submap_id, FrontierCollection()))
-             .first;
-    it->second.id = submap_id;
-  } else {
+    it = frontiers_.insert(std::make_pair(data.id, FrontierCollection())).first;
+    it->second.id = data.id;
+  } else if (!config_.submaps_are_frozen) {
+    // If they are not frozen frontiers will be recomputed and overwritten.
     it->second = FrontierCollection();
   }
   FrontierCollection& collection = it->second;
@@ -43,11 +40,11 @@ void SubmapFrontierEvaluator::computeFrontiersForSubmap(
   auto t_start = std::chrono::high_resolution_clock::now();
 
   std::vector<std::vector<Point>> frontiers;
-  wave_front_detector_.resetDetectorToLayer(tsdf_layer);
+  wave_front_detector_.resetDetectorToLayer(*data.tsdf_layer);
   wave_front_detector_.computeFrontiers(initial_point, &frontiers);
 
   // Parse the result into a frontier collection.
-  collection.T_M_S = T_M_S;
+  collection.T_M_S = data.T_M_S;
   unsigned int number_of_points = 0;
   unsigned int number_of_discarded_frontiers = 0;
   for (const std::vector<Point>& frontier : frontiers) {
@@ -65,13 +62,13 @@ void SubmapFrontierEvaluator::computeFrontiersForSubmap(
   auto t_end = std::chrono::high_resolution_clock::now();
   LOG_IF(INFO, config_.verbosity >= 3)
       << "Found " << collection.frontiers.size() << "frontiers, totaling "
-      << number_of_points << " points, in submap " << submap_id << " in "
+      << number_of_points << " points, in submap " << data.id << " in "
       << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start)
              .count()
       << "ms";
   LOG_IF(INFO, config_.verbosity >= 4 && number_of_discarded_frontiers > 0)
       << "Discarded " << number_of_discarded_frontiers
-      << "frontiers below minimum size.";
+      << " frontiers below minimum size.";
 }
 
 void SubmapFrontierEvaluator::updateFrontiers(

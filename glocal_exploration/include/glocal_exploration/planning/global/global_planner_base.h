@@ -2,12 +2,13 @@
 #define GLOCAL_EXPLORATION_PLANNING_GLOBAL_GLOBAL_PLANNER_BASE_H_
 
 #include <memory>
-#include <utility>
 #include <unordered_map>
+#include <utility>
 
 #include <voxblox/core/layer.h>
 
 #include "glocal_exploration/common.h"
+#include "glocal_exploration/mapping/map_base.h"
 
 namespace glocal_exploration {
 class Communicator;
@@ -25,9 +26,8 @@ class GlobalPlannerBase {
   virtual void planningIteration() = 0;
 
   // NOTE(schmluk): these are curently exposed in the base class for simplicity.
-  virtual void computeFrontiersForSubmap(
-      const voxblox::Layer<voxblox::TsdfVoxel>& tsdf_layer, int submap_id,
-      const Point& initial_point, const Transformation& T_M_S) = 0;
+  virtual void computeFrontiersForSubmap(const MapBase::SubmapData& data,
+                                         const Point& initial_point) = 0;
 
   // transformations mission to submap for each id.
   virtual void updateFrontiers(
@@ -38,7 +38,5 @@ class GlobalPlannerBase {
 };
 
 }  // namespace glocal_exploration
-
-#include "glocal_exploration/state/communicator.h"
 
 #endif  // GLOCAL_EXPLORATION_PLANNING_GLOBAL_GLOBAL_PLANNER_BASE_H_

@@ -18,6 +18,8 @@ class SubmapFrontierEvaluator : public GlobalPlannerBase {
   struct Config {
     int verbosity = 2;
     int min_frontier_size = 1;
+    bool submaps_are_frozen = true;  // false: submap frontiers will be
+                                     // recomputed and overwritten.
 
     [[nodiscard]] bool isValid() const;
     [[nodiscard]] Config checkValid() const;
@@ -27,9 +29,8 @@ class SubmapFrontierEvaluator : public GlobalPlannerBase {
                           std::shared_ptr<Communicator> communicator);
   ~SubmapFrontierEvaluator() override = default;
 
-  void computeFrontiersForSubmap(
-      const voxblox::Layer<voxblox::TsdfVoxel>& tsdf_layer, int submap_id,
-      const Point& initial_point, const Transformation& T_M_S) override;
+  void computeFrontiersForSubmap(const MapBase::SubmapData& data,
+                                 const Point& initial_point) override;
 
   void updateFrontiers(
       const std::unordered_map<int, Transformation>& T_M_S) override;

@@ -52,6 +52,4 @@ class MapBase {
 
 }  // namespace glocal_exploration
 
-#include "glocal_exploration/state/communicator.h"
-
 #endif  // GLOCAL_EXPLORATION_MAPPING_MAP_BASE_H_

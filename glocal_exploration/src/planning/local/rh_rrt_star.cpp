@@ -13,6 +13,7 @@
 #include <voxblox/core/block_hash.h>
 #include <voxblox/core/common.h>
 
+#include "glocal_exploration/state/communicator.h"
 #include "glocal_exploration/utility/config_checker.h"
 
 namespace glocal_exploration {

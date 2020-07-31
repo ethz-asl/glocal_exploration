@@ -27,6 +27,4 @@ class LocalPlannerBase {
 
 }  // namespace glocal_exploration
 
-#include "glocal_exploration/state/communicator.h"
-
 #endif  // GLOCAL_EXPLORATION_PLANNING_LOCAL_LOCAL_PLANNER_BASE_H_

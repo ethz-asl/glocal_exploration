@@ -16,9 +16,9 @@ SkeletonVisualizer::SkeletonVisualizer(
     : config_(config.checkValid()),
       GlobalPlannerVisualizerBase(std::move(communicator)) {
   // reference planner
-  planner_ = std::dynamic_pointer_cast<SkeletonPlanner>(comm_->localPlanner());
+  planner_ = std::dynamic_pointer_cast<SkeletonPlanner>(comm_->globalPlanner());
   if (!planner_) {
-    LOG(FATAL) << "Can not setup 'SkeletonVisualizer' with a local planner "
+    LOG(FATAL) << "Can not setup 'SkeletonVisualizer' with a global planner "
                   "that is not of type 'SkeletonPlanner'.";
   }
 
