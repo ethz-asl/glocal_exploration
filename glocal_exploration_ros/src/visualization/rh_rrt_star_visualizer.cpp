@@ -21,10 +21,10 @@ RHRRTStarVisualizer::RHRRTStarVisualizer(
     const Config& config, const std::shared_ptr<Communicator>& communicator)
     : LocalPlannerVisualizerBase(communicator), config_(config.checkValid()) {
   // reference planner
-  planner_.reset(dynamic_cast<RHRRTStar*>(comm_->localPlanner()));
+  planner_ = std::dynamic_pointer_cast<RHRRTStar>(comm_->localPlanner());
   if (!planner_) {
     LOG(FATAL) << "Can not setup 'RHRRTStarVisualizer' with a local planner "
-                  "that is not of type 'RHRRTStar'";
+                  "that is not of type 'RHRRTStar'.";
   }
 
   // ROS

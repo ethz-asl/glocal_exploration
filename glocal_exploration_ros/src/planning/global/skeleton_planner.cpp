@@ -27,10 +27,10 @@ SkeletonPlanner::SkeletonPlanner(const Config& config,
 
 void SkeletonPlanner::planningIteration() {
   // Newly started global planning
-  if (comm_->stateMachine->previousState() !=
+  if (comm_->stateMachine()->previousState() !=
       StateMachine::State::kGlobalPlanning) {
     resetPlanner();
-    comm_->stateMachine->signalGlobalPlanning();
+    comm_->stateMachine()->signalGlobalPlanning();
   }
 
   // stage1: compute the target point

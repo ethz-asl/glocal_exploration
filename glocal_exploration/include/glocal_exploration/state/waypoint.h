@@ -1,5 +1,5 @@
-#ifndef GLOCAL_EXPLORATION_PLANNING_WAYPOINT_H_
-#define GLOCAL_EXPLORATION_PLANNING_WAYPOINT_H_
+#ifndef GLOCAL_EXPLORATION_STATE_WAYPOINT_H_
+#define GLOCAL_EXPLORATION_STATE_WAYPOINT_H_
 
 #include "glocal_exploration/common.h"
 
@@ -17,9 +17,11 @@ struct WayPoint {
   double yaw = 0;
 
   // utilities
-  Eigen::Vector3d position() const { return Eigen::Vector3d(x, y, z); }
+  [[nodiscard]] Eigen::Vector3d position() const {
+    return Eigen::Vector3d(x, y, z);
+  }
 };
 
 }  // namespace glocal_exploration
 
-#endif  // GLOCAL_EXPLORATION_PLANNING_WAYPOINT_H_
+#endif  // GLOCAL_EXPLORATION_STATE_WAYPOINT_H_

@@ -6,8 +6,8 @@
 #include <vector>
 
 #include "glocal_exploration/mapping/map_base.h"
-#include "glocal_exploration/planning/waypoint.h"
 #include "glocal_exploration/state/region_of_interest.h"
+#include "glocal_exploration/state/waypoint.h"
 
 namespace glocal_exploration {
 

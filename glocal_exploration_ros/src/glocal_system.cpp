@@ -62,6 +62,14 @@ void GlocalSystem::buildComponents(const ros::NodeHandle& nh) {
       ComponentFactoryROS::createLocalPlanner(nh_local_planner, comm_));
   local_planner_visualizer_ = ComponentFactoryROS::createLocalPlannerVisualizer(
       nh_local_planner, comm_);
+
+  // setup the global planner + visualizer
+  ros::NodeHandle nh_global_planner(nh, "global_planner");
+  comm_->setupGlobalPlanner(
+      ComponentFactoryROS::createGlobalPlanner(nh_global_planner, comm_));
+  global_planner_visualizer_ =
+      ComponentFactoryROS::createGlobalPlannerVisualizer(nh_global_planner,
+                                                         comm_);
 }
 
 void GlocalSystem::mainLoop() {

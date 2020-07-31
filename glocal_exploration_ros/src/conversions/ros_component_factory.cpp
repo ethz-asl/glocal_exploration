@@ -4,11 +4,10 @@
 #include <string>
 
 #include "glocal_exploration_ros/conversions/ros_params.h"
-#include "glocal_exploration_ros/visualization/rh_rrt_star_visualizer.h"
 
 namespace glocal_exploration {
 
-std::string ComponentFactoryROS::getType(const ros::NodeHandle &nh) {
+std::string ComponentFactoryROS::getType(const ros::NodeHandle& nh) {
   std::string type;
   nh.param("type", type, std::string("type param is not set"));
   return type;
@@ -26,6 +25,17 @@ std::shared_ptr<MapBase> ComponentFactoryROS::createMap(
                                          communicator);
   } else {
     LOG(ERROR) << "Unknown map type '" << type << "'.";
+    return nullptr;
+  }
+}
+
+std::shared_ptr<RegionOfInterest> ComponentFactoryROS::createRegionOfInterest(
+    const ros::NodeHandle& nh) {
+  std::string type = getType(nh);
+  if (type == "bounding_box") {
+    return std::make_shared<BoundingBox>(getBoundingBoxConfigFromRos(nh));
+  } else {
+    LOG(ERROR) << "Unknown region of interest type '" << type << "'.";
     return nullptr;
   }
 }
@@ -52,38 +62,38 @@ ComponentFactoryROS::createLocalPlannerVisualizer(
     return std::make_shared<RHRRTStarVisualizer>(
         getRHRRTStarVisualizerConfigFromRos(nh), communicator);
   } else {
-    LOG(WARNING) << "Did not find a visualizer for local planner '" << type
+    LOG(WARNING) << "Could not find a visualizer for local planner '" << type
                  << "'.";
     return std::make_shared<LocalPlannerVisualizerBase>(communicator);
   }
 }
 
-std::shared_ptr<RegionOfInterest> ComponentFactoryROS::createRegionOfInterest(
-    const ros::NodeHandle &nh) {
-  std::string type = getType(nh);
-  if (type == "bounding_box") {
-    return std::make_shared<BoundingBox>(getBoundingBoxConfigFromRos(nh));
-  } else {
-    LOG(ERROR) << "Unknown region of interest type '" << type << "'.";
-    return nullptr;
-  }
-}
-
-std::shared_ptr<GlobalPlannerBase>
-ComponentFactoryROS::createGlobalPlanner(const ros::NodeHandle &nh,
-                                         std::shared_ptr<MapBase> map,
-                                         std::shared_ptr<StateMachine> state_machine) {
+std::shared_ptr<GlobalPlannerBase> ComponentFactoryROS::createGlobalPlanner(
+    const ros::NodeHandle& nh,
+    const std::shared_ptr<Communicator>& communicator) {
   std::string type = getType(nh);
   if (type == "skeleton") {
-    auto planner = std::make_shared<SkeletonPlanner>(map, state_machine);
-    SkeletonPlanner::Config cfg = getSkeletonPlannerConfigFromRos(nh);
-    planner->setupFromConfig(&cfg);
-    return planner;
+    return std::make_shared<SkeletonPlanner>(
+        getSkeletonPlannerConfigFromRos(nh), communicator);
   } else {
     LOG(ERROR) << "Unknown global planner type '" << type << "'.";
     return nullptr;
   }
 }
 
-} // namespace glocal_exploration
+std::shared_ptr<GlobalPlannerVisualizerBase>
+ComponentFactoryROS::createGlobalPlannerVisualizer(
+    const ros::NodeHandle& nh,
+    const std::shared_ptr<Communicator>& communicator) {
+  std::string type = getType(nh);
+  if (type == "skeleton") {
+    return std::make_shared<SkeletonVisualizer>(
+        getSkeletonVisualizerConfigFromRos(nh), communicator);
+  } else {
+    LOG(WARNING) << "Could not find a visualizer for global planner '" << type
+                 << "'.";
+    return std::make_shared<GlobalPlannerVisualizerBase>(communicator);
+  }
+}
 
+}  // namespace glocal_exploration

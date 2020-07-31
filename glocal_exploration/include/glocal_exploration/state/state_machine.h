@@ -7,7 +7,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "glocal_exploration/common.h"
-#include "glocal_exploration/planning/waypoint.h"
+#include "glocal_exploration/state/waypoint.h"
 
 namespace glocal_exploration {
 /**

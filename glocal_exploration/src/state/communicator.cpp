@@ -21,6 +21,11 @@ void Communicator::setupLocalPlanner(
   local_planner_ = std::move(local_planner);
 }
 
+void Communicator::setupGlobalPlanner(
+    std::shared_ptr<GlobalPlannerBase> global_planner) {
+  global_planner_ = std::move(global_planner);
+}
+
 void Communicator::setupRegionOfInterest(
     std::shared_ptr<RegionOfInterest> roi) {
   roi_ = std::move(roi);

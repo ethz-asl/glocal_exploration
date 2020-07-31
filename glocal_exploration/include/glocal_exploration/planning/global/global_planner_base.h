@@ -7,9 +7,10 @@
 #include <voxblox/core/layer.h>
 
 #include "glocal_exploration/common.h"
-#include "glocal_exploration/state/communicator.h"
 
 namespace glocal_exploration {
+class Communicator;
+
 /**
  * Defines the interface of a global planner.
  */
@@ -28,9 +29,11 @@ class GlobalPlannerBase {
   virtual void updateFrontiers() = 0;
 
  protected:
-  const std::shared_ptr<Comm> comm_;
+  const std::shared_ptr<Communicator> comm_;
 };
 
 }  // namespace glocal_exploration
+
+#include "glocal_exploration/state/communicator.h"
 
 #endif  // GLOCAL_EXPLORATION_PLANNING_GLOBAL_GLOBAL_PLANNER_BASE_H_

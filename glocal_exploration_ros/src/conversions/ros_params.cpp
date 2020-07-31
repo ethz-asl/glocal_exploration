@@ -4,6 +4,27 @@
 
 namespace glocal_exploration {
 
+SubmapFrontiers::Config getSubmapFrontiersConfigFromRos(
+    const ros::NodeHandle& nh) {
+  SubmapFrontiers::Config config;
+
+  return config;
+}
+
+SkeletonPlanner::Config getSkeletonPlannerConfigFromRos(
+    const ros::NodeHandle& nh) {
+  SkeletonPlanner::Config config;
+
+  return config;
+}
+
+SkeletonVisualizer::Config getSkeletonVisualizerConfigFromRos(
+    const ros::NodeHandle& nh) {
+  SkeletonVisualizer::Config config;
+
+  return config;
+}
+
 GlocalSystem::Config getGlocalSystemConfigFromRos(const ros::NodeHandle& nh) {
   GlocalSystem::Config config;
   nh.param("verbosity", config.verbosity, config.verbosity);

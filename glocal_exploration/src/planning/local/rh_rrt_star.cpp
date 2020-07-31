@@ -367,7 +367,7 @@ bool RHRRTStar::connectViewPoint(ViewPoint* view_point) {
       continue;
     }
     if (view_point->tryAddConnection(tree_data_.points[index].get(),
-                                     comm_->map())) {
+                                     comm_->map().get())) {
       view_point->connections.back().second->cost =
           computeCost(*view_point->connections.back().second.get());
       connection_found = true;
