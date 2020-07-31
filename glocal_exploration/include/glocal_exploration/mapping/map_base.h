@@ -3,6 +3,9 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
+
+#include <voxblox/core/layer.h>
 
 #include "glocal_exploration/common.h"
 
@@ -17,6 +20,12 @@ class MapBase {
  public:
   enum class VoxelState { kUnknown, kOccupied, kFree };
 
+  struct SubmapData {
+    int id;
+    Transformation T_M_S;
+    std::shared_ptr<const voxblox::Layer<voxblox::TsdfVoxel>> tsdf_layer;
+  };
+
   explicit MapBase(std::shared_ptr<Communicator> communicator)
       : comm_(std::move(communicator)) {}
   virtual ~MapBase() = default;
@@ -25,18 +34,17 @@ class MapBase {
   virtual double getVoxelSize() = 0;
 
   /* Local planner */
-  virtual bool isTraversableInActiveSubmap(
-      const Eigen::Vector3d& position, const Eigen::Quaterniond& orientation =
-                                           Eigen::Quaterniond::Identity()) = 0;
+  virtual bool isTraversableInActiveSubmap(const Point& position) = 0;
 
   // Voxels are referred in the planner by their center points.
-  virtual Eigen::Vector3d getVoxelCenterInLocalArea(
-      const Eigen::Vector3d& point) = 0;
+  virtual Point getVoxelCenterInLocalArea(const Point& position) = 0;
 
-  virtual VoxelState getVoxelStateInLocalArea(const Eigen::Vector3d& point) = 0;
+  virtual VoxelState getVoxelStateInLocalArea(const Point& position) = 0;
 
   /* Global planner */
+  virtual bool isObservedInGlobalMap(const Point& position) = 0;
 
+  virtual void getAllSubmapData(std::vector<SubmapData>* data) = 0;
 
  protected:
   const std::shared_ptr<Communicator> comm_;

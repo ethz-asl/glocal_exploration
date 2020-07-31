@@ -1,6 +1,8 @@
 #include "glocal_exploration_ros/mapping/voxgraph_map.h"
 
+#include <algorithm>
 #include <memory>
+#include <vector>
 
 #include <pcl/conversions.h>
 #include <pcl/point_types.h>
@@ -8,7 +10,6 @@
 
 #include <glocal_exploration/state/communicator.h>
 #include <glocal_exploration/utility/config_checker.h>
-
 
 namespace glocal_exploration {
 
@@ -19,7 +20,6 @@ bool VoxgraphMap::Config::isValid() const {
   return checker.isValid();
 }
 
-
 VoxgraphMap::Config VoxgraphMap::Config::checkValid() const {
   CHECK(isValid());
   return Config(*this);
@@ -27,8 +27,8 @@ VoxgraphMap::Config VoxgraphMap::Config::checkValid() const {
 
 VoxgraphMap::VoxgraphMap(const Config& config,
                          const std::shared_ptr<Communicator>& communicator)
-    : MapBase(communicator), 
-      config_(config.checkValid()), 
+    : MapBase(communicator),
+      config_(config.checkValid()),
       local_area_needs_update_(false) {
   // Launch the sliding window local map and global map servers
   ros::NodeHandle nh(ros::names::parentNamespace(config_.nh_private_namespace));
@@ -52,8 +52,7 @@ VoxgraphMap::VoxgraphMap(const Config& config,
   c_block_size_ = voxblox_server_->getEsdfMapPtr()->block_size();
 }
 
-bool VoxgraphMap::isTraversableInActiveSubmap(
-    const Eigen::Vector3d& position, const Eigen::Quaterniond& orientation) {
+bool VoxgraphMap::isTraversableInActiveSubmap(const Point& position) {
   if (!comm_->regionOfInterest()->contains(position)) {
     return false;
   }
@@ -68,7 +67,7 @@ bool VoxgraphMap::isTraversableInActiveSubmap(
 }
 
 MapBase::VoxelState VoxgraphMap::getVoxelStateInLocalArea(
-    const Eigen::Vector3d& position) {
+    const Point& position) {
   // NOTE: The local area consists of the local map + all overlapping global
   //       submaps. We cache and incrementally update the merged global submap
   //       neighborhood. But instead of also merging in the local map, we keep
@@ -96,9 +95,8 @@ MapBase::VoxelState VoxgraphMap::getVoxelStateInLocalArea(
   return local_area_->getVoxelStateAtPosition(position);
 }
 
-Eigen::Vector3d VoxgraphMap::getVoxelCenterInLocalArea(
-    const Eigen::Vector3d& point) {
-  return (point / c_voxel_size_).array().round() * c_voxel_size_;
+Point VoxgraphMap::getVoxelCenterInLocalArea(const Point& position) {
+  return (position / c_voxel_size_).array().round() * c_voxel_size_;
 }
 
 void VoxgraphMap::updateLocalArea() {
@@ -110,6 +108,36 @@ void VoxgraphMap::updateLocalArea() {
 
   if (local_area_pub_.getNumSubscribers() > 0) {
     local_area_->publishLocalArea(local_area_pub_);
+  }
+}
+
+bool VoxgraphMap::isObservedInGlobalMap(const Point& position) {
+  // TODO(@victorr): Don't know if you know of a nicer way to check this :)
+
+  auto submaps = voxgraph_server_->getSubmapCollection().getSubmapConstPtrs();
+  return std::any_of(submaps.begin(), submaps.end(),
+                     [position](const voxgraph::VoxgraphSubmap::ConstPtr& s) {
+                       return s->getEsdfMap().isObserved(position);
+                     });
+}
+
+void VoxgraphMap::getAllSubmapData(std::vector<SubmapData>* data) {
+  // TODO(@victorr): This is a first implementation for global frontier
+  //  tracking. The global planner has a function computeFrontiers (or similar)
+  //  that can be called upon submap completion to store frontiers.
+  //  This function is solely needed to guarantee all maps get frontiers, the
+  //  evaluator has a param sumaps_are_fronzen that prevents it from recomputing
+  //  frontiers for a given ID. Btw I don't know this includes the active
+  //  submap, but it should not be included here.
+
+  CHECK_NOTNULL(data);
+  auto submaps = voxgraph_server_->getSubmapCollection().getSubmapConstPtrs();
+  for (const auto& submap : submaps) {
+    SubmapData datum;
+    datum.id = submap->getID();
+    datum.T_M_S = submap->getPose().cast<FloatingPoint>();
+    datum.tsdf_layer.reset(submap->getTsdfMap().getTsdfLayerConstPtr());
+    data->push_back(datum);
   }
 }
 

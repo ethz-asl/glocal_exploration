@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <glocal_exploration/mapping/map_base.h>
 
@@ -22,22 +23,20 @@ class VoxgraphMap : public MapBase {
     double traversability_radius = 0.3;  // m
     double clearing_radius = 0.5;        // m
 
-    bool isValid() const;
-    Config checkValid() const;
+    [[nodiscard]] bool isValid() const;
+    [[nodiscard]] Config checkValid() const;
   };
 
   explicit VoxgraphMap(const Config& config,
                        const std::shared_ptr<Communicator>& communicator);
-  virtual ~VoxgraphMap() = default;
-
-  bool isTraversableInActiveSubmap(
-      const Eigen::Vector3d& position,
-      const Eigen::Quaterniond& orientation) override;
-  VoxelState getVoxelStateInLocalArea(const Eigen::Vector3d& position) override;
+  ~VoxgraphMap() override = default;
 
   double getVoxelSize() override { return c_voxel_size_; }
-  Eigen::Vector3d getVoxelCenterInLocalArea(
-      const Eigen::Vector3d& point) override;
+  bool isTraversableInActiveSubmap(const Point& position) override;
+  VoxelState getVoxelStateInLocalArea(const Point& position) override;
+  Point getVoxelCenterInLocalArea(const Point& point) override;
+  bool isObservedInGlobalMap(const Point& position) override;
+  void getAllSubmapData(std::vector<SubmapData>* data) override;
 
  protected:
   const Config config_;

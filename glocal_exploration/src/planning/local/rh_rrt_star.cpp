@@ -502,11 +502,10 @@ bool RHRRTStar::sampleNewPoint(ViewPoint* point) {
   // verify and crop the sampled path
   double range_increment = comm_->map()->getVoxelSize();
   double range = range_increment;
-  auto orientation = Eigen::Quaterniond();
   Eigen::Vector3d direction = (goal - origin).normalized();
-  while (comm_->map()->isTraversableInActiveSubmap(origin + range * direction,
-                                                   orientation) &&
-         range < distance_max) {
+  while (
+      comm_->map()->isTraversableInActiveSubmap(origin + range * direction) &&
+      range < distance_max) {
     range += range_increment;
   }
   range = range - config_.path_cropping_length - range_increment;
