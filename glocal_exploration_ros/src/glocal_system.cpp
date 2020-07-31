@@ -66,7 +66,7 @@ void GlocalSystem::buildComponents(const ros::NodeHandle& nh) {
 
 void GlocalSystem::mainLoop() {
   // This is the main loop, spinning is managed explicitly for efficiency
-  // starting the main loop means everything is setup
+  // starting the main loop means everything is setup.
   LOG_IF(INFO, config_.verbosity >= 1)
       << "Glocal Exploration Planner set up successfully.";
   comm_->stateMachine()->signalReady();
@@ -99,7 +99,6 @@ void GlocalSystem::loopIteration() {
     target_position_ = next_point.position();
     target_yaw_ = next_point.yaw;
     publishTargetPose();
-    comm_->setTargetReached(false);
 
     // visualizations
     switch (comm_->stateMachine()->currentState()) {
@@ -112,6 +111,7 @@ void GlocalSystem::loopIteration() {
 }
 
 void GlocalSystem::publishTargetPose() {
+  // publish the target pose.
   geometry_msgs::Pose msg;
   tf2::Quaternion q;
   q.setRPY(0, 0, target_yaw_);
@@ -123,6 +123,10 @@ void GlocalSystem::publishTargetPose() {
   msg.orientation.z = q.z();
   msg.orientation.w = q.w();
   target_pub_.publish(msg);
+
+  // update the tracking state.
+  comm_->setTargetReached(false);
+  time_last_waypoint_started_ = ros::Time::now();
 }
 
 void GlocalSystem::odomCallback(const nav_msgs::Odometry& msg) {
@@ -134,7 +138,7 @@ void GlocalSystem::odomCallback(const nav_msgs::Odometry& msg) {
       msg.pose.pose.orientation.w, msg.pose.pose.orientation.x,
       msg.pose.pose.orientation.y, msg.pose.pose.orientation.z);
 
-  // update the state machine with the current pose
+  // update the state machine with the current pose.
   double yaw = tf2::getYaw(msg.pose.pose.orientation);
   WayPoint current_point;
   current_point.x = current_position_.x();
@@ -145,10 +149,10 @@ void GlocalSystem::odomCallback(const nav_msgs::Odometry& msg) {
 
   // Check whether the goal pose is reached
   if (!comm_->targetIsReached()) {
-    // check position
+    // check proximity.
     if ((target_position_ - current_position_).norm() <=
         config_.replan_position_threshold) {
-      // check yaw
+      // check yaw.
       double yaw_diff = target_yaw_ - yaw;
       if (yaw_diff < 0) {
         yaw_diff += 2.0 * M_PI;
@@ -160,42 +164,36 @@ void GlocalSystem::odomCallback(const nav_msgs::Odometry& msg) {
         comm_->setTargetReached(true);
       }
     }
+
+    // check whether the last move command is timing out.
+    if (config_.waypoint_timeout > 0.0) {
+      if ((msg.header.stamp - time_last_waypoint_started_).toSec() >
+          config_.waypoint_timeout) {
+        // NOTE(schmluk): This usually means the MAV is close to the target but
+        // the controller did not exactly reach the threshold. Therefore we
+        // assume the target is reached and continue planning.
+        comm_->setTargetReached(true);
+      }
+    }
+  }
+}
+
+bool GlocalSystem::startExploration() {
+  if (comm_->stateMachine()->currentState() != StateMachine::State::kReady) {
+    // Can not start from another state than ready.
+    return false;
   }
 
-  // check whether we're moving if we should be
-  if (config_.republish_waypoints && !comm_->targetIsReached() &&
-      (msg.header.stamp - previous_time_).toSec() > 1.0) {
-    double distance = (current_position_ - previous_position_).norm();
-    double yaw_diff = previous_yaw_ - yaw;
-    if (yaw_diff < 0) {
-      yaw_diff += 2.0 * M_PI;
-    }
-    if (yaw_diff > M_PI) {
-      yaw_diff = 2.0 * M_PI - yaw_diff;
-    }
-    if (distance < 0.2 && yaw_diff < 15.0 * M_PI / 180.0) {
-      publishTargetPose();
-    }
-    previous_time_ = msg.header.stamp;
-    previous_yaw_ = yaw;
-    previous_position_ = current_position_;
-  }
+  // setup initial state.
+  comm_->stateMachine()->signalLocalPlanning();
+  comm_->setTargetReached(true);
+  LOG_IF(INFO, config_.verbosity >= 1) << "Started Glocal Exploration.";
+  return true;
 }
 
 bool GlocalSystem::runSrvCallback(std_srvs::SetBool::Request& req,
                                   std_srvs::SetBool::Response& res) {
-  comm_->stateMachine()->signalLocalPlanning();
-  if (comm_->stateMachine()->currentState() ==
-      StateMachine::State::kLocalPlanning) {
-    LOG_IF(INFO, config_.verbosity >= 1) << "Started Glocal Exploration.";
-    comm_->setTargetReached(true);
-    previous_time_ = ros::Time::now();
-    previous_position_ = comm_->currentPose().position();
-    previous_yaw_ = comm_->currentPose().yaw;
-    res.success = true;
-  } else {
-    res.success = false;
-  }
+  res.success = startExploration();
   return true;
 }
 

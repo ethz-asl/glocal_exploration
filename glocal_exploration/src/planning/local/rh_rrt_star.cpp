@@ -10,6 +10,9 @@
 #include <utility>
 #include <vector>
 
+#include <voxblox/core/block_hash.h>
+#include <voxblox/core/common.h>
+
 #include "glocal_exploration/utility/config_checker.h"
 
 namespace glocal_exploration {
@@ -415,15 +418,10 @@ bool RHRRTStar::selectBestConnection(ViewPoint* view_point) {
   return true;
 }
 
-double RHRRTStar::computeGain(const std::vector<Eigen::Vector3d>& centers,
-                              const std::vector<MapBase::VoxelState>& states) {
-  double gain = 0.0;
-  for (auto& state : states) {
-    if (state == MapBase::VoxelState::kUnknown) {
-      gain += 1.0;
-    }
-  }
-  return gain;
+void RHRRTStar::evaluateViewPoint(ViewPoint* view_point) {
+  voxblox::LongIndexSet voxels;
+  sensor_model_->getVisibleUnknownVoxels(&voxels, view_point->pose);
+  view_point->gain = voxels.size();
 }
 
 double RHRRTStar::computeCost(const Connection& connection) {
@@ -546,13 +544,6 @@ bool RHRRTStar::findNearestNeighbors(Eigen::Vector3d position,
   return true;
 }
 
-void RHRRTStar::evaluateViewPoint(ViewPoint* view_point) {
-  std::vector<Eigen::Vector3d> visible_voxels;
-  std::vector<MapBase::VoxelState> states;
-  sensor_model_->getVisibleVoxels(&visible_voxels, &states, view_point->pose);
-  view_point->gain = computeGain(visible_voxels, states);
-}
-
 void RHRRTStar::visualizeGain(std::vector<Eigen::Vector3d>* voxels,
                               std::vector<Eigen::Vector3d>* colors,
                               double* scale, const WayPoint& pose) const {
@@ -562,22 +553,24 @@ void RHRRTStar::visualizeGain(std::vector<Eigen::Vector3d>* voxels,
   // TODO(schmluk): This is neither beautiful nor efficient but it doesn't get
   //  called often...
 
-  // get voxels
-  std::vector<MapBase::VoxelState> states;
-  sensor_model_->getVisibleVoxels(voxels, &states, pose);
-  voxels->erase(
-      std::remove_if(voxels->begin(), voxels->end(),
-                     [this](const Eigen::Vector3d& pt) {
-                       return comm_->map()->getVoxelStateInLocalArea(pt) !=
-                              MapBase::VoxelState::kUnknown;
-                     }),
-      voxels->end());
-
-  // uniform coloring [0, 1]
-  colors->assign(voxels->size(), Eigen::Vector3d(1, 0.8, 0));
+  // get voxel indices
+  voxblox::LongIndexSet voxels_idx;
+  sensor_model_->getVisibleUnknownVoxels(&voxels_idx, pose);
 
   // voxel size
   *scale = comm_->map()->getVoxelSize();
+  const double voxel_size = comm_->map()->getVoxelSize();
+
+  // get centers
+  voxels->clear();
+  voxels->reserve(voxels_idx.size());
+  for (const auto& idx : voxels_idx) {
+    voxels->push_back(
+        voxblox::getCenterPointFromGridIndex(idx, voxel_size).cast<double>());
+  }
+
+  // uniform coloring [0, 1]
+  colors->assign(voxels->size(), Eigen::Vector3d(1, 0.8, 0));
 }
 
 bool RHRRTStar::ViewPoint::tryAddConnection(ViewPoint* target, MapBase* map) {
