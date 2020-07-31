@@ -1,8 +1,8 @@
 #ifndef GLOCAL_EXPLORATION_ROS_PLANNING_GLOBAL_SKELETON_PLANNER_H_
 #define GLOCAL_EXPLORATION_ROS_PLANNING_GLOBAL_SKELETON_PLANNER_H_
 
-#include <queue>
 #include <memory>
+#include <queue>
 #include <string>
 
 #include <ros/ros.h>
@@ -50,8 +50,8 @@ class SkeletonPlanner : public SubmapFrontiers {
   bool computePathToGoal();
 
   // variables
-  std::queue<Eigen::Vector3d> way_points_;    // in mission frame
-  int stage_;   // at which part of global planning the system is right now
+  std::queue<Eigen::Vector3d> way_points_;  // in mission frame
+  int stage_;  // at which part of global planning the system is right now
   Eigen::Vector3d goal_point_;
 };
 

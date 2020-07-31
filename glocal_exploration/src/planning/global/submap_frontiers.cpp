@@ -1,7 +1,7 @@
 #include "glocal_exploration/planning/global/submap_frontiers.h"
 
-#include <utility>
 #include <memory>
+#include <utility>
 
 namespace glocal_exploration {
 

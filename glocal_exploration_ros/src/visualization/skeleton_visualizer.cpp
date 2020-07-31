@@ -1,7 +1,7 @@
 #include "glocal_exploration_ros/visualization/skeleton_visualizer.h"
 
-#include <utility>
 #include <memory>
+#include <utility>
 
 namespace glocal_exploration {
 
