@@ -28,9 +28,12 @@ class Communicator {
   }[[nodiscard]] const WayPoint& currentPose() const {
     return current_pose_;
   }
+  [[nodiscard]] bool newWayPointIsRequested() const {
+    return new_waypoint_requested_;
+  }
 
-  // componet accessors
-  [[nodiscard]] const std::shared_ptr<StateMachine>& stateMachine() const {
+      // componet accessors
+      [[nodiscard]] const std::shared_ptr<StateMachine>& stateMachine() const {
     return state_machine_;
   }[[nodiscard]] const std::shared_ptr<RegionOfInterest>& regionOfInterest()
       const {
@@ -46,13 +49,13 @@ class Communicator {
 
   // requests
   void requestWayPoint(const WayPoint& way_point);
+  WayPoint getRequestedWayPoint();
 
   // interface for the main node to manage the state
   void setTargetReached(bool target_reached) {
     target_reached_ = target_reached;
   }
   void setCurrentPose(const WayPoint& pose) { current_pose_ = pose; }
-  bool getNewWayPointIfRequested(WayPoint* way_point);
 
   // setup tools for the main node
   void setupStateMachine(std::shared_ptr<StateMachine> state_machine);

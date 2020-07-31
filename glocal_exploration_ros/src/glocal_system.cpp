@@ -93,28 +93,24 @@ void GlocalSystem::mainLoop() {
 void GlocalSystem::loopIteration() {
   // actions
   switch (comm_->stateMachine()->currentState()) {
-    case StateMachine::State::kReady:
-      return;
     case StateMachine::State::kLocalPlanning: {
       comm_->localPlanner()->planningIteration();
+      local_planner_visualizer_->visualize();
+      break;
+    }
+    case StateMachine::State::kGlobalPlanning: {
+      comm_->globalPlanner()->planningIteration();
+      global_planner_visualizer_->visualize();
       break;
     }
   }
 
   // move requests
-  WayPoint next_point;
-  if (comm_->getNewWayPointIfRequested(&next_point)) {
+  if (comm_->newWayPointIsRequested()) {
+    WayPoint next_point = comm_->getRequestedWayPoint();
     target_position_ = next_point.position();
     target_yaw_ = next_point.yaw;
     publishTargetPose();
-
-    // visualizations
-    switch (comm_->stateMachine()->currentState()) {
-      case StateMachine::State::kLocalPlanning: {
-        local_planner_visualizer_->visualize();
-        break;
-      }
-    }
   }
 }
 

@@ -16,7 +16,9 @@ cs_add_library(${PROJECT_NAME}
         src/state/region_of_interest.cpp
         src/planning/local/rh_rrt_star.cpp
         src/planning/local/lidar_model.cpp
-        src/planning/global/submap_frontiers.cpp
+        src/planning/global/submap_frontier.cpp
+        src/planning/global/wavefront_detector.cpp
+        src/planning/global/submap_frontier_evaluator.cpp
         )
 
 ##########

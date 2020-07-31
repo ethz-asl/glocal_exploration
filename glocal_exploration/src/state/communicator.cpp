@@ -36,14 +36,9 @@ void Communicator::requestWayPoint(const WayPoint& way_point) {
   target_way_point_ = way_point;
 }
 
-bool Communicator::getNewWayPointIfRequested(WayPoint* way_point) {
-  if (!new_waypoint_requested_) {
-    return false;
-  }
-  CHECK_NOTNULL(way_point);
-  *way_point = target_way_point_;
+WayPoint Communicator::getRequestedWayPoint() {
   new_waypoint_requested_ = false;
-  return true;
+  return target_way_point_;
 }
 
 }  // namespace glocal_exploration

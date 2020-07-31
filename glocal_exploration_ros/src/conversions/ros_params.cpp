@@ -4,16 +4,19 @@
 
 namespace glocal_exploration {
 
-SubmapFrontiers::Config getSubmapFrontiersConfigFromRos(
+SubmapFrontierEvaluator::Config getSubmapFrontierEvaluatorConfigFromRos(
     const ros::NodeHandle& nh) {
-  SubmapFrontiers::Config config;
-
+  SubmapFrontierEvaluator::Config config;
+  nh.param("verbosity", config.verbosity, config.verbosity);
+  nh.param("min_frontier_size", config.min_frontier_size,
+           config.min_frontier_size);
   return config;
 }
 
 SkeletonPlanner::Config getSkeletonPlannerConfigFromRos(
     const ros::NodeHandle& nh) {
   SkeletonPlanner::Config config;
+  config.submap_frontier_config = getSubmapFrontierEvaluatorConfigFromRos(nh);
 
   return config;
 }

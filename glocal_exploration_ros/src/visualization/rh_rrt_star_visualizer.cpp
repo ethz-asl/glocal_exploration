@@ -33,6 +33,11 @@ RHRRTStarVisualizer::RHRRTStarVisualizer(
 }
 
 void RHRRTStarVisualizer::visualize() {
+  // Visualize only if a new waypoint was requested.
+  if (!comm_->newWayPointIsRequested()) {
+    return;
+  }
+
   // initialize data
   auto& points = planner_->getTreeData().points;
   if (points.empty()) {

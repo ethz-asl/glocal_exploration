@@ -17,8 +17,8 @@ SkeletonPlanner::Config SkeletonPlanner::Config::checkValid() const {
 SkeletonPlanner::SkeletonPlanner(const Config& config,
                                  std::shared_ptr<Communicator> communicator)
     : config_(config.checkValid()),
-      SubmapFrontiers(config.submap_frontier_config.checkValid(),
-                      std::move(communicator)) {
+      SubmapFrontierEvaluator(config.submap_frontier_config.checkValid(),
+                              std::move(communicator)) {
   // setup servers
   nh_ = ros::NodeHandle(ros::names::parentNamespace(config_.nh_namespace));
   skeleton_planner_srv_ = nh_.serviceClient<mav_planning_msgs::PlannerService>(

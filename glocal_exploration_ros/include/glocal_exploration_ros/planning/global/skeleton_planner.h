@@ -9,20 +9,20 @@
 
 #include <glocal_exploration/state/communicator.h>
 
-#include "glocal_exploration/planning/global/submap_frontiers.h"
+#include "glocal_exploration/planning/global/submap_frontier_evaluator.h"
 
 namespace glocal_exploration {
 /**
  * Uses the submap skeleton planner to ind paths to frontiers.
  */
-class SkeletonPlanner : public SubmapFrontiers {
+class SkeletonPlanner : public SubmapFrontierEvaluator {
  public:
   // Defines a baseclass for map configurations
   struct Config {
     std::string nh_namespace = "skeleton_global_planner";
     std::string service_name;
 
-    SubmapFrontiers::Config submap_frontier_config;
+    SubmapFrontierEvaluator::Config submap_frontier_config;
 
     [[nodiscard]] bool isValid() const;
     [[nodiscard]] Config checkValid() const;

@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <utility>
+#include <unordered_map>
 
 #include <voxblox/core/layer.h>
 
@@ -25,8 +26,12 @@ class GlobalPlannerBase {
 
   // NOTE(schmluk): these are curently exposed in the base class for simplicity.
   virtual void computeFrontiersForSubmap(
-      const voxblox::Layer<voxblox::TsdfVoxel>& tsdf_layer, int submap_id) = 0;
-  virtual void updateFrontiers() = 0;
+      const voxblox::Layer<voxblox::TsdfVoxel>& tsdf_layer, int submap_id,
+      const Point& initial_point, const Transformation& T_M_S) = 0;
+
+  // transformations mission to submap for each id.
+  virtual void updateFrontiers(
+      const std::unordered_map<int, Transformation>& T_M_S) = 0;
 
  protected:
   const std::shared_ptr<Communicator> comm_;

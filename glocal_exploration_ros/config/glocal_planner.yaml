@@ -130,4 +130,10 @@ local_planner:
  
 global_planner:
   type: "skeleton"
+  verbosity: 3
+  
+  # Submap Frontiers Evaluator
+  min_frontier_size: 1
+  
+  # Visualization
     
