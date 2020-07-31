@@ -1,33 +1,36 @@
-#include "glocal_exploration_ros/planning/global_planner/skeleton_planner.h"
+#include "glocal_exploration_ros/planning/global/skeleton_planner.h"
+
+#include <memory>
+#include <utility>
 
 #include <mav_planning_msgs/PlannerService.h>
 
 namespace glocal_exploration {
 
-SkeletonPlanner::SkeletonPlanner(std::shared_ptr<MapBase> map, std::shared_ptr<StateMachine> state_machine)
-    : GlobalPlannerBase(std::move(map), std::move(state_machine)) {}
+bool SkeletonPlanner::Config::isValid() const { return true; }
 
-bool SkeletonPlanner::setupFromConfig(GlobalPlannerBase::Config *config) {
-  CHECK_NOTNULL(config);
-  auto cfg = dynamic_cast<Config *>(config);
-  if (!cfg) {
-    LOG(ERROR) << "Failed to setup: config is not of type 'SkeletonPlanner::Config'.";
-    return false;
-  }
-  config_ = *cfg;
+SkeletonPlanner::Config SkeletonPlanner::Config::checkValid() const {
+  CHECK(isValid());
+  return Config(*this);
+}
 
+SkeletonPlanner::SkeletonPlanner(const Config& config,
+                                 std::shared_ptr<Communicator> communicator)
+    : config_(config.checkValid()),
+      SubmapFrontiers(config.submap_frontier_config.checkValid(),
+                      std::move(communicator)) {
   // setup servers
   nh_ = ros::NodeHandle(ros::names::parentNamespace(config_.nh_namespace));
-  skeleton_planner_srv_ = nh_.serviceClient<mav_planning_msgs::PlannerService>(config_.servce_name);
-
-  return true;
+  skeleton_planner_srv_ = nh_.serviceClient<mav_planning_msgs::PlannerService>(
+      config_.service_name);
 }
 
 void SkeletonPlanner::planningIteration() {
   // Newly started global planning
-  if (state_machine_->previousState() != StateMachine::GlobalPlanning) {
+  if (comm_->stateMachine->previousState() !=
+      StateMachine::State::kGlobalPlanning) {
     resetPlanner();
-    state_machine_->signalGlobalPlanning();
+    comm_->stateMachine->signalGlobalPlanning();
   }
 
   // stage1: compute the target point
@@ -46,19 +49,20 @@ void SkeletonPlanner::planningIteration() {
 
   // stage3: execute
   if (stage_ == 3) {
-    if (state_machine_->targetIsReached()) {
+    if (comm_->targetIsReached()) {
       if (way_points_.empty()) {
         // finished execution
-        state_machine_->signalLocalPlanning();
+        comm_->stateMachine()->signalLocalPlanning();
       } else {
         // request next point
         WayPoint way_point;
         way_point.x = way_points_.front().x();
         way_point.y = way_points_.front().y();
         way_point.z = way_points_.front().z();
-        way_point.yaw = std::atan2((way_points_.front().y() - state_machine_->currentPose().y),
-                                   (way_points_.front().x() - state_machine_->currentPose().x));
-        state_machine_->requestWayPoint(way_point);
+        way_point.yaw =
+            std::atan2((way_points_.front().y() - comm_->currentPose().y),
+                       (way_points_.front().x() - comm_->currentPose().x));
+        comm_->requestWayPoint(way_point);
       }
     }
   }
@@ -106,4 +110,4 @@ bool SkeletonPlanner::computePathToGoal() {
   return srv.response.success;
 }
 
-} // namespace glocal_exploration
+}  // namespace glocal_exploration

@@ -55,7 +55,6 @@ class GlocalSystem {
   // methods
   void buildComponents(const ros::NodeHandle& nh);
   void loopIteration();
-  void readParamsFromRos();
   void publishTargetPose();
 
   // variables

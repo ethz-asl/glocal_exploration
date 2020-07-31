@@ -43,8 +43,7 @@ class RHRRTStar : public LocalPlannerBase {
   };
 
   // setup
-  explicit RHRRTStar(const Config& config,
-                     std::shared_ptr<Communicator> communicator);
+  RHRRTStar(const Config& config, std::shared_ptr<Communicator> communicator);
   virtual ~RHRRTStar() = default;
 
   // planning

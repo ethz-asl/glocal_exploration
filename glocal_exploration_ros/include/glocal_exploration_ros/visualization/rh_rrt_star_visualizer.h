@@ -4,6 +4,8 @@
 #include <memory>
 #include <string>
 
+#include <ros/ros.h>
+
 #include "glocal_exploration/planning/local/rh_rrt_star.h"
 #include "glocal_exploration_ros/visualization/local_planner_visualizer_base.h"
 
@@ -18,8 +20,8 @@ class RHRRTStarVisualizer : public LocalPlannerVisualizerBase {
     bool visualize_visible_voxels = true;
     bool visualize_value = true;
 
-    bool isValid() const { return true; }
-    Config checkValid() const;
+    [[nodiscard]] bool isValid() const { return true; }[[nodiscard]] Config
+        checkValid() const;
   };
 
   RHRRTStarVisualizer(const Config& config,
@@ -33,7 +35,7 @@ class RHRRTStarVisualizer : public LocalPlannerVisualizerBase {
   ros::NodeHandle nh_;
   ros::Publisher pub_;
 
-  // visualization namespaces
+  // visualization namespace definitions
   const std::string value_ns_ = "candidate_trajectories";
   const std::string gain_ns_ = "candidate_gains";
   const std::string text_ns_ = "candidate_text";

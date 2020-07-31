@@ -1,5 +1,5 @@
-#ifndef GLOCAL_EXPLORATION_ROS_VISUALIZATION_LOCAL_PLANNER_VISUALIZER_BASE_H_
-#define GLOCAL_EXPLORATION_ROS_VISUALIZATION_LOCAL_PLANNER_VISUALIZER_BASE_H_
+#ifndef GLOCAL_EXPLORATION_ROS_VISUALIZATION_GLOBAL_PLANNER_VISUALIZER_BASE_H_
+#define GLOCAL_EXPLORATION_ROS_VISUALIZATION_GLOBAL_PLANNER_VISUALIZER_BASE_H_
 
 #include <memory>
 #include <utility>
@@ -9,12 +9,12 @@
 
 namespace glocal_exploration {
 
-class LocalPlannerVisualizerBase {
+class GlobalPlannerVisualizerBase {
  public:
-  explicit LocalPlannerVisualizerBase(
+  explicit GlobalPlannerVisualizerBase(
       std::shared_ptr<Communicator> communicator)
       : comm_(std::move(communicator)) {}
-  virtual ~LocalPlannerVisualizerBase() = default;
+  virtual ~GlobalPlannerVisualizerBase() = default;
 
   // Interface (the default implementation does not visualize anything).
   virtual void visualize() {}
@@ -25,4 +25,4 @@ class LocalPlannerVisualizerBase {
 
 }  // namespace glocal_exploration
 
-#endif  // GLOCAL_EXPLORATION_ROS_VISUALIZATION_LOCAL_PLANNER_VISUALIZER_BASE_H_
+#endif  // GLOCAL_EXPLORATION_ROS_VISUALIZATION_GLOBAL_PLANNER_VISUALIZER_BASE_H_
