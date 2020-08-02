@@ -75,20 +75,22 @@ class FrontierCollection {
   // frontier access
   [[nodiscard]] size_t size() const {
     return frontiers_.size();
-  }[[nodiscard]] std::vector<Frontier>::const_iterator begin() const {
+  }
+  [[nodiscard]] std::vector<Frontier>::const_iterator begin() const {
     return frontiers_.begin();
   }
   [[nodiscard]] std::vector<Frontier>::const_iterator end() const {
     return frontiers_.end();
-  }[[nodiscard]] std::vector<Frontier>::iterator begin() {
+  }
+  [[nodiscard]] std::vector<Frontier>::iterator begin() {
     return frontiers_.begin();
   }
   [[nodiscard]] std::vector<Frontier>::iterator end() {
     return frontiers_.end();
   }
 
-      // accessors
-      [[nodiscard]] int getID() const {
+  // accessors
+  [[nodiscard]] int getID() const {
     return id_;
   }
 
