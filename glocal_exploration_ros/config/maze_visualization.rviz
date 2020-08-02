@@ -9,6 +9,7 @@ Panels:
         - /Voxgraph1
         - /Voxgraph1/Local1
         - /Voxgraph1/Global1
+        - /Global Planner Visualization1
       Splitter Ratio: 0.7823529243469238
     Tree Height: 728
   - Class: rviz/Selection
@@ -29,7 +30,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: Local area
+    SyncSource: ""
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -72,7 +73,7 @@ Visualization Manager:
     - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /glocal/glocal_system/local_planner/visualization
-      Name: Local planner vis
+      Name: Local Planner Visualization
       Namespaces:
         candidate_gains: true
         candidate_text: true
@@ -434,7 +435,7 @@ Visualization Manager:
                   Marker Topic: /glocal/glocal_system/mapping/combined_mesh
                   Name: Merged submaps
                   Namespaces:
-                    mesh: true
+                    {}
                   Queue Size: 100
                   Value: true
                 - Class: rviz/Marker
@@ -481,6 +482,14 @@ Visualization Manager:
           Value: false
       Enabled: true
       Name: Voxgraph
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /glocal/glocal_system/global_planner/visualization
+      Name: Global Planner Visualization
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 255; 255; 255

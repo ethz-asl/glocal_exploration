@@ -19,14 +19,17 @@ SkeletonPlanner::Config getSkeletonPlannerConfigFromRos(
     const ros::NodeHandle& nh) {
   SkeletonPlanner::Config config;
   config.submap_frontier_config = getSubmapFrontierEvaluatorConfigFromRos(nh);
-
   return config;
 }
 
 SkeletonVisualizer::Config getSkeletonVisualizerConfigFromRos(
     const ros::NodeHandle& nh) {
   SkeletonVisualizer::Config config;
-
+  config.nh_namespace = nh.getNamespace();
+  nh.param("visualize_frontiers", config.visualize_frontiers,
+           config.visualize_frontiers);
+  nh.param("visualize_inactive_frontiers", config.visualize_inactive_frontiers,
+           config.visualize_inactive_frontiers);
   return config;
 }
 

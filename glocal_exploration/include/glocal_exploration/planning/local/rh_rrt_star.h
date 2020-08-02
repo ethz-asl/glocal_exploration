@@ -65,7 +65,7 @@ class RHRRTStar : public LocalPlannerBase {
     bool tryAddConnection(ViewPoint* target, MapBase* map);
     Connection* getActiveConnection();
     [[nodiscard]] Connection const* getActiveConnection() const;
-    ViewPoint* getConnectedViewPoint(size_t index);
+    ViewPoint* getConnectedViewPoint(size_t index) const;
   };
 
   // connections are the edges in the tree
@@ -80,7 +80,7 @@ class RHRRTStar : public LocalPlannerBase {
   struct TreeData {
     std::vector<std::unique_ptr<ViewPoint>> points;
 
-    // nanoflann functionality (This is required s.t. nanoflann can run)
+    // Nanoflann functionality (this is required s.t. nanoflann can run).
     inline std::size_t kdtree_get_point_count() const { return points.size(); }
 
     inline double kdtree_get_pt(const size_t idx, const size_t dim) const {
@@ -149,8 +149,7 @@ class RHRRTStar : public LocalPlannerBase {
   bool should_update_;
   ViewPoint* root_;  // root pointer so it does not need to be searched for all
   // the time
-  Connection*
-      current_connection_;  // the connection that is currently being executed
+  Connection* current_connection_;  // the connection currently being executed
 
   // stats
   int pruned_points_;

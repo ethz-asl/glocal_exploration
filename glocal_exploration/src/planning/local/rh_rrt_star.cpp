@@ -613,7 +613,7 @@ RHRRTStar::Connection const* RHRRTStar::ViewPoint::getActiveConnection() const {
 }
 
 RHRRTStar::ViewPoint* RHRRTStar::ViewPoint::getConnectedViewPoint(
-    size_t index) {
+    size_t index) const {
   if (index < 0 || index >= connections.size()) {
     LOG(WARNING) << "Tried to access a connection out of range (" << index
                  << "/" << connections.size() << ").";

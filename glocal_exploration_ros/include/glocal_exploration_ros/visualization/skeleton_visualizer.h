@@ -4,6 +4,10 @@
 #include <memory>
 #include <string>
 
+#include <ros/ros.h>
+#include <visualization_msgs/MarkerArray.h>
+#include <voxblox/core/common.h>
+
 #include "glocal_exploration_ros/planning/global/skeleton_planner.h"
 #include "glocal_exploration_ros/visualization/global_planner_visualizer_base.h"
 
@@ -12,27 +16,40 @@ namespace glocal_exploration {
 class SkeletonVisualizer : public GlobalPlannerVisualizerBase {
  public:
   struct Config {
-    std::string nh_namespace = "";
-    bool visualize_gain = true;
-    bool visualize_text = true;
-    bool visualize_visible_voxels = true;
-    bool visualize_value = true;
+    std::string nh_namespace = "skeleton_planner_visualizer";
+    bool visualize_frontiers = true;
+    bool visualize_inactive_frontiers = false;
 
     [[nodiscard]] bool isValid() const;
     [[nodiscard]] Config checkValid() const;
   };
 
   SkeletonVisualizer(const Config& config,
-                     std::shared_ptr<Communicator> communicator);
+                     const std::shared_ptr<Communicator>& communicator);
   ~SkeletonVisualizer() override = default;
 
   void visualize() override;
 
- protected:
+ private:
+  visualization_msgs::MarkerArray visualizeFrontier(const Frontier& frontier,
+                                                    unsigned int* id);
+
+ private:
   const Config config_;
   std::shared_ptr<SkeletonPlanner> planner_;
   ros::NodeHandle nh_;
   ros::Publisher pub_;
+
+  // tracking
+  int frontier_msg_id_;
+
+  // Settings
+  const voxblox::Color kColorList[8] = {
+      voxblox::Color::Red(),    voxblox::Color::Blue(),
+      voxblox::Color::Green(),  voxblox::Color::Yellow(),
+      voxblox::Color::Orange(), voxblox::Color::Teal(),
+      voxblox::Color::Pink(),   voxblox::Color::Purple()};
+  const std::string frontier_ns = "frontiers";
 };
 
 }  // namespace glocal_exploration
