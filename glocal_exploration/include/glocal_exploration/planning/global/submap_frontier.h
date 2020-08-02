@@ -22,32 +22,41 @@ struct FrontierCandidate {
 };
 
 /**
- * Contains all candidate points that form a connected frontier.
+ * Contains all candidate points that form a connected frontier. All points are
+ * in Mission frame (M), where transforms are managed by the FrontierCollection.
  */
 class Frontier {
  public:
   Frontier() = default;
-  ~Frontier() = default;
+  virtual ~Frontier() = default;
 
   // point access
   [[nodiscard]] size_t size() const {
     return points_.size();
-  } std::vector<FrontierCandidate>::iterator begin() {
+  }[[nodiscard]] std::vector<FrontierCandidate>::const_iterator begin() const {
     return points_.begin();
   }
-  std::vector<FrontierCandidate>::iterator end() { return points_.end(); }
-
-  // accessors
-  [[nodiscard]] const Point& centroid() const {
-    return centroid_;
-  }[[nodiscard]] bool isActive() const {
-    return is_active_;
+  [[nodiscard]] std::vector<FrontierCandidate>::const_iterator end() const {
+    return points_.end();
+  }[[nodiscard]] std::vector<FrontierCandidate>::iterator begin() {
+    return points_.begin();
   }
+  [[nodiscard]] std::vector<FrontierCandidate>::iterator end() {
+    return points_.end();
+  }
+
+      // accessors
+      [[nodiscard]] const Point& centroid() const {
+    return centroid_;
+  }
+  [[nodiscard]] bool isActive() const { return is_active_; }
 
   // interaction
   void addPoint(const Point& point);
   void setPoints(const std::vector<Point>& points);
   void computeCentroid(bool only_active_frontiers = false);
+  void applyTransformation(const Transformation& transformation);
+  void setIsActive(bool is_active) { is_active_ = is_active; }
 
  private:
   std::vector<FrontierCandidate> points_;
@@ -58,10 +67,39 @@ class Frontier {
 /**
  * The frontier collection contains all frontiers of a submap.
  */
-struct FrontierCollection {
-  int id;
-  std::vector<Frontier> frontiers;
-  Transformation T_M_S;
+class FrontierCollection {
+ public:
+  FrontierCollection(int id, const Transformation& T_M_S_initial);
+  virtual ~FrontierCollection() = default;
+
+  // frontier access
+  [[nodiscard]] size_t size() const {
+    return frontiers_.size();
+  }[[nodiscard]] std::vector<Frontier>::const_iterator begin() const {
+    return frontiers_.begin();
+  }
+  [[nodiscard]] std::vector<Frontier>::const_iterator end() const {
+    return frontiers_.end();
+  }[[nodiscard]] std::vector<Frontier>::iterator begin() {
+    return frontiers_.begin();
+  }
+  [[nodiscard]] std::vector<Frontier>::iterator end() {
+    return frontiers_.end();
+  }
+
+      // accessors
+      [[nodiscard]] int getID() const {
+    return id_;
+  }
+
+  // interaction
+  Frontier& addFrontier();
+  void transformFrontiers(const Transformation& T_M_S);
+
+ private:
+  int id_;
+  std::vector<Frontier> frontiers_;
+  Transformation T_M_S_prev_;
 };
 
 }  // namespace glocal_exploration

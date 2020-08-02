@@ -13,7 +13,8 @@ namespace glocal_exploration {
 
 /**
  * Implements the wavefront frontier detection algorithm as described in this
- * paper: https://journals.sagepub.com/doi/full/10.1177/0278364913494911
+ * paper: https://journals.sagepub.com/doi/full/10.1177/0278364913494911 /
+ * https://arxiv.org/pdf/1806.03581.pdf.
  */
 class WaveFrontDetector {
  public:

@@ -28,4 +28,30 @@ void Frontier::computeCentroid(bool only_active_frontiers) {
   centroid_ /= count;
 }
 
+void Frontier::applyTransformation(const Transformation& transformation) {
+  for (FrontierCandidate& point : points_) {
+    point.position = transformation * point.position;
+  }
+}
+
+FrontierCollection::FrontierCollection(int id,
+                                       const Transformation& T_M_S_initial)
+    : id_(id), T_M_S_prev_(T_M_S_initial) {}
+
+Frontier& FrontierCollection::addFrontier() {
+  frontiers_.emplace_back(Frontier());
+  return frontiers_.back();
+}
+
+void FrontierCollection::transformFrontiers(const Transformation& T_M_S) {
+  if (T_M_S == T_M_S_prev_) {
+    return;
+  }
+  Transformation T_new_prev = T_M_S.inverse() * T_M_S_prev_;
+  for (Frontier& frontier : frontiers_) {
+    frontier.applyTransformation(T_new_prev);
+  }
+  T_M_S_prev_ = T_M_S;
+}
+
 }  // namespace glocal_exploration
