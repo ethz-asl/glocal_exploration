@@ -1,13 +1,15 @@
 #include "glocal_exploration/planning/global/wavefront_detector.h"
 
+#include <memory>
 #include <queue>
+#include <utility>
 #include <vector>
 
 namespace glocal_exploration {
 
 void WaveFrontDetector::resetDetectorToLayer(
-    const voxblox::Layer<voxblox::TsdfVoxel>& layer) {
-  layer_.reset(&layer);
+    std::shared_ptr<const voxblox::Layer<voxblox::TsdfVoxel>> layer) {
+  layer_ = std::move(layer);
   voxel_size_ = layer_->voxel_size();
   voxel_size_inv_ = 1.0 / voxel_size_;
   voxels_per_side_ = layer_->voxels_per_side();
@@ -17,7 +19,7 @@ void WaveFrontDetector::computeFrontiers(
     const Point& initial_point, std::vector<std::vector<Point>>* result) {
   result->clear();
 
-  // Reset maps queue and lists.
+  // Reset map queue and lists.
   map_queue_ = std::queue<Index>();
   map_open_list_.clear();
   map_closed_list_.clear();
@@ -53,7 +55,7 @@ void WaveFrontDetector::mapBFS(std::vector<std::vector<Point>>* result) {
       Index neighbor = candidate + offset;
 
       if (!isInMapOpen(neighbor) && !isInMapClosed(neighbor)) {
-        // Check if the neighbor is adjacent open space.
+        // Check if the neighbor is adjacent to open space.
         for (const Index& offset_2 : kNeighborOffsets) {
           if (indexIsFreeSpace(neighbor + offset_2)) {
             enqueueMap(neighbor);
@@ -90,6 +92,7 @@ void WaveFrontDetector::frontierBFS(std::vector<std::vector<Point>>* result) {
         }
       }
     }
+    frontier_closed_list_.insert(frontier_candidate);
   }
   // Append new frontier to result.
   result->push_back(frontier);
@@ -125,7 +128,6 @@ WaveFrontDetector::Index WaveFrontDetector::popMap() {
   Index idx = map_queue_.front();
   map_queue_.pop();
   map_open_list_.erase(idx);
-  map_closed_list_.insert(idx);
   return idx;
 }
 
@@ -133,7 +135,6 @@ WaveFrontDetector::Index WaveFrontDetector::popFrontier() {
   Index idx = frontier_queue_.front();
   frontier_queue_.pop();
   frontier_open_list_.erase(idx);
-  frontier_closed_list_.insert(idx);
   return idx;
 }
 
@@ -142,15 +143,15 @@ bool WaveFrontDetector::isInMapOpen(const Index& index) const {
 }
 
 bool WaveFrontDetector::isInMapClosed(const Index& index) const {
-  return map_closed_list_.find(index) != map_open_list_.end();
+  return map_closed_list_.find(index) != map_closed_list_.end();
 }
 
 bool WaveFrontDetector::isInFrontierOpen(const Index& index) const {
-  return frontier_open_list_.find(index) != map_open_list_.end();
+  return frontier_open_list_.find(index) != frontier_open_list_.end();
 }
 
 bool WaveFrontDetector::isInFrontierClosed(const Index& index) const {
-  return frontier_closed_list_.find(index) != map_open_list_.end();
+  return frontier_closed_list_.find(index) != frontier_closed_list_.end();
 }
 
 bool WaveFrontDetector::isFrontier(const Index& index) const {

@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <queue>
+#include <utility>
 #include <vector>
 
 #include <voxblox/core/layer.h>
@@ -24,7 +25,8 @@ class WaveFrontDetector {
   WaveFrontDetector() = default;
   ~WaveFrontDetector() = default;
 
-  void resetDetectorToLayer(const voxblox::Layer<voxblox::TsdfVoxel>& layer);
+  void resetDetectorToLayer(
+      std::shared_ptr<const voxblox::Layer<voxblox::TsdfVoxel>> layer);
 
   // The result contains vectors of points that belong to the same frontier.
   void computeFrontiers(const Point& initial_point,
