@@ -42,7 +42,7 @@ mapping:
   use_missing_points_for_clearing: true
   # Integrator settings temporal window (for compatibility with voxgraph)
   pointcloud_deintegration_queue_length: 40
-  publish_map_every_n_sec: 20.0
+  publish_map_every_n_sec: 5 #20.0
   publish_map_with_trajectory: true
   publish_tsdf_map: true
   # Visualization
@@ -55,9 +55,9 @@ mapping:
   publish_pointclouds_on_update: true
 
   # VOXGRAPH
-  debug: true
+  debug: false
   submap_topic: "/glocal/glocal_system/mapping/tsdf_map_out"
-  submap_creation_interval: 6
+  submap_creation_interval: 60 #6
   loop_closure_topic_queue_length: 1000
   submap_topic_queue_length: 10
   publisher_queue_length: 10
@@ -100,7 +100,7 @@ mapping:
 
 local_planner:
   type: rh_rrt_star
-  verbosity: 3
+  verbosity: 0
   # RH-RRT-Star params
   local_sampling_radius: 3.0  # m
   global_sampling_radius: 100 # m
@@ -133,10 +133,10 @@ global_planner:
   verbosity: 4
   
   # Submap Frontiers Evaluator
-  min_frontier_size: 1
-  submaps_are_frozen: false
+  min_frontier_size: 10
+  submaps_are_frozen: true
   
   # Visualization
   visualize_frontiers: true
-  visualize_inactive_frontiers: true
+  visualize_inactive_frontiers: false
     

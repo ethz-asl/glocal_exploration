@@ -29,7 +29,8 @@
   <node name="experiment_manager" pkg="glocal_exploration_ros" type="experiment_manager.py" output="screen"/>
   
   <!-- tf -->
-  <node pkg="tf" type="static_transform_publisher" name="static_tf" args="0 0 0 0 0 0 1 /odom /world 100"/>
+  <node pkg="tf" type="static_transform_publisher" name="static_tf_odom_world" args="0 0 0 0 0 0 1 /odom /world 100"/>
+  <node pkg="tf" type="static_transform_publisher" name="static_tf_mission_world" args="0 0 0 0 0 0 1 /world /mission 100"/>
   
   <!-- airsim client -->
   <node name="airsim_simulator" pkg="unreal_airsim" type="airsim_simulator_node" required="true" output="screen" args="-alsologtostderr">

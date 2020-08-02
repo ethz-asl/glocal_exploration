@@ -34,20 +34,20 @@ void Frontier::applyTransformation(const Transformation& transformation) {
   }
 }
 
-FrontierCollection::FrontierCollection(int id,
-                                       const Transformation& T_M_S_initial)
-    : id_(id), T_M_S_prev_(T_M_S_initial) {}
+FrontierCollection::FrontierCollection(int id) : id_(id) {
+  T_M_S_prev_.setIdentity();
+}
 
 Frontier& FrontierCollection::addFrontier() {
   frontiers_.emplace_back(Frontier());
   return frontiers_.back();
 }
 
-void FrontierCollection::transformFrontiers(const Transformation& T_M_S) {
+void FrontierCollection::updateFrontierFrame(const Transformation& T_M_S) {
   if (T_M_S == T_M_S_prev_) {
     return;
   }
-  Transformation T_new_prev = T_M_S.inverse() * T_M_S_prev_;
+  Transformation T_new_prev = T_M_S * T_M_S_prev_.inverse();
   for (Frontier& frontier : frontiers_) {
     frontier.applyTransformation(T_new_prev);
   }

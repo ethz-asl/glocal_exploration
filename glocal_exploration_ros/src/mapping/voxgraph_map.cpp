@@ -136,7 +136,12 @@ void VoxgraphMap::getAllSubmapData(std::vector<SubmapData>* data) {
     SubmapData datum;
     datum.id = submap->getID();
     datum.T_M_S = submap->getPose().cast<FloatingPoint>();
-    datum.tsdf_layer.reset(submap->getTsdfMap().getTsdfLayerConstPtr());
+    // NOTE(schmluk): This is a layer t copy initialization s.t. it does not
+    // interfere with the other things voxgraph is doing (the server can
+    // segfault otherwise).
+    datum.tsdf_layer =
+        std::make_shared<const voxblox::Layer<voxblox::TsdfVoxel>>(
+            submap->getTsdfMap().getTsdfLayer());
     data->push_back(datum);
   }
 }

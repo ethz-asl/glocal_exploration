@@ -74,7 +74,8 @@ void VoxbloxMap::getAllSubmapData(std::vector<SubmapData>* data) {
   SubmapData datum;
   datum.id = 0;
   datum.T_M_S.setIdentity();
-  datum.tsdf_layer.reset(server_->getTsdfMapPtr()->getTsdfLayerConstPtr());
+  datum.tsdf_layer = std::make_shared<const voxblox::Layer<voxblox::TsdfVoxel>>(
+      server_->getTsdfMapPtr()->getTsdfLayer());
   data->push_back(datum);
 }
 

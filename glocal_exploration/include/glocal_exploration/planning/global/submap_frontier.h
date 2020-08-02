@@ -69,7 +69,8 @@ class Frontier {
  */
 class FrontierCollection {
  public:
-  FrontierCollection(int id, const Transformation& T_M_S_initial);
+  FrontierCollection() = default;
+  explicit FrontierCollection(int id);
   virtual ~FrontierCollection() = default;
 
   // frontier access
@@ -96,7 +97,7 @@ class FrontierCollection {
 
   // interaction
   Frontier& addFrontier();
-  void transformFrontiers(const Transformation& T_M_S);
+  void updateFrontierFrame(const Transformation& T_M_S);
 
  private:
   int id_;

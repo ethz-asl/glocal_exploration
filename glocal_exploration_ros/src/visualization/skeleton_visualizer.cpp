@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <iostream>
 #include <memory>
-#include <utility>
 #include <vector>
 
 #include <visualization_msgs/MarkerArray.h>
@@ -34,7 +33,7 @@ SkeletonVisualizer::SkeletonVisualizer(
 
 void SkeletonVisualizer::visualize() {
   if (config_.visualize_frontiers) {
-    // Note(schmluk): If submaps are frozen  the id_tracker will ensure that
+    // Note(schmluk): If submaps are frozen the id_tracker will ensure that
     // frontier colors persist. Otherwise the colors will be nicely spaced.
     unsigned int id_tracker = 0;
     std::vector<int> ids;
@@ -47,15 +46,15 @@ void SkeletonVisualizer::visualize() {
     // Erase previous visualizations
     auto msg = visualization_msgs::Marker();
     auto msg_array = visualization_msgs::MarkerArray();
-    msg.ns = frontier_ns;
-    msg.action = visualization_msgs::Marker::DELETEALL;
     msg.header.frame_id = "mission";
     msg.header.stamp = ros::Time::now();
+    msg.ns = frontier_ns;
+    msg.action = visualization_msgs::Marker::DELETEALL;
     msg_array.markers.push_back(msg);
     pub_.publish(msg_array);
 
     // Visualize all frontiers in all submaps.
-    frontier_msg_id_ = 0;
+    frontier_msg_id_ = 0;  // Tracker for each voxels id.
     for (const int& id : ids) {
       const FrontierCollection& frontiers = planner_->getFrontiers().at(id);
       for (const Frontier& frontier : frontiers) {
@@ -68,13 +67,13 @@ void SkeletonVisualizer::visualize() {
 visualization_msgs::MarkerArray SkeletonVisualizer::visualizeFrontier(
     const Frontier& frontier, unsigned int* id) {
   auto result = visualization_msgs::MarkerArray();
-  if (!frontier.isActive() || config_.visualize_inactive_frontiers) {
+  if (!frontier.isActive() && !config_.visualize_inactive_frontiers) {
     return result;
   }
   voxblox::Color color =
-      kColorList[*id % sizeof(kColorList) / sizeof(*kColorList)];
+      kColorList[*id % (sizeof(kColorList) / sizeof(*kColorList))];
   for (const FrontierCandidate& point : frontier) {
-    if (!point.is_active || config_.visualize_inactive_frontiers) {
+    if (!point.is_active && !config_.visualize_inactive_frontiers) {
       continue;
     }
     auto msg = visualization_msgs::Marker();
@@ -98,7 +97,7 @@ visualization_msgs::MarkerArray SkeletonVisualizer::visualizeFrontier(
     if (point.is_active) {
       msg.color.a = 1.0;
     } else {
-      msg.color.a = 0.2;
+      msg.color.a = 0.1;
     }
     result.markers.push_back(msg);
   }

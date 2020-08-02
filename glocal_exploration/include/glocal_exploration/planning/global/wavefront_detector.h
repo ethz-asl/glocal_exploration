@@ -9,6 +9,7 @@
 #include <voxblox/core/layer.h>
 
 #include "glocal_exploration/common.h"
+#include "glocal_exploration/mapping/map_base.h"
 
 namespace glocal_exploration {
 
@@ -46,8 +47,7 @@ class WaveFrontDetector {
   bool isInFrontierOpen(const Index& index) const;
   bool isInFrontierClosed(const Index& index) const;
   bool isFrontier(const Index& index) const;
-  bool indexIsObserved(const Index& index) const;
-  bool indexIsFreeSpace(const Index& index) const;
+  MapBase::VoxelState voxelState(const Index& index) const;
 
  private:
   const Index kNeighborOffsets[26] = {

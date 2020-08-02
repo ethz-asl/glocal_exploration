@@ -46,7 +46,7 @@ void RHRRTStarVisualizer::visualize() {
 
   // cached headers for all msgs
   timestamp_ = ros::Time::now();
-  frame_id_ = "world";
+  frame_id_ = "mission";
 
   // Display all trajectories in the input and erase previous ones
   double max_value = std::numeric_limits<double>::min();

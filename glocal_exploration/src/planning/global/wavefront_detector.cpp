@@ -53,11 +53,10 @@ void WaveFrontDetector::mapBFS(std::vector<std::vector<Point>>* result) {
 
     for (const Index& offset : kNeighborOffsets) {
       Index neighbor = candidate + offset;
-
       if (!isInMapOpen(neighbor) && !isInMapClosed(neighbor)) {
         // Check if the neighbor is adjacent to open space.
         for (const Index& offset_2 : kNeighborOffsets) {
-          if (indexIsFreeSpace(neighbor + offset_2)) {
+          if (voxelState(neighbor + offset_2) == MapBase::VoxelState::kFree) {
             enqueueMap(neighbor);
             break;
           }
@@ -83,9 +82,9 @@ void WaveFrontDetector::frontierBFS(std::vector<std::vector<Point>>* result) {
       // Add the point to the current frontier.
       frontier.emplace_back(centerPointFromIndex(frontier_candidate));
 
+      // Enqueue all neighbors to check for frontiers.
       for (const Index& offset : kNeighborOffsets) {
         Index neighbor = frontier_candidate + offset;
-
         if (!isInFrontierOpen(neighbor) || !isInFrontierClosed(neighbor) ||
             !isInMapClosed(neighbor)) {
           enqueueFrontier(neighbor);
@@ -155,42 +154,39 @@ bool WaveFrontDetector::isInFrontierClosed(const Index& index) const {
 }
 
 bool WaveFrontDetector::isFrontier(const Index& index) const {
-  // Here frontiers are defined as unknwon voxels that border free space voxels.
-  if (indexIsObserved(index)) {
+  // Here frontiers are defined as unknown voxels that border free space voxels.
+  if (voxelState(index) != MapBase::VoxelState::kUnknown) {
     return false;
   }
 
   // Check all neighboring voxels.
   for (const Index& offset : kNeighborOffsets) {
-    if (indexIsObserved(index + offset)) {
+    if (voxelState(index + offset) == MapBase::VoxelState::kFree) {
       return true;
     }
   }
   return false;
 }
 
-bool WaveFrontDetector::indexIsObserved(const Index& index) const {
+MapBase::VoxelState WaveFrontDetector::voxelState(const Index& index) const {
   voxblox::BlockIndex block_idx;
   voxblox::VoxelIndex voxel_idx;
   voxblox::getBlockAndVoxelIndexFromGlobalVoxelIndex(index, voxels_per_side_,
                                                      &block_idx, &voxel_idx);
-  auto block_ptr = layer_->getBlockPtrByIndex(block_idx);
-  if (block_ptr) {
-    return block_ptr->getVoxelByVoxelIndex(voxel_idx).weight > 1e-6;
+  auto block = layer_->getBlockPtrByIndex(block_idx);
+  if (block) {
+    const voxblox::TsdfVoxel& voxel = block->getVoxelByVoxelIndex(voxel_idx);
+    if (voxel.weight <= 1e-6) {
+      return MapBase::VoxelState::kUnknown;
+    } else if (voxel.distance > voxel_size_) {
+      // Note(schmluk): The surface is slightly inflated to make detection more
+      // conservative and avoid frontiers out in the blue.
+      return MapBase::VoxelState::kFree;
+    } else {
+      return MapBase::VoxelState::kOccupied;
+    }
   }
-  return false;
-}
-
-bool WaveFrontDetector::indexIsFreeSpace(const Index& index) const {
-  voxblox::BlockIndex block_idx;
-  voxblox::VoxelIndex voxel_idx;
-  voxblox::getBlockAndVoxelIndexFromGlobalVoxelIndex(index, voxels_per_side_,
-                                                     &block_idx, &voxel_idx);
-  auto block_ptr = layer_->getBlockPtrByIndex(block_idx);
-  if (block_ptr) {
-    return block_ptr->getVoxelByVoxelIndex(voxel_idx).distance > 0.0;
-  }
-  return false;
+  return MapBase::VoxelState::kUnknown;
 }
 
 }  // namespace glocal_exploration
