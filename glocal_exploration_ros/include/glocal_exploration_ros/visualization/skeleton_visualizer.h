@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <ros/ros.h>
 #include <visualization_msgs/MarkerArray.h>
