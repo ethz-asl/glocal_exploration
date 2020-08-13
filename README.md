@@ -1,6 +1,12 @@
 # glocal_exploration
 Efficient local and global exploration on submap collections with changing past pose estimates
 
+### Time for Voxiverse v0 (:
+* `mav_voxblox_planning` on branch [hotfix/glocal](https://github.com/ethz-asl/mav_voxblox_planning/tree/hotfix/glocal) (alternatively: [devel/voxgraph_planning](https://github.com/ethz-asl/mav_voxblox_planning/tree/devel/voxgraph_planning)).
+* `asldoc-2019-ma-gasserl` branch [feature/glocal](https://github.com/ethz-asl/asldoc-2019-ma-gasserl/tree/feature/glocal).
+* `voxblox` on branch [feature/temporal_window](https://github.com/ethz-asl/voxblox/tree/feature/temporal_window).
+* `voxgraph` on [feature/temporal_window](https://github.com/ethz-asl/voxgraph/tree/feature/temporal_window).
+
 # Maze demo
 These are just preliminary instructions to setup for development.
 
@@ -17,6 +23,7 @@ These are just preliminary instructions to setup for development.
   ```
   roslaunch unreal_airsim parse_config_to_airsim.launch source:=/home/$USER/catkin_ws/src/glocal_exploration/glocal_exploration_ros/config/maze_airsim.yaml
   ```
+  This step needs to be repeated if other AirSim Settings were used.
   
 ## Run
 * Start the UE4 Editor with Maze Scenario, play in editor (alt+P), shift+f1 to tab out.
