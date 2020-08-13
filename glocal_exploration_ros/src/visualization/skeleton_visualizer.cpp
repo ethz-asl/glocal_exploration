@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iostream>
 #include <memory>
+#include <random>
 #include <vector>
 
 #include <visualization_msgs/MarkerArray.h>
@@ -19,11 +20,26 @@ SkeletonVisualizer::Config SkeletonVisualizer::Config::checkValid() const {
 SkeletonVisualizer::SkeletonVisualizer(
     const Config& config, const std::shared_ptr<Communicator>& communicator)
     : config_(config.checkValid()), GlobalPlannerVisualizerBase(communicator) {
-  // reference planner
+  // Reference planner.
   planner_ = std::dynamic_pointer_cast<SkeletonPlanner>(comm_->globalPlanner());
   if (!planner_) {
     LOG(FATAL) << "Can not setup 'SkeletonVisualizer' with a global planner "
                   "that is not of type 'SkeletonPlanner'.";
+  }
+
+  // Colors.
+  if (config_.n_frontier_colors <= 1) {
+    color_list_ = {voxblox::Color::Green()};
+  } else {
+    color_list_.reserve(config_.n_frontier_colors);
+    for (int i = 0; i < config_.n_frontier_colors; ++i) {
+      float h = static_cast<float>(i) /
+                static_cast<float>(config_.n_frontier_colors - 1);
+      color_list_.emplace_back(voxblox::rainbowColorMap(h));
+      std::random_device random_device;
+      std::shuffle(color_list_.begin(), color_list_.end(),
+                   std::mt19937(random_device()));
+    }
   }
 
   // ROS
@@ -70,8 +86,7 @@ visualization_msgs::MarkerArray SkeletonVisualizer::visualizeFrontier(
   if (!frontier.isActive() && !config_.visualize_inactive_frontiers) {
     return result;
   }
-  voxblox::Color color =
-      kColorList[*id % (sizeof(kColorList) / sizeof(*kColorList))];
+  voxblox::Color color = color_list_[*id % color_list_.size()];
   for (const FrontierCandidate& point : frontier) {
     if (!point.is_active && !config_.visualize_inactive_frontiers) {
       continue;

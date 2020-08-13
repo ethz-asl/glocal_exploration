@@ -19,6 +19,7 @@ class SkeletonVisualizer : public GlobalPlannerVisualizerBase {
     std::string nh_namespace = "skeleton_planner_visualizer";
     bool visualize_frontiers = true;
     bool visualize_inactive_frontiers = false;
+    int n_frontier_colors = 20;
 
     [[nodiscard]] bool isValid() const;
     [[nodiscard]] Config checkValid() const;
@@ -44,11 +45,7 @@ class SkeletonVisualizer : public GlobalPlannerVisualizerBase {
   int frontier_msg_id_;
 
   // Settings
-  const voxblox::Color kColorList[8] = {
-      voxblox::Color::Red(),    voxblox::Color::Blue(),
-      voxblox::Color::Green(),  voxblox::Color::Yellow(),
-      voxblox::Color::Orange(), voxblox::Color::Teal(),
-      voxblox::Color::Pink(),   voxblox::Color::Purple()};
+  std::vector<voxblox::Color> color_list_;
   const std::string frontier_ns = "frontiers";
 };
 
