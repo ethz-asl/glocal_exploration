@@ -5,6 +5,7 @@
 #include <queue>
 #include <string>
 
+#include <cblox_planning_global/linked_planning/skeleton/linked_skeleton_planner.h>
 #include <ros/ros.h>
 
 #include <glocal_exploration/state/communicator.h>
@@ -32,8 +33,9 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
 
   void planningIteration() override;
 
- protected:
+ private:
   const Config config_;
+  std::unique_ptr<mav_planning::CbloxSkeletonPlanner> skeleton_planner_;
 
   // Interface to planner node
   ros::NodeHandle nh_;

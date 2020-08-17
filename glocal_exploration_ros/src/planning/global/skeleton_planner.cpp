@@ -25,6 +25,9 @@ SkeletonPlanner::SkeletonPlanner(const Config& config,
   nh_ = ros::NodeHandle(ros::names::parentNamespace(config_.nh_namespace));
   skeleton_planner_srv_ = nh_.serviceClient<mav_planning_msgs::PlannerService>(
       config_.service_name);
+
+  // Setup planner
+  skeleton_planner_ = std::make_unique<mav_planning::CbloxSkeletonPlanner>();
 }
 
 void SkeletonPlanner::planningIteration() {
