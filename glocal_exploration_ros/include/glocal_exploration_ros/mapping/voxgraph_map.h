@@ -6,6 +6,7 @@
 #include <vector>
 
 #include <glocal_exploration/mapping/map_base.h>
+#include <3rd_party/config_utilities.hpp>
 
 #include "glocal_exploration_ros/mapping/threadsafe_wrappers/threadsafe_voxblox_server.h"
 #include "glocal_exploration_ros/mapping/threadsafe_wrappers/threadsafe_voxgraph_server.h"
@@ -17,14 +18,15 @@ namespace glocal_exploration {
  */
 class VoxgraphMap : public MapBase {
  public:
-  struct Config {
+  struct Config : public config_utilities::Config<Config> {
     // Since this is a ros-class anyways we make it easy and just get the nh.
     std::string nh_private_namespace = "~";
     double traversability_radius = 0.3;  // m
     double clearing_radius = 0.5;        // m
 
-    [[nodiscard]] bool isValid() const;
-    [[nodiscard]] Config checkValid() const;
+    Config();
+    void checkParams() const override;
+    void fromRosParam() override;
   };
 
   explicit VoxgraphMap(const Config& config,

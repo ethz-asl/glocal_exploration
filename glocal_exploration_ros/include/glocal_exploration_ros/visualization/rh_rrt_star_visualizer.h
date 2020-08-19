@@ -7,6 +7,7 @@
 #include <ros/ros.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <3rd_party/config_utilities.hpp>
 
 #include "glocal_exploration/planning/local/rh_rrt_star.h"
 #include "glocal_exploration_ros/visualization/local_planner_visualizer_base.h"
@@ -15,15 +16,16 @@ namespace glocal_exploration {
 
 class RHRRTStarVisualizer : public LocalPlannerVisualizerBase {
  public:
-  struct Config {
+  struct Config : public config_utilities::Config<Config> {
     std::string nh_namespace = "rh_rrt_star_visualizer";
     bool visualize_gain = true;
     bool visualize_text = true;
     bool visualize_visible_voxels = true;
     bool visualize_value = true;
 
-    [[nodiscard]] bool isValid() const { return true; }[[nodiscard]] Config
-        checkValid() const;
+    Config();
+    void checkParams() const override;
+    void fromRosParam() override;
   };
 
   RHRRTStarVisualizer(const Config& config,

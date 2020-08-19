@@ -14,23 +14,45 @@
 #include <voxblox/core/common.h>
 
 #include "glocal_exploration/state/communicator.h"
-#include "glocal_exploration/utility/config_checker.h"
 
 namespace glocal_exploration {
 
-bool RHRRTStar::Config::isValid() const {
-  ConfigChecker checker("RHRRTStar");
-  checker.check_gt(max_path_length, 0.0, "max_path_length");
-  checker.check_gt(path_cropping_length, 0.0, "path_cropping_length");
-  checker.check_gt(max_number_of_neighbors, 0, "max_number_of_neighbors");
-  checker.check_gt(maximum_rewiring_iterations, 0,
-                   "maximum_rewiring_iterations");
-  return checker.isValid();
+RHRRTStar::Config::Config() { setConfigName("RHRRTStar"); }
+
+void RHRRTStar::Config::checkParams() const {
+  checkParamGT(max_path_length, 0.0, "max_path_length");
+  checkParamGT(path_cropping_length, 0.0, "path_cropping_length");
+  checkParamGT(max_number_of_neighbors, 0, "max_number_of_neighbors");
+  checkParamGT(maximum_rewiring_iterations, 0, "maximum_rewiring_iterations");
+  checkParamConfig(lidar_config);
 }
 
-RHRRTStar::Config RHRRTStar::Config::checkValid() const {
-  CHECK(isValid());
-  return Config(*this);
+void RHRRTStar::Config::fromRosParam() {
+  rosParam("verbosity", &verbosity);
+  rosParam("local_sampling_radius", &local_sampling_radius);
+  rosParam("global_sampling_radius", &global_sampling_radius);
+  rosParam("min_local_points", &min_local_points);
+  rosParam("min_path_length", &min_path_length);
+  rosParam("min_sampling_distance", &min_sampling_distance);
+  rosParam("max_path_length", &max_path_length);
+  rosParam("path_cropping_length", &path_cropping_length);
+  rosParam("max_number_of_neighbors", &max_number_of_neighbors);
+  rosParam("maximum_rewiring_iterations", &maximum_rewiring_iterations);
+  rosParam(&lidar_config);
+}
+
+void RHRRTStar::Config::printFields() const {
+  printField("verbosity", verbosity);
+  printField("local_sampling_radius", local_sampling_radius);
+  printField("global_sampling_radius", global_sampling_radius);
+  printField("min_local_points", min_local_points);
+  printField("min_path_length", min_path_length);
+  printField("min_sampling_distance", min_sampling_distance);
+  printField("max_path_length", max_path_length);
+  printField("path_cropping_length", path_cropping_length);
+  printField("max_number_of_neighbors", max_number_of_neighbors);
+  printField("maximum_rewiring_iterations", maximum_rewiring_iterations);
+  printField("lidar_config", lidar_config);
 }
 
 RHRRTStar::RHRRTStar(const Config& config,
@@ -370,7 +392,7 @@ bool RHRRTStar::connectViewPoint(ViewPoint* view_point) {
     if (view_point->tryAddConnection(tree_data_.points[index].get(),
                                      comm_->map().get())) {
       view_point->connections.back().second->cost =
-          computeCost(*view_point->connections.back().second.get());
+          computeCost(*view_point->connections.back().second);
       connection_found = true;
     }
   }

@@ -8,13 +8,15 @@
 #include <voxblox/core/block_hash.h>
 #include <voxblox/core/common.h>
 
+#include <3rd_party/config_utilities.hpp>
+
 #include "glocal_exploration/planning/local/sensor_model.h"
 
 namespace glocal_exploration {
 
 class LidarModel : public SensorModel {
  public:
-  struct Config {
+  struct Config : public config_utilities::Config<Config> {
     double ray_length = 5.0;   // m
     double vertical_fov = 45;  // Total fields of view [deg], expected symmetric
     // w.r.t. sensor facing direction
@@ -26,8 +28,9 @@ class LidarModel : public SensorModel {
         1.0;  // reduce the number of checks by this factor
     Transformation T_baselink_sensor;
 
-    [[nodiscard]] bool isValid() const;
-    [[nodiscard]] Config checkValid() const;
+    void checkParams() const override;
+    void fromRosParam() override;
+    Config();
   };
 
   explicit LidarModel(const Config& config,

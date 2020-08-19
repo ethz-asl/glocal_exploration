@@ -5,19 +5,19 @@
 
 #include <glocal_exploration/common.h>
 #include <glocal_exploration/state/communicator.h>
-#include <glocal_exploration/utility/config_checker.h>
 
 namespace glocal_exploration {
 
-bool VoxbloxMap::Config::isValid() const {
-  ConfigChecker checker("VoxbloxMap");
-  checker.check_gt(traversability_radius, 0.0, "traversability_radius");
-  return checker.isValid();
+VoxbloxMap::Config::Config() { setConfigName("VoxbloxMap"); }
+
+void VoxbloxMap::Config::checkParams() const {
+  checkParamGT(traversability_radius, 0.0, "traversability_radius");
 }
 
-VoxbloxMap::Config VoxbloxMap::Config::checkValid() const {
-  CHECK(isValid());
-  return Config(*this);
+void VoxbloxMap::Config::fromRosParam() {
+  rosParam("traversability_radius", &traversability_radius);
+  rosParam("clearing_radius", &clearing_radius);
+  nh_private_namespace = rosParamNameSpace();
 }
 
 VoxbloxMap::VoxbloxMap(const Config& config,

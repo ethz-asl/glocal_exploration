@@ -12,9 +12,16 @@
 
 namespace glocal_exploration {
 
-RHRRTStarVisualizer::Config RHRRTStarVisualizer::Config::checkValid() const {
-  CHECK(isValid());
-  return Config(*this);
+RHRRTStarVisualizer::Config::Config() { setConfigName("RHRRTStarVisualizer"); }
+
+void RHRRTStarVisualizer::Config::checkParams() const {}
+
+void RHRRTStarVisualizer::Config::fromRosParam() {
+  rosParam("visualize_gain", &visualize_gain);
+  rosParam("visualize_text", &visualize_text);
+  rosParam("visualize_visible_voxels", &visualize_visible_voxels);
+  rosParam("visualize_value", &visualize_value);
+  nh_namespace = rosParamNameSpace();
 }
 
 RHRRTStarVisualizer::RHRRTStarVisualizer(
