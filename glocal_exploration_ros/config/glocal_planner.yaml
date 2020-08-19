@@ -19,6 +19,7 @@ mapping:
 
   clearing_radius: 1.0
   traversability_radius: 1.0
+  verbosity: 1
 
   # VOXBLOX sliding window
   # Grid settings
@@ -100,7 +101,7 @@ mapping:
 
 local_planner:
   type: rh_rrt_star
-  verbosity: 0
+  verbosity: 4
   # RH-RRT-Star params
   local_sampling_radius: 3.0  # m
   global_sampling_radius: 100 # m
@@ -139,4 +140,3 @@ global_planner:
   # Visualization
   visualize_frontiers: true
   visualize_inactive_frontiers: false
-    

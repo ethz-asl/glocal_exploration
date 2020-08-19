@@ -22,7 +22,15 @@ void VoxgraphMap::Config::checkParams() const {
 void VoxgraphMap::Config::fromRosParam() {
   rosParam("traversability_radius", &traversability_radius);
   rosParam("clearing_radius", &clearing_radius);
+  rosParam("verbosity", &verbosity);
   nh_private_namespace = rosParamNameSpace();
+}
+
+void VoxgraphMap::Config::printFields() const {
+  printField("verbosity", verbosity);
+  printField("clearing_radius", clearing_radius);
+  printField("traversability_radius", traversability_radius);
+  printField("nh_private_namespace", nh_private_namespace);
 }
 
 VoxgraphMap::VoxgraphMap(const Config& config,
@@ -30,6 +38,7 @@ VoxgraphMap::VoxgraphMap(const Config& config,
     : MapBase(communicator),
       config_(config.checkValid()),
       local_area_needs_update_(false) {
+  LOG_IF(INFO, config_.verbosity >= 1) << "\n" + config_.toString();
   // Launch the sliding window local map and global map servers
   ros::NodeHandle nh(ros::names::parentNamespace(config_.nh_private_namespace));
   ros::NodeHandle nh_private(config_.nh_private_namespace);
@@ -59,7 +68,7 @@ bool VoxgraphMap::isTraversableInActiveSubmap(const Point& position) {
   double distance = 0.0;
   if (voxblox_server_->getEsdfMapPtr()->getDistanceAtPosition(position,
                                                               &distance)) {
-    // This means the voxel is observed
+    // This means the voxel is observed.
     return (distance > config_.traversability_radius);
   }
   return (position - comm_->currentPose().position()).norm() <

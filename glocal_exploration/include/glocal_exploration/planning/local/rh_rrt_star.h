@@ -53,7 +53,7 @@ class RHRRTStar : public LocalPlannerBase {
   void planningIteration() override;
 
   struct Connection;
-  // View points are the vertices in the tree
+  // View points are the vertices in the tree.
   struct ViewPoint {
     WayPoint pose;
     double gain = 0;
@@ -68,7 +68,7 @@ class RHRRTStar : public LocalPlannerBase {
     bool tryAddConnection(ViewPoint* target, MapBase* map);
     Connection* getActiveConnection();
     [[nodiscard]] Connection const* getActiveConnection() const;
-    ViewPoint* getConnectedViewPoint(size_t index) const;
+    [[nodiscard]] ViewPoint* getConnectedViewPoint(size_t index) const;
   };
 
   // connections are the edges in the tree

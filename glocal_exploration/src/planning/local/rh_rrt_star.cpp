@@ -21,7 +21,7 @@ RHRRTStar::Config::Config() { setConfigName("RHRRTStar"); }
 
 void RHRRTStar::Config::checkParams() const {
   checkParamGT(max_path_length, 0.0, "max_path_length");
-  checkParamGT(path_cropping_length, 0.0, "path_cropping_length");
+  checkParamGE(path_cropping_length, 0.0, "path_cropping_length");
   checkParamGT(max_number_of_neighbors, 0, "max_number_of_neighbors");
   checkParamGT(maximum_rewiring_iterations, 0, "maximum_rewiring_iterations");
   checkParamConfig(lidar_config);
@@ -58,19 +58,20 @@ void RHRRTStar::Config::printFields() const {
 RHRRTStar::RHRRTStar(const Config& config,
                      std::shared_ptr<Communicator> communicator)
     : LocalPlannerBase(std::move(communicator)), config_(config.checkValid()) {
-  // initialize the sensor model
+  // Initialize the sensor model.
   sensor_model_ = std::make_unique<LidarModel>(config_.lidar_config, comm_);
+  LOG_IF(INFO, config_.verbosity >= 1) << "\n" + config_.toString();
 }
 
 void RHRRTStar::planningIteration() {
-  // Newly started local planning
+  // Newly started local planning.
   if (comm_->stateMachine()->previousState() !=
       StateMachine::State::kLocalPlanning) {
     resetPlanner(comm_->currentPose());
     comm_->stateMachine()->signalLocalPlanning();
   }
 
-  // Requested a view point so update
+  // Requested a view point so update.
   if (should_update_) {
     updateGains();
     should_update_ = false;
@@ -109,6 +110,9 @@ void RHRRTStar::resetPlanner(const WayPoint& origin) {
   should_update_ = false;
   pruned_points_ = 0;
   new_points_ = 0;
+
+  // Logging.
+  LOG_IF(INFO, config_.verbosity >= 4) << "Reset the RH-RRT* planner.";
 }
 
 void RHRRTStar::expandTree() {
@@ -258,7 +262,7 @@ void RHRRTStar::updateCollision() {
     for (int _i = 0; _i < viewpoint->connections.size(); ++_i) {
       int i = _i + offset;
 
-      // update every connection only once (by the parent)
+      // Update every connection only once (by the parent).
       if (viewpoint->connections[i].first) {
         Connection* connection = viewpoint->connections[i].second.get();
         if (connection == current_connection_) {
@@ -267,7 +271,7 @@ void RHRRTStar::updateCollision() {
           continue;
         }
 
-        // check collision
+        // Check collision.
         bool collided = false;
         for (auto& path_point : connection->path_points) {
           if (!comm_->map()->isTraversableInActiveSubmap(path_point)) {
@@ -276,7 +280,7 @@ void RHRRTStar::updateCollision() {
           }
         }
 
-        // remove these connections
+        // Remove these connections.
         if (collided) {
           ViewPoint* target = connection->target;
           target->connections.erase(std::remove_if(target->connections.begin(),
@@ -293,7 +297,7 @@ void RHRRTStar::updateCollision() {
     }
   }
 
-  // remove view_points that don't have a connection to the root anymore anymore
+  // Remove view_points that don't have a connection to the root anymore.
   computePointsConnectedToRoot(false);
   tree_data_.points.erase(
       std::remove_if(tree_data_.points.begin(), tree_data_.points.end(),
@@ -499,44 +503,44 @@ double RHRRTStar::computeGNVStep(ViewPoint* view_point, double gain,
 }
 
 bool RHRRTStar::sampleNewPoint(ViewPoint* point) {
-  // sample the goal point
-  double theta = 2.0 * M_PI * static_cast<double>(std::rand()) /
-                 static_cast<double>(RAND_MAX);
-  double phi = acos(1.0 - 2.0 * static_cast<double>(std::rand()) /
-                              static_cast<double>(RAND_MAX));
-  double rho = local_sampled_points_ > 0 ? config_.local_sampling_radius
-                                         : config_.global_sampling_radius;
+  // Sample the goal point.
+  const double theta = 2.0 * M_PI * static_cast<double>(std::rand()) /
+                       static_cast<double>(RAND_MAX);
+  const double phi = acos(1.0 - 2.0 * static_cast<double>(std::rand()) /
+                                    static_cast<double>(RAND_MAX));
+  const double rho = local_sampled_points_ > 0 ? config_.local_sampling_radius
+                                               : config_.global_sampling_radius;
   Eigen::Vector3d goal = rho * Eigen::Vector3d(sin(phi) * cos(theta),
                                                sin(phi) * sin(theta), cos(phi));
   goal += comm_->currentPose().position();
 
-  // Find the nearest neighbor
+  // Find the nearest neighbor.
   std::vector<size_t> nearest_viewpoint;
   if (!findNearestNeighbors(goal, &nearest_viewpoint)) {
     return false;
   }
   Eigen::Vector3d origin =
       tree_data_.points[nearest_viewpoint.front()]->pose.position();
-  double distance_max =
+  const double distance_max =
       std::min(std::max((goal - origin).norm(), config_.min_sampling_distance),
                config_.max_path_length) +
       config_.path_cropping_length;
 
-  // verify and crop the sampled path
-  double range_increment = comm_->map()->getVoxelSize();
+  // Verify and crop the sampled path.
+  const double range_increment = comm_->map()->getVoxelSize();
   double range = range_increment;
   Eigen::Vector3d direction = (goal - origin).normalized();
   while (
       comm_->map()->isTraversableInActiveSubmap(origin + range * direction) &&
-      range < distance_max) {
+      range <= distance_max) {
     range += range_increment;
   }
-  range = range - config_.path_cropping_length - range_increment;
+  range = range - config_.path_cropping_length;
   if (range < config_.min_sampling_distance) {
     return false;
   }
 
-  // write the result
+  // Write the result.
   goal = origin + range * direction;
   point->pose.x = goal.x();
   point->pose.y = goal.y();
@@ -550,7 +554,7 @@ bool RHRRTStar::findNearestNeighbors(Eigen::Vector3d position,
                                      std::vector<size_t>* result,
                                      int n_neighbors) {
   // how to use nanoflann (:
-  // Returns the indices of the neighbors in tree data
+  // Returns the indices of the neighbors in tree data.
   double query_pt[3] = {position.x(), position.y(), position.z()};
   std::size_t ret_index[n_neighbors];  // NOLINT
   double out_dist[n_neighbors];        // NOLINT
@@ -591,15 +595,15 @@ void RHRRTStar::visualizeGain(std::vector<Eigen::Vector3d>* voxels,
         voxblox::getCenterPointFromGridIndex(idx, voxel_size).cast<double>());
   }
 
-  // uniform coloring [0, 1]
+  // Uniform coloring [0, 1].
   colors->assign(voxels->size(), Eigen::Vector3d(1, 0.8, 0));
 }
 
 bool RHRRTStar::ViewPoint::tryAddConnection(ViewPoint* target, MapBase* map) {
-  // Check traversability
+  // Check traversability.
   Eigen::Vector3d origin = pose.position();
   Eigen::Vector3d direction = target->pose.position() - origin;
-  int n_points = std::floor(direction.norm() / map->getVoxelSize());
+  int n_points = std::ceil(direction.norm() / map->getVoxelSize());
   direction.normalize();
   std::vector<Eigen::Vector3d> path_points;
   path_points.resize(n_points);
@@ -610,7 +614,7 @@ bool RHRRTStar::ViewPoint::tryAddConnection(ViewPoint* target, MapBase* map) {
     }
   }
 
-  // Add the connection
+  // Add the connection.
   auto connection = std::make_shared<Connection>();
   connection->parent = this;
   connection->target = target;

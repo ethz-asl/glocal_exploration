@@ -20,6 +20,7 @@ void LidarModel::Config::checkParams() const {
   checkParamGT(vertical_resolution, 0, "vertical_resolution");
   checkParamGT(horizontal_resolution, 0, "horizontal_resolution");
   checkParamGT(ray_length, 0.0, "ray_length");
+  checkParamGT(ray_step, 0.0, "ray_step");
   checkParamGT(downsampling_factor, 0.0, "downsampling_factor");
 }
 
@@ -29,8 +30,20 @@ void LidarModel::Config::fromRosParam() {
   rosParam("vertical_resolution", &vertical_resolution);
   rosParam("horizontal_resolution", &horizontal_resolution);
   rosParam("ray_length", &ray_length);
+  rosParam("ray_step", &ray_step);
   rosParam("downsampling_factor", &downsampling_factor);
   rosParam("T_baselink_sensor", &T_baselink_sensor);
+}
+
+void LidarModel::Config::printFields() const {
+  printField("vertical_fov", vertical_fov);
+  printField("horizontal_fov", horizontal_fov);
+  printField("vertical_resolution", vertical_resolution);
+  printField("horizontal_resolution", horizontal_resolution);
+  printField("ray_length", ray_length);
+  printField("ray_step", ray_step);
+  printField("downsampling_factor", downsampling_factor);
+  printField("T_baselink_sensor", T_baselink_sensor);
 }
 
 LidarModel::LidarModel(const Config& config,

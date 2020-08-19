@@ -23,14 +23,15 @@ class LidarModel : public SensorModel {
     double horizontal_fov = 360;
     int vertical_resolution = 64;
     int horizontal_resolution = 1024;
-    double ray_step = 0.0;  // m, use 0 to default to voxel size
+    double ray_step = 0.1;  // m
     double downsampling_factor =
         1.0;  // reduce the number of checks by this factor
     Transformation T_baselink_sensor;
 
+    Config();
     void checkParams() const override;
     void fromRosParam() override;
-    Config();
+    void printFields() const override;
   };
 
   explicit LidarModel(const Config& config,

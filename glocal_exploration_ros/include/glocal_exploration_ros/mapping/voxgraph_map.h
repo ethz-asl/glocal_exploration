@@ -23,10 +23,12 @@ class VoxgraphMap : public MapBase {
     std::string nh_private_namespace = "~";
     double traversability_radius = 0.3;  // m
     double clearing_radius = 0.5;        // m
+    int verbosity = 0;
 
     Config();
     void checkParams() const override;
     void fromRosParam() override;
+    void printFields() const override;
   };
 
   explicit VoxgraphMap(const Config& config,

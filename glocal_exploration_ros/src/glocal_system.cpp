@@ -197,7 +197,7 @@ bool GlocalSystem::startExploration() {
   // setup initial state.
   comm_->stateMachine()->signalLocalPlanning();
   comm_->setTargetReached(true);
-  LOG_IF(INFO, config_.verbosity >= 1) << "Started Glocal Exploration.";
+  LOG_IF(INFO, config_.verbosity >= 1) << "Started Glocal Exploration Planner.";
   return true;
 }
 
