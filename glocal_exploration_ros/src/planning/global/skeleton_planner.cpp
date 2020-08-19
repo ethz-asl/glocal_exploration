@@ -84,9 +84,7 @@ void SkeletonPlanner::planningIteration() {
   }
 }
 
-void SkeletonPlanner::resetPlanner() {
-  stage_ = 1;
-}
+void SkeletonPlanner::resetPlanner() { stage_ = 1; }
 
 bool SkeletonPlanner::computeGoalPoint() {
   // check there are enough submaps already

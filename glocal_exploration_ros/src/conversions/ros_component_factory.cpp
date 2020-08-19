@@ -3,9 +3,9 @@
 #include <memory>
 #include <string>
 
-#include <3rd_party/config_utilities.hpp>
 #include <glocal_exploration/planning/local/rh_rrt_star.h>
 #include <glocal_exploration/state/region_of_interest.h>
+#include <3rd_party/config_utilities.hpp>
 
 #include "glocal_exploration_ros/mapping/voxblox_map.h"
 #include "glocal_exploration_ros/mapping/voxgraph_map.h"
@@ -43,7 +43,8 @@ std::shared_ptr<RegionOfInterest> ComponentFactoryROS::createRegionOfInterest(
     const ros::NodeHandle& nh) {
   std::string type = getType(nh);
   if (type == "bounding_box") {
-    return std::make_shared<BoundingBox>(config_utilities::getConfigFromRos<BoundingBox::Config>(nh));
+    return std::make_shared<BoundingBox>(
+        config_utilities::getConfigFromRos<BoundingBox::Config>(nh));
   } else {
     LOG(ERROR) << "Unknown region of interest type '" << type << "'.";
     return nullptr;
@@ -85,7 +86,9 @@ std::shared_ptr<GlobalPlannerBase> ComponentFactoryROS::createGlobalPlanner(
     const std::shared_ptr<Communicator>& communicator) {
   std::string type = getType(nh);
   if (type == "skeleton") {
-    return std::make_shared<SkeletonPlanner>(        config_utilities::getConfigFromRos<SkeletonPlanner::Config>(nh), communicator);
+    return std::make_shared<SkeletonPlanner>(
+        config_utilities::getConfigFromRos<SkeletonPlanner::Config>(nh),
+        communicator);
   } else {
     LOG(ERROR) << "Unknown global planner type '" << type << "'.";
     return nullptr;
@@ -98,7 +101,9 @@ ComponentFactoryROS::createGlobalPlannerVisualizer(
     const std::shared_ptr<Communicator>& communicator) {
   std::string type = getType(nh);
   if (type == "skeleton") {
-    return std::make_shared<SkeletonVisualizer>(        config_utilities::getConfigFromRos<SkeletonVisualizer::Config>(nh), communicator);
+    return std::make_shared<SkeletonVisualizer>(
+        config_utilities::getConfigFromRos<SkeletonVisualizer::Config>(nh),
+        communicator);
   } else {
     LOG(WARNING) << "Could not find a visualizer for global planner '" << type
                  << "'.";
