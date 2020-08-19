@@ -11,12 +11,16 @@
 
 namespace glocal_exploration {
 
-bool SubmapFrontierEvaluator::Config::isValid() const { return true; }
+SubmapFrontierEvaluator::Config::Config() {
+  setConfigName("SubmapFrontierEvaluator");
+}
 
-SubmapFrontierEvaluator::Config SubmapFrontierEvaluator::Config::checkValid()
-    const {
-  CHECK(isValid());
-  return Config(*this);
+void SubmapFrontierEvaluator::Config::checkParams() const {}
+
+void SubmapFrontierEvaluator::Config::fromRosParam() {
+  rosParam("verbosity", &verbosity);
+  rosParam("min_frontier_size", &min_frontier_size);
+  rosParam("submaps_are_frozen", &submaps_are_frozen);
 }
 
 SubmapFrontierEvaluator::SubmapFrontierEvaluator(

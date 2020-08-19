@@ -7,6 +7,7 @@
 
 #include <cblox_planning_global/linked_planning/skeleton/linked_skeleton_planner.h>
 #include <ros/ros.h>
+#include <3rd_party/config_utilities.hpp>
 
 #include <glocal_exploration/state/communicator.h>
 
@@ -18,15 +19,17 @@ namespace glocal_exploration {
  */
 class SkeletonPlanner : public SubmapFrontierEvaluator {
  public:
-  struct Config {
+  struct Config : public config_utilities::Config<Config> {
     std::string nh_namespace = "skeleton_global_planner";
     std::string service_name;
 
     SubmapFrontierEvaluator::Config submap_frontier_config;
 
-    [[nodiscard]] bool isValid() const;
-    [[nodiscard]] Config checkValid() const;
+    Config();
+    void checkParams() const override;
+    void fromRosParam() override;
   };
+
   SkeletonPlanner(const Config& config,
                   std::shared_ptr<Communicator> communicator);
   ~SkeletonPlanner() override = default;

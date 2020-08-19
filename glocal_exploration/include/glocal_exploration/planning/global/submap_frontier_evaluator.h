@@ -4,6 +4,8 @@
 #include <memory>
 #include <unordered_map>
 
+#include <3rd_party/config_utilities.hpp>
+
 #include "glocal_exploration/planning/global/global_planner_base.h"
 #include "glocal_exploration/planning/global/submap_frontier.h"
 #include "glocal_exploration/planning/global/wavefront_detector.h"
@@ -15,14 +17,15 @@ namespace glocal_exploration {
  */
 class SubmapFrontierEvaluator : public GlobalPlannerBase {
  public:
-  struct Config {
+  struct Config : public config_utilities::Config<Config> {
     int verbosity = 2;
     int min_frontier_size = 1;
     bool submaps_are_frozen = true;  // false: submap frontiers will be
                                      // recomputed and overwritten.
 
-    [[nodiscard]] bool isValid() const;
-    [[nodiscard]] Config checkValid() const;
+    Config();
+    void checkParams() const override;
+    void fromRosParam() override;
   };
 
   SubmapFrontierEvaluator(const Config& config,

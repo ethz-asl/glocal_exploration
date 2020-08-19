@@ -9,11 +9,14 @@
 
 namespace glocal_exploration {
 
-bool SkeletonPlanner::Config::isValid() const { return true; }
+SkeletonPlanner::Config::Config() { setConfigName("SkeletonPlanner"); }
 
-SkeletonPlanner::Config SkeletonPlanner::Config::checkValid() const {
-  CHECK(isValid());
-  return Config(*this);
+void SkeletonPlanner::Config::checkParams() const {}
+
+void SkeletonPlanner::Config::fromRosParam() {
+  rosParam("service_name", &service_name);
+  rosParam(&submap_frontier_config);
+  nh_namespace = rosParamNameSpace();
 }
 
 SkeletonPlanner::SkeletonPlanner(const Config& config,

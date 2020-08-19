@@ -10,11 +10,15 @@
 
 namespace glocal_exploration {
 
-bool SkeletonVisualizer::Config::isValid() const { return true; }
+SkeletonVisualizer::Config::Config() { setConfigName("SkeletonVisualizer"); }
 
-SkeletonVisualizer::Config SkeletonVisualizer::Config::checkValid() const {
-  CHECK(isValid());
-  return Config(*this);
+void SkeletonVisualizer::Config::checkParams() const {}
+
+void SkeletonVisualizer::Config::fromRosParam() {
+  rosParam("visualize_frontiers", &visualize_frontiers);
+  rosParam("visualize_inactive_frontiers", &visualize_inactive_frontiers);
+  rosParam("n_frontier_colors", &n_frontier_colors);
+  nh_namespace = rosParamNameSpace();
 }
 
 SkeletonVisualizer::SkeletonVisualizer(

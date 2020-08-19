@@ -8,6 +8,7 @@
 #include <ros/ros.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <voxblox/core/common.h>
+#include <3rd_party/config_utilities.hpp>
 
 #include "glocal_exploration_ros/planning/global/skeleton_planner.h"
 #include "glocal_exploration_ros/visualization/global_planner_visualizer_base.h"
@@ -16,14 +17,15 @@ namespace glocal_exploration {
 
 class SkeletonVisualizer : public GlobalPlannerVisualizerBase {
  public:
-  struct Config {
+  struct Config : public config_utilities::Config<Config> {
     std::string nh_namespace = "skeleton_planner_visualizer";
     bool visualize_frontiers = true;
     bool visualize_inactive_frontiers = false;
     int n_frontier_colors = 20;
 
-    [[nodiscard]] bool isValid() const;
-    [[nodiscard]] Config checkValid() const;
+    Config();
+    void checkParams() const override;
+    void fromRosParam() override;
   };
 
   SkeletonVisualizer(const Config& config,
