@@ -7,28 +7,26 @@
 #include <voxblox_ros/ptcloud_vis.h>
 
 #include <glocal_exploration/state/communicator.h>
-#include <glocal_exploration/utility/config_checker.h>
-
 
 namespace glocal_exploration {
 
-bool VoxgraphMap::Config::isValid() const {
-  ConfigChecker checker("VoxgraphMap");
+VoxgraphMap::Config::Config() { setConfigName("VoxgraphMap"); }
+
+void VoxgraphMap::Config::checkParams() const {
   // TODO(@victorr): check param validity
-  checker.check_gt(traversability_radius, 0.0, "traversability_radius");
-  return checker.isValid();
+  checkParamGT(traversability_radius, 0.0, "traversability_radius");
 }
 
-
-VoxgraphMap::Config VoxgraphMap::Config::checkValid() const {
-  CHECK(isValid());
-  return Config(*this);
+void VoxgraphMap::Config::fromRosParam() {
+  rosParam("traversability_radius", &traversability_radius);
+  rosParam("clearing_radius", &clearing_radius);
+  nh_private_namespace = rosParamNameSpace();
 }
 
 VoxgraphMap::VoxgraphMap(const Config& config,
                          const std::shared_ptr<Communicator>& communicator)
-    : MapBase(communicator), 
-      config_(config.checkValid()), 
+    : MapBase(communicator),
+      config_(config.checkValid()),
       local_area_needs_update_(false) {
   // Launch the sliding window local map and global map servers
   ros::NodeHandle nh(ros::names::parentNamespace(config_.nh_private_namespace));

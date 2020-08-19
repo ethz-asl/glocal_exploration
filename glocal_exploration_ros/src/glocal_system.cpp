@@ -5,28 +5,28 @@
 #include <geometry_msgs/Pose.h>
 #include <tf2/utils.h>
 
-#include <glocal_exploration/utility/config_checker.h>
-
 #include "glocal_exploration_ros/conversions/ros_component_factory.h"
-#include "glocal_exploration_ros/conversions/ros_params.h"
 
 namespace glocal_exploration {
 
-bool GlocalSystem::Config::isValid() const {
-  ConfigChecker checker("GlocalSystem");
-  checker.check_gt(replan_position_threshold, 0.0, "replan_position_threshold");
-  checker.check_gt(replan_yaw_threshold, 0.0, "replan_yaw_threshold");
-  return checker.isValid();
+GlocalSystem::Config::Config() { setConfigName("GlocalSystem"); }
+
+void GlocalSystem::Config::checkParams() const {
+  checkParamGT(replan_position_threshold, 0.0, "replan_position_threshold");
+  checkParamGT(replan_yaw_threshold, 0.0, "replan_yaw_threshold");
 }
 
-GlocalSystem::Config GlocalSystem::Config::checkValid() const {
-  CHECK(isValid());
-  return Config(*this);
+void GlocalSystem::Config::fromRosParam() {
+  rosParam("verbosity", &verbosity);
+  rosParam("replan_position_threshold", &replan_position_threshold);
+  rosParam("replan_yaw_threshold", &replan_yaw_threshold);
+  rosParam("waypoint_timeout", &waypoint_timeout);
 }
 
 GlocalSystem::GlocalSystem(const ros::NodeHandle& nh,
                            const ros::NodeHandle& nh_private)
-    : GlocalSystem(nh, nh_private, getGlocalSystemConfigFromRos(nh_private)) {}
+    : GlocalSystem(nh, nh_private,
+                   config_utilities::getConfigFromRos<Config>(nh_private)) {}
 
 GlocalSystem::GlocalSystem(const ros::NodeHandle& nh,
                            const ros::NodeHandle& nh_private,

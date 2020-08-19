@@ -1,20 +1,22 @@
 #include "glocal_exploration/state/region_of_interest.h"
 
-#include "glocal_exploration/utility/config_checker.h"
-
 namespace glocal_exploration {
 
-bool BoundingBox::Config::isValid() const {
-  ConfigChecker checker("BoundingBox");
-  checker.check(x_max > x_min, "x_max is expected > x_min.");
-  checker.check(y_max > y_min, "y_max is expected > y_min.");
-  checker.check(z_max > z_min, "z_max is expected > z_min.");
-  return checker.isValid();
+BoundingBox::Config::Config() { setConfigName("BoundingBox"); }
+
+void BoundingBox::Config::checkParams() const {
+  checkParamCond(x_max > x_min, "x_max is expected > x_min.");
+  checkParamCond(y_max > y_min, "y_max is expected > y_min.");
+  checkParamCond(z_max > z_min, "z_max is expected > z_min.");
 }
 
-BoundingBox::Config BoundingBox::Config::checkValid() const {
-  CHECK(isValid());
-  return Config(*this);
+void BoundingBox::Config::fromRosParam() {
+  rosParam("x_min", &x_min);
+  rosParam("x_max", &x_max);
+  rosParam("y_min", &y_min);
+  rosParam("y_max", &y_max);
+  rosParam("z_min", &z_min);
+  rosParam("z_max", &z_max);
 }
 
 bool BoundingBox::contains(const Eigen::Vector3d& point) {

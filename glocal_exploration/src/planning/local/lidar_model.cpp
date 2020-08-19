@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <memory>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -10,24 +9,28 @@
 #include <voxblox/core/common.h>
 
 #include "glocal_exploration/state/communicator.h"
-#include "glocal_exploration/utility/config_checker.h"
 
 namespace glocal_exploration {
 
-bool LidarModel::Config::isValid() const {
-  ConfigChecker checker("LidarModel");
-  checker.check_gt(vertical_fov, 0.0, "vertical_fov");
-  checker.check_gt(horizontal_fov, 0.0, "horizontal_fov");
-  checker.check_gt(vertical_resolution, 0, "vertical_resolution");
-  checker.check_gt(horizontal_resolution, 0, "horizontal_resolution");
-  checker.check_gt(ray_length, 0.0, "ray_length");
-  checker.check_gt(downsampling_factor, 0.0, "downsampling_factor");
-  return checker.isValid();
+LidarModel::Config::Config() { setConfigName("LidarModel"); }
+
+void LidarModel::Config::checkParams() const {
+  checkParamGT(vertical_fov, 0.0, "vertical_fov");
+  checkParamGT(horizontal_fov, 0.0, "horizontal_fov");
+  checkParamGT(vertical_resolution, 0, "vertical_resolution");
+  checkParamGT(horizontal_resolution, 0, "horizontal_resolution");
+  checkParamGT(ray_length, 0.0, "ray_length");
+  checkParamGT(downsampling_factor, 0.0, "downsampling_factor");
 }
 
-LidarModel::Config LidarModel::Config::checkValid() const {
-  CHECK(isValid());
-  return Config(*this);
+void LidarModel::Config::fromRosParam() {
+  rosParam("vertical_fov", &vertical_fov);
+  rosParam("horizontal_fov", &horizontal_fov);
+  rosParam("vertical_resolution", &vertical_resolution);
+  rosParam("horizontal_resolution", &horizontal_resolution);
+  rosParam("ray_length", &ray_length);
+  rosParam("downsampling_factor", &downsampling_factor);
+  rosParam("T_baselink_sensor", &T_baselink_sensor);
 }
 
 LidarModel::LidarModel(const Config& config,

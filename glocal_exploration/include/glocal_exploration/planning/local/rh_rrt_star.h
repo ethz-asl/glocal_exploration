@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include <3rd_party/config_utilities.hpp>
 #include <3rd_party/nanoflann.hpp>
 
 #include "glocal_exploration/common.h"
@@ -16,7 +17,7 @@ namespace glocal_exploration {
 
 class RHRRTStar : public LocalPlannerBase {
  public:
-  struct Config {
+  struct Config : public config_utilities::Config<Config> {
     int verbosity = 1;
     // sampling
     double local_sampling_radius = 1.5;   // m
@@ -38,8 +39,10 @@ class RHRRTStar : public LocalPlannerBase {
     // sensor model (currently just use lidar)
     LidarModel::Config lidar_config;
 
-    [[nodiscard]] bool isValid() const;
-    [[nodiscard]] Config checkValid() const;
+    void checkParams() const override;
+    void fromRosParam() override;
+    void printFields() const override;
+    Config();
   };
 
   // setup

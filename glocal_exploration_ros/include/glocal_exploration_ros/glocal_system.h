@@ -6,6 +6,7 @@
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
 #include <std_srvs/SetBool.h>
+#include <3rd_party/config_utilities.hpp>
 
 #include "glocal_exploration/state/communicator.h"
 #include "glocal_exploration_ros/visualization/local_planner_visualizer_base.h"
@@ -14,28 +15,29 @@ namespace glocal_exploration {
 
 class GlocalSystem {
  public:
-  struct Config {
+  struct Config : public config_utilities::Config<Config> {
     int verbosity = 1;
     double replan_position_threshold = 0.2;  // m
     double replan_yaw_threshold = 10.0;      // deg
     double waypoint_timeout = 0.0;           // s
 
-    [[nodiscard]] bool isValid() const;
-    [[nodiscard]] Config checkValid() const;
+    Config();
+    void checkParams() const override;
+    void fromRosParam() override;
   };
 
-  // Constructor
+  // Constructors.
   GlocalSystem(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
   GlocalSystem(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
                const Config& config);
   virtual ~GlocalSystem() = default;
 
-  // ROS callbacks
+  // ROS callbacks.
   void odomCallback(const nav_msgs::Odometry& msg);
   bool runSrvCallback(std_srvs::SetBool::Request& req,    // NOLINT
                       std_srvs::SetBool::Response& res);  // NOLINT
 
-  // spinning is managed explicitly, run this to start the planner
+  // spinning is managed explicitly, run this to start the planner.
   void mainLoop();
 
  protected:

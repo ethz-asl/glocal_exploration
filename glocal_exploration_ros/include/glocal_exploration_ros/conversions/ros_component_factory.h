@@ -6,7 +6,7 @@
 
 #include <ros/node_handle.h>
 
-#include "glocal_exploration/state/communicator.h"
+#include <glocal_exploration/state/communicator.h>
 #include "glocal_exploration_ros/visualization/local_planner_visualizer_base.h"
 
 namespace glocal_exploration {
