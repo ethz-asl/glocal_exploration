@@ -91,7 +91,7 @@ void GlocalSystem::mainLoop() {
 }
 
 void GlocalSystem::loopIteration() {
-  // actions
+  // Actions.
   switch (comm_->stateMachine()->currentState()) {
     case StateMachine::State::kLocalPlanning: {
       comm_->localPlanner()->planningIteration();
@@ -103,20 +103,18 @@ void GlocalSystem::loopIteration() {
       global_planner_visualizer_->visualize();
       break;
     }
-  }
+    }
 
   // TEST(schmluk): force global planning
-  if (comm_->newWayPointIsRequested()) {
     comm_->globalPlanner()->planningIteration();
     global_planner_visualizer_->visualize();
-  }
 
-  // move requests
-  if (comm_->newWayPointIsRequested()) {
-    WayPoint next_point = comm_->getRequestedWayPoint();
-    target_position_ = next_point.position();
-    target_yaw_ = next_point.yaw;
-    publishTargetPose();
+    // move requests
+    if (comm_->newWayPointIsRequested()) {
+      WayPoint next_point = comm_->getRequestedWayPoint();
+      target_position_ = next_point.position();
+      target_yaw_ = next_point.yaw;
+      publishTargetPose();
   }
 }
 

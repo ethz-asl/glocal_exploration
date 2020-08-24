@@ -23,6 +23,12 @@ void SubmapFrontierEvaluator::Config::fromRosParam() {
   rosParam("submaps_are_frozen", &submaps_are_frozen);
 }
 
+void SubmapFrontierEvaluator::Config::printFields() const {
+  printField("verbosity", verbosity);
+  printField("min_frontier_size", min_frontier_size);
+  printField("submaps_are_frozen", submaps_are_frozen);
+}
+
 SubmapFrontierEvaluator::SubmapFrontierEvaluator(
     const Config& config, std::shared_ptr<Communicator> communicator)
     : config_(config.checkValid()),

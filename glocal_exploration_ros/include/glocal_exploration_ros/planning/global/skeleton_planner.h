@@ -6,6 +6,7 @@
 #include <string>
 
 #include <cblox_planning_global/linked_planning/skeleton/linked_skeleton_planner.h>
+#include <cblox_planning_global/map_interface/cblox_planner.h>
 #include <ros/ros.h>
 #include <3rd_party/config_utilities.hpp>
 
@@ -20,14 +21,22 @@ namespace glocal_exploration {
 class SkeletonPlanner : public SubmapFrontierEvaluator {
  public:
   struct Config : public config_utilities::Config<Config> {
-    std::string nh_namespace = "skeleton_global_planner";
-    std::string service_name;
+    int verbosity = 1;
+    std::string nh_private_namespace = "~";
 
+    // Frontier evaluator.
     SubmapFrontierEvaluator::Config submap_frontier_config;
+
+    // Skeleton Planner.
+    double collision_radius = 1.0;
+    bool use_path_shortening = true;
+    bool verbose_skeleton_planner = false;
+    std::string frame_id = "world";
 
     Config();
     void checkParams() const override;
     void fromRosParam() override;
+    void printFields() const override;
   };
 
   SkeletonPlanner(const Config& config,
@@ -38,24 +47,26 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
 
  private:
   const Config config_;
-  std::unique_ptr<mav_planning::CbloxSkeletonPlanner> skeleton_planner_;
 
-  // Interface to planner node
-  ros::NodeHandle nh_;
-  ros::ServiceClient skeleton_planner_srv_;
-  ros::ServiceClient publish_global_trajectory_cln_;
-  ros::ServiceServer publish_global_trajectory_srv_;
-  ros::Subscriber trajectory_sub_;
+  // Skeleton planner.
+  using SkeletonMap = mav_planning::CbloxPlanner<cblox::SkeletonSubmap>;
+  std::unique_ptr<SkeletonMap> skeleton_map_;
+  std::unique_ptr<mav_planning::CbloxSkeletonPlanner> skeleton_planner_;
 
   // methods
   void resetPlanner();
   bool computeGoalPoint();
   bool computePathToGoal();
+  void setupSkeletonPlanner();
 
   // variables
   std::queue<Eigen::Vector3d> way_points_;  // in mission frame
-  int stage_;  // at which part of global planning the system is right now
   Eigen::Vector3d goal_point_;
+  ros::Time tmp_;
+
+  // Stages of global planning.
+  enum class Stage { k1ComputePoint, k2ComputePath, k3ExecutePath };
+  Stage stage_ = Stage::k1ComputePoint;
 };
 
 }  // namespace glocal_exploration

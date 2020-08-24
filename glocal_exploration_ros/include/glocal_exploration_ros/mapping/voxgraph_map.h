@@ -23,7 +23,7 @@ class VoxgraphMap : public MapBase {
     std::string nh_private_namespace = "~";
     double traversability_radius = 0.3;  // m
     double clearing_radius = 0.5;        // m
-    int verbosity = 0;
+    int verbosity = 1;
 
     Config();
     void checkParams() const override;
@@ -35,6 +35,7 @@ class VoxgraphMap : public MapBase {
                        const std::shared_ptr<Communicator>& communicator);
   ~VoxgraphMap() override = default;
 
+  // MapBase overrides.
   double getVoxelSize() override { return c_voxel_size_; }
   bool isTraversableInActiveSubmap(const Point& position) override;
   VoxelState getVoxelStateInLocalArea(const Point& position) override;

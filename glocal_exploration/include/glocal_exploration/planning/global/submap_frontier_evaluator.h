@@ -26,6 +26,7 @@ class SubmapFrontierEvaluator : public GlobalPlannerBase {
     Config();
     void checkParams() const override;
     void fromRosParam() override;
+    void printFields() const override;
   };
 
   SubmapFrontierEvaluator(const Config& config,

@@ -71,16 +71,13 @@ Visualization Manager:
       Reference Frame: <Fixed Frame>
       Value: true
     - Class: rviz/MarkerArray
-      Enabled: true
+      Enabled: false
       Marker Topic: /glocal/glocal_system/local_planner/visualization
       Name: Local Planner Visualization
       Namespaces:
-        candidate_gains: true
-        candidate_text: true
-        candidate_trajectories: true
-        next_expected_gain: true
+        {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/Group
       Displays:
         - Alpha: 1
@@ -385,7 +382,7 @@ Visualization Manager:
               Use Fixed Frame: true
               Use rainbow: true
               Value: false
-          Enabled: true
+          Enabled: false
           Name: Local
         - Class: rviz/Group
           Displays:
@@ -435,7 +432,7 @@ Visualization Manager:
                   Marker Topic: /glocal/glocal_system/mapping/combined_mesh
                   Name: Merged submaps
                   Namespaces:
-                    {}
+                    mesh: true
                   Queue Size: 100
                   Value: true
                 - Class: rviz/Marker
