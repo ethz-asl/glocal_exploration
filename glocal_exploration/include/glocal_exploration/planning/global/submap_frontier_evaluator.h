@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <vector>
 
 #include <3rd_party/config_utilities.hpp>
 
@@ -43,6 +44,8 @@ class SubmapFrontierEvaluator : public GlobalPlannerBase {
   const std::unordered_map<int, FrontierCollection>& getFrontiers() const {
     return frontiers_;
   }
+  // access
+  std::vector<const Frontier*> getActiveFrontiers() const;
 
  private:
   const Config config_;

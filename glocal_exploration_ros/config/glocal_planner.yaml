@@ -1,4 +1,11 @@
-# Config for the Planner
+# Config for the Glocal System.
+
+# Global (shared) parameters:
+voxel_size: &voxel_size 0.2
+voxels_per_side: &voxels_per_side 16
+truncation_distance: &truncation_distance 0.6
+collision_radius: &collision_radius 1.0
+
 # General params
 replan_position_threshold: 0.3  # m
 replan_yaw_threshold: 5   # deg
@@ -18,16 +25,16 @@ mapping:
   type: voxgraph
 
   clearing_radius: 1.0
-  traversability_radius: 1.0
+  traversability_radius: *collision_radius
   verbosity: 1
 
   # VOXBLOX sliding window
   # Grid settings
-  tsdf_voxel_size: 0.2
-  tsdf_voxels_per_side: 16
+  tsdf_voxel_size: *voxel_size
+  tsdf_voxels_per_side: *voxels_per_side
   # Integrator settings general
   method: "projective"
-  truncation_distance: 0.60
+  truncation_distance: *truncation_distance
   min_ray_length_m: 1.0
   max_ray_length_m: 10
   max_weight: 1000
@@ -142,7 +149,23 @@ global_planner:
   visualize_inactive_frontiers: false
   
   # CBLOX_SKELETON_PLANNER
-  collision_radius: 0.5
-  use_path_shortening: true
-  verbose_skeleton_planner: true
-  frame_id: mission
+  skeleton:
+    verbose: false
+    visualize: true
+    do_smoothing: false
+    min_value: false
+    num_seconds_to_plan: 3.0
+    grow_time: 3
+    edge_density: 1.5
+    frame_id: mission
+    world_frame: mission
+    mission_frame: mission
+    odom_frame: mission # TODO is this correct?
+    robot_radius: *collision_radius
+    tsdf_voxel_size: *voxel_size
+    tsdf_voxels_per_side: *voxels_per_side
+    esdf_voxel_size: *voxel_size
+    esdf_voxels_per_side: *voxels_per_side
+    truncation_distance: *truncation_distance
+  
+  

@@ -45,42 +45,42 @@
       <remap from="~pointcloud" to="/$(arg mav_name)/Lidar" />
       <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
       <remap from="command/pose" to="/$(arg mav_name)/command/pose" />
-      <remap from="~/submap_in" to="~/mapping/submap_esdfs" />
-      <remap from="~/submap_pose_in" to="~/mapping/submap_poses" />
+      <remap from="~/global_planner/submap_in" to="~/mapping/submap_esdfs" />
+      <remap from="~/global_planner/submap_pose_in" to="~/mapping/submap_poses" />
     </node>  
     
     <!-- Skeleton Planner -->
-    <node name="cblox_skeleton_server" pkg="cblox_planning_global"
-          type="cblox_skeleton_server" output="screen"
-          args="-alsologtostderr" clear_params="true" required="false" if="false">
-      <remap from="submap_in" to="glocal_system/mapping/submap_esdfs" />
-      <remap from="submap_pose_in" to="glocal_system/mapping/submap_poses" />
-      
-	    <param name="verbose" value="false" />
+<!--    <node name="cblox_skeleton_server" pkg="cblox_planning_global"-->
+<!--          type="cblox_skeleton_server" output="screen"-->
+<!--          args="-alsologtostderr" clear_params="true" required="false" if="false">-->
+<!--      <remap from="submap_in" to="glocal_system/mapping/submap_esdfs" />-->
+<!--      <remap from="submap_pose_in" to="glocal_system/mapping/submap_poses" />-->
+<!--      -->
+<!--	    <param name="verbose" value="false" />-->
 <!--      <param name="active_submap_service_topic" value="/planner/planner_node/publish_active_submap1"/>    -->
 <!--the name must be wrong if Voxgraph map is in the same node of the planner, otherwise deadlock!-->
 
-      <param name="visualize" value="true"/>
-      <param name="robot_radius" value="0.5"/>
-      <param name="do_smoothing" value="false"/>
-      <param name="path_shortening" value="true"/>
-      <param name="min_value" value="false"/>
+<!--      <param name="visualize" value="true"/>-->
+<!--      <param name="robot_radius" value="0.5"/>-->
+<!--      <param name="do_smoothing" value="false"/>-->
+<!--      <param name="path_shortening" value="true"/>-->
+<!--      <param name="min_value" value="false"/>-->
 
-      <param name="num_seconds_to_plan" value="3"/>
-      <param name="grow_time" value="3"/>
-      <param name="edge_density" value="1.5"/>
+<!--      <param name="num_seconds_to_plan" value="3"/>-->
+<!--      <param name="grow_time" value="3"/>-->
+<!--      <param name="edge_density" value="1.5"/>-->
 
-      <param name="frame_id" value="mission"/> 
-      <param name="world_frame" value="mission"/> 
-      <param name="mission_frame" value="mission"/> 
-      <param name="odom_frame" value="world"/> 
+<!--      <param name="frame_id" value="mission"/> -->
+<!--      <param name="world_frame" value="mission"/> -->
+<!--      <param name="mission_frame" value="mission"/> -->
+<!--      <param name="odom_frame" value="world"/> -->
 
-      <param name="tsdf_voxel_size" value="0.2" />
-      <param name="tsdf_voxels_per_side" value="16" />
-      <param name="esdf_voxel_size" value="0.2" />
-      <param name="esdf_voxels_per_side" value="16" />
-      <param name="truncation_distance" value="0.6"/>
-    </node>  
+<!--      <param name="tsdf_voxel_size" value="0.2" />-->
+<!--      <param name="tsdf_voxels_per_side" value="16" />-->
+<!--      <param name="esdf_voxel_size" value="0.2" />-->
+<!--      <param name="esdf_voxels_per_side" value="16" />-->
+<!--      <param name="truncation_distance" value="0.6"/>-->
+<!--    </node>  -->
 
 	<!-- Global trajectory smoother -->
 <!--    <node name="mav_local_planner" pkg="mav_local_planner" type="mav_local_planner_node" args="-alsologtostderr" output="screen" clear_params="true">-->

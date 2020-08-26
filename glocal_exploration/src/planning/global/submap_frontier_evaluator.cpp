@@ -29,6 +29,19 @@ void SubmapFrontierEvaluator::Config::printFields() const {
   printField("submaps_are_frozen", submaps_are_frozen);
 }
 
+std::vector<const Frontier*> SubmapFrontierEvaluator::getActiveFrontiers()
+    const {
+  std::vector<const Frontier*> result;
+  for (const auto& frontiers : frontiers_) {
+    for (const auto& frontier : frontiers.second) {
+      if (frontier.isActive()) {
+        result.push_back(&frontier);
+      }
+    }
+  }
+  return result;
+}
+
 SubmapFrontierEvaluator::SubmapFrontierEvaluator(
     const Config& config, std::shared_ptr<Communicator> communicator)
     : config_(config.checkValid()),

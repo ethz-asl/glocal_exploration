@@ -5,8 +5,7 @@
 #include <queue>
 #include <string>
 
-#include <cblox_planning_global/linked_planning/skeleton/linked_skeleton_planner.h>
-#include <cblox_planning_global/map_interface/cblox_planner.h>
+#include <cblox_planning_global/linked_planning/skeleton/linked_skeleton_planner_ros.h>
 #include <ros/ros.h>
 #include <3rd_party/config_utilities.hpp>
 
@@ -49,15 +48,13 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   const Config config_;
 
   // Skeleton planner.
-  using SkeletonMap = mav_planning::CbloxPlanner<cblox::SkeletonSubmap>;
-  std::unique_ptr<SkeletonMap> skeleton_map_;
-  std::unique_ptr<mav_planning::CbloxSkeletonPlanner> skeleton_planner_;
+  std::unique_ptr<mav_planning::CbloxSkeletonGlobalPlanner> skeleton_planner_;
 
   // methods
   void resetPlanner();
+  bool computeFrontiers();
   bool computeGoalPoint();
-  bool computePathToGoal();
-  void setupSkeletonPlanner();
+  bool computePathToGoal(const Point& goal);
 
   // variables
   std::queue<Eigen::Vector3d> way_points_;  // in mission frame
@@ -65,8 +62,13 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   ros::Time tmp_;
 
   // Stages of global planning.
-  enum class Stage { k1ComputePoint, k2ComputePath, k3ExecutePath };
-  Stage stage_ = Stage::k1ComputePoint;
+  enum class Stage {
+    k1ComputeFrontiers,
+    k2ComputeGoalPoint,
+    k3ComputePath,
+    k4ExecutePath
+  };
+  Stage stage_;
 };
 
 }  // namespace glocal_exploration
