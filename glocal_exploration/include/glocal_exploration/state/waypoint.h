@@ -17,9 +17,7 @@ struct WayPoint {
   double yaw = 0;
 
   // utilities
-  [[nodiscard]] Eigen::Vector3d position() const {
-    return Eigen::Vector3d(x, y, z);
-  }
+  Eigen::Vector3d position() const { return Eigen::Vector3d(x, y, z); }
 };
 
 }  // namespace glocal_exploration

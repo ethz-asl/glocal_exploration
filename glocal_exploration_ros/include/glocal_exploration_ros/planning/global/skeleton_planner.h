@@ -26,12 +26,6 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
     // Frontier evaluator.
     SubmapFrontierEvaluator::Config submap_frontier_config;
 
-    // Skeleton Planner.
-    double collision_radius = 1.0;
-    bool use_path_shortening = true;
-    bool verbose_skeleton_planner = false;
-    std::string frame_id = "world";
-
     Config();
     void checkParams() const override;
     void fromRosParam() override;

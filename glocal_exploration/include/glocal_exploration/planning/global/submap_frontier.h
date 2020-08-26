@@ -31,25 +31,19 @@ class Frontier {
   virtual ~Frontier() = default;
 
   // point access
-  [[nodiscard]] size_t size() const {
-    return points_.size();
-  }[[nodiscard]] std::vector<FrontierCandidate>::const_iterator begin() const {
+  size_t size() const { return points_.size(); }
+  std::vector<FrontierCandidate>::const_iterator begin() const {
     return points_.begin();
   }
-  [[nodiscard]] std::vector<FrontierCandidate>::const_iterator end() const {
-    return points_.end();
-  }[[nodiscard]] std::vector<FrontierCandidate>::iterator begin() {
-    return points_.begin();
-  }
-  [[nodiscard]] std::vector<FrontierCandidate>::iterator end() {
+  std::vector<FrontierCandidate>::const_iterator end() const {
     return points_.end();
   }
+  std::vector<FrontierCandidate>::iterator begin() { return points_.begin(); }
+  std::vector<FrontierCandidate>::iterator end() { return points_.end(); }
 
-      // accessors
-      [[nodiscard]] const Point& centroid() const {
-    return centroid_;
-  }
-  [[nodiscard]] bool isActive() const { return is_active_; }
+  // accessors
+  const Point& centroid() const { return centroid_; }
+  bool isActive() const { return is_active_; }
 
   // interaction
   void addPoint(const Point& point);
@@ -74,24 +68,16 @@ class FrontierCollection {
   virtual ~FrontierCollection() = default;
 
   // frontier access
-  [[nodiscard]] size_t size() const {
-    return frontiers_.size();
-  }[[nodiscard]] std::vector<Frontier>::const_iterator begin() const {
+  size_t size() const { return frontiers_.size(); }
+  std::vector<Frontier>::const_iterator begin() const {
     return frontiers_.begin();
   }
-  [[nodiscard]] std::vector<Frontier>::const_iterator end() const {
-    return frontiers_.end();
-  }[[nodiscard]] std::vector<Frontier>::iterator begin() {
-    return frontiers_.begin();
-  }
-  [[nodiscard]] std::vector<Frontier>::iterator end() {
-    return frontiers_.end();
-  }
+  std::vector<Frontier>::const_iterator end() const { return frontiers_.end(); }
+  std::vector<Frontier>::iterator begin() { return frontiers_.begin(); }
+  std::vector<Frontier>::iterator end() { return frontiers_.end(); }
 
-      // accessors
-      [[nodiscard]] int getID() const {
-    return id_;
-  }
+  // accessors
+  int getID() const { return id_; }
 
   // interaction
   Frontier& addFrontier();

@@ -67,8 +67,8 @@ class RHRRTStar : public LocalPlannerBase {
     // helper methods
     bool tryAddConnection(ViewPoint* target, MapBase* map);
     Connection* getActiveConnection();
-    [[nodiscard]] Connection const* getActiveConnection() const;
-    [[nodiscard]] ViewPoint* getConnectedViewPoint(size_t index) const;
+    Connection const* getActiveConnection() const;
+    ViewPoint* getConnectedViewPoint(size_t index) const;
   };
 
   // connections are the edges in the tree
@@ -105,11 +105,8 @@ class RHRRTStar : public LocalPlannerBase {
       KDTree;
 
   // accessors for visualization
-  [[nodiscard]] const Config& getConfig() const {
-    return config_;
-  }[[nodiscard]] const TreeData& getTreeData() const {
-    return tree_data_;
-  }
+  const Config& getConfig() const { return config_; }
+  const TreeData& getTreeData() const { return tree_data_; }
   void visualizeGain(std::vector<Eigen::Vector3d>* voxels,
                      std::vector<Eigen::Vector3d>* colors, double* scale,
                      const WayPoint& pose) const;
@@ -157,6 +154,8 @@ class RHRRTStar : public LocalPlannerBase {
   // stats
   int pruned_points_;
   int new_points_;
+
+  int executed_segments_;
 };
 
 }  // namespace glocal_exploration

@@ -23,29 +23,22 @@ class Communicator {
   virtual ~Communicator() = default;
 
   // general information accessors
-  [[nodiscard]] bool targetIsReached() const {
-    return target_reached_;
-  }[[nodiscard]] const WayPoint& currentPose() const {
-    return current_pose_;
-  }
-  [[nodiscard]] bool newWayPointIsRequested() const {
-    return new_waypoint_requested_;
-  }
+  bool targetIsReached() const { return target_reached_; }
+  const WayPoint& currentPose() const { return current_pose_; }
+  bool newWayPointIsRequested() const { return new_waypoint_requested_; }
 
-      // componet accessors
-      [[nodiscard]] const std::shared_ptr<StateMachine>& stateMachine() const {
+  // componet accessors
+  const std::shared_ptr<StateMachine>& stateMachine() const {
     return state_machine_;
   }
-  [[nodiscard]] const std::shared_ptr<RegionOfInterest>& regionOfInterest()
-      const {
-        return roi_;
-      }[[nodiscard]] const std::shared_ptr<MapBase>& map() const {
-    return map_;
+  const std::shared_ptr<RegionOfInterest>& regionOfInterest() const {
+    return roi_;
   }
-  [[nodiscard]] const std::shared_ptr<LocalPlannerBase>& localPlanner() const {
+  const std::shared_ptr<MapBase>& map() const { return map_; }
+  const std::shared_ptr<LocalPlannerBase>& localPlanner() const {
     return local_planner_;
-  }[[nodiscard]] const std::shared_ptr<GlobalPlannerBase>& globalPlanner()
-      const {
+  }
+  const std::shared_ptr<GlobalPlannerBase>& globalPlanner() const {
     return global_planner_;
   }
 
