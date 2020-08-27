@@ -90,7 +90,7 @@ bool SkeletonPlanner::computeFrontiers() {
   // Check there are enough submaps already.
   if (data.empty()) {
     LOG_IF(INFO, config_.verbosity >= 2)
-        << "No submaps finished yet for global planning, swtching back local.";
+        << "No submaps finished yet for global planning, switching back local.";
     comm_->stateMachine()->signalLocalPlanning();
     return false;
   }
@@ -119,12 +119,25 @@ bool SkeletonPlanner::computeGoalPoint() {
   visualization_info_.goals_changed = true;
   visualization_info_.goal_points.clear();
 
-  // Get all frontiers and order according to euclidian distance.
+  // Get all frontiers and order according to euclidean distance.
   std::vector<FrontierSearchData> frontiers;
   for (const auto& frontier : getActiveFrontiers()) {
     FrontierSearchData& data = frontiers.emplace_back();
-    data.centroid = frontier->centroid();
-    data.euclidian_distance =
+    data.centroid = Point(0.0, 0.0, 0.0);
+    double num_points = 0.0;
+    for (const auto& point : *frontier) {
+      if (point.is_active) {
+        data.centroid += point.position;
+        num_points += 1.0;
+      }
+    }
+    if (num_points == 0.0) {
+      LOG(WARNING) << "Tried to compute the centroid for a frontier without "
+                      "active points.";
+      continue;
+    }
+    data.centroid /= num_points;
+    data.euclidean_distance =
         (comm_->currentPose().position() - frontier->centroid()).norm();
   }
   if (frontiers.empty()) {
@@ -132,11 +145,11 @@ bool SkeletonPlanner::computeGoalPoint() {
   }
   std::sort(frontiers.begin(), frontiers.end(),
             [](const FrontierSearchData& lhs, const FrontierSearchData& rhs) {
-              return lhs.euclidian_distance > rhs.euclidian_distance;
+              return lhs.euclidean_distance > rhs.euclidean_distance;
             });
 
   // Compute paths to frontiers to determine the closest reachable one. Start
-  // with closest and use euclidian distance as lower bound to prune candidates.
+  // with closest and use euclidean distance as lower bound to prune candidates.
   auto t_start = std::chrono::high_resolution_clock::now();
   int path_counter = 0;
   int unreachable_goal_counter = 0;
@@ -168,7 +181,7 @@ bool SkeletonPlanner::computeGoalPoint() {
       double dist = it->path_distance;
       auto it2 = ++it;
       while (it2 != frontiers.end()) {
-        if (it2->euclidian_distance >= dist) {
+        if (it2->euclidean_distance >= dist) {
           visualization_info_.goal_points.emplace_back(std::make_pair(2, goal));
           it2 = frontiers.erase(it2);
         } else {
@@ -215,7 +228,7 @@ bool SkeletonPlanner::computeGoalPoint() {
   if (config_.verbosity >= 3) {
     ss << " (" << std::fixed << std::setprecision(2) << it->path_distance
        << "m path, " << std::fixed << std::setprecision(2)
-       << it->euclidian_distance << "m euclidean distance).";
+       << it->euclidean_distance << "m euclidean distance).";
   }
   LOG_IF(INFO, config_.verbosity >= 2) << ss.str();
   return true;
@@ -234,10 +247,6 @@ void SkeletonPlanner::executeWayPoint() {
       way_point.yaw = std::atan2((way_point.y - comm_->currentPose().y),
                                  (way_point.x - comm_->currentPose().x));
       comm_->requestWayPoint(way_point);
-      std::cout
-          << "length: "
-          << (way_point.position() - comm_->currentPose().position()).norm()
-          << std::endl;
       way_points_.erase(way_points_.begin());
     }
   }

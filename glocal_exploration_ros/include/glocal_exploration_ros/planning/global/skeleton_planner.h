@@ -78,7 +78,7 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   // Frontier search
   struct FrontierSearchData {
     Point centroid;
-    double euclidian_distance;
+    double euclidean_distance;
     double path_distance;
     std::vector<WayPoint> way_points;
   };

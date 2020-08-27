@@ -105,12 +105,13 @@ void GlocalSystem::loopIteration() {
     }
   }
 
-  // move requests
+  // Move requests.
   if (comm_->newWayPointIsRequested()) {
-    WayPoint next_point = comm_->getRequestedWayPoint();
+    const WayPoint& next_point = comm_->getRequestedWayPoint();
     target_position_ = next_point.position();
     target_yaw_ = next_point.yaw;
     publishTargetPose();
+    comm_->setRequestedWayPointRead();
   }
 }
 

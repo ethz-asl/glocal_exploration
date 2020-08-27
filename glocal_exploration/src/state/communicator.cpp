@@ -33,12 +33,8 @@ void Communicator::setupRegionOfInterest(
 
 void Communicator::requestWayPoint(const WayPoint& way_point) {
   new_waypoint_requested_ = true;
+  previous_target_way_point_ = target_way_point_;
   target_way_point_ = way_point;
-}
-
-WayPoint Communicator::getRequestedWayPoint() {
-  new_waypoint_requested_ = false;
-  return target_way_point_;
 }
 
 }  // namespace glocal_exploration
