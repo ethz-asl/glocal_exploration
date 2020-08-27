@@ -60,16 +60,19 @@ void SkeletonPlanner::planningIteration() {
       if (computeFrontiers()) {
         stage_ = Stage::k2ComputeGoalAndPath;
       }
+      break;
     }
     case Stage::k2ComputeGoalAndPath: {
       // Select a frontier to move towards, including path generation.
       if (computeGoalPoint()) {
         stage_ = Stage::k3ExecutePath;
       }
+      break;
     }
     case Stage::k3ExecutePath: {
       // Execute way points until finished, then switch back to local.
       executeWayPoint();
+      break;
     }
   }
 }
@@ -80,6 +83,7 @@ bool SkeletonPlanner::computeFrontiers() {
   // Guarantee tha all frontiers are computed and update them to the current
   // state. If they are already pre-computed and frozen the computation step
   // will do nothing.
+  visualization_info_.frontiers_changed = true;
   std::vector<MapBase::SubmapData> data;
   comm_->map()->getAllSubmapData(&data);
 
@@ -112,6 +116,9 @@ bool SkeletonPlanner::computeFrontiers() {
 
 bool SkeletonPlanner::computeGoalPoint() {
   // Compute the frontier with the shortest path to it.
+  visualization_info_.goals_changed = true;
+  visualization_info_.goal_points.clear();
+
   // Get all frontiers and order according to euclidian distance.
   std::vector<FrontierSearchData> frontiers;
   for (const auto& frontier : getActiveFrontiers()) {
@@ -140,13 +147,14 @@ bool SkeletonPlanner::computeGoalPoint() {
     Point goal = it->centroid;
     if (!findValidGoalPoint(&goal)) {
       unreachable_goal_counter++;
+      visualization_info_.goal_points.emplace_back(std::make_pair(3, goal));
       it = frontiers.erase(it);
       continue;
     }
 
     // Try to find a path via linked skeleton planning.
     path_counter++;
-    if (computePath(it->centroid, &way_points)) {
+    if (computePath(goal, &way_points)) {
       it->way_points = way_points;
       it->path_distance =
           (way_points[0].position() - comm_->currentPose().position()).norm();
@@ -154,16 +162,22 @@ bool SkeletonPlanner::computeGoalPoint() {
         it->path_distance +=
             (way_points[i].position() - way_points[i - 1].position()).norm();
       }
+      visualization_info_.goal_points.emplace_back(std::make_pair(0, goal));
 
       // Prune paths that can not be shorter than this one.
       double dist = it->path_distance;
-      frontiers.erase(std::remove_if(++it, frontiers.end(),
-                                     [dist](const FrontierSearchData& x) {
-                                       return x.euclidian_distance >= dist;
-                                     }),
-                      frontiers.end());
+      auto it2 = ++it;
+      while (it2 != frontiers.end()) {
+        if (it2->euclidian_distance >= dist) {
+          visualization_info_.goal_points.emplace_back(std::make_pair(2, goal));
+          it2 = frontiers.erase(it2);
+        } else {
+          it2++;
+        }
+      }
     } else {
       // Remove inaccessible frontiers.
+      visualization_info_.goal_points.emplace_back(std::make_pair(1, goal));
       it = frontiers.erase(it);
     }
   }

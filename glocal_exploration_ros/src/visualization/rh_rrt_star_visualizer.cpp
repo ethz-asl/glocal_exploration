@@ -20,7 +20,8 @@ void RHRRTStarVisualizer::Config::fromRosParam() {
   rosParam("visualize_gain", &visualize_gain);
   rosParam("visualize_text", &visualize_text);
   rosParam("visualize_visible_voxels", &visualize_visible_voxels);
-  rosParam("visualize_value", &visualize_value);
+  rosParam("visualize_tree", &visualize_tree);
+  rosParam("visualize_executed_path", &visualize_executed_path);
   nh_namespace = rosParamNameSpace();
 }
 
@@ -36,13 +37,44 @@ RHRRTStarVisualizer::RHRRTStarVisualizer(
 
   // ROS
   nh_ = ros::NodeHandle(config_.nh_namespace);
-  pub_ = nh_.advertise<visualization_msgs::MarkerArray>("visualization", 100);
+  value_pub_ = nh_.advertise<visualization_msgs::Marker>("tree", 100);
+  gain_pub_ = nh_.advertise<visualization_msgs::Marker>("gain", 100);
+  text_pub_ = nh_.advertise<visualization_msgs::Marker>("text", 100);
+  voxel_pub_ =
+      nh_.advertise<visualization_msgs::MarkerArray>("visible_voxels", 100);
+  path_pub_ = nh_.advertise<visualization_msgs::Marker>("executed_path", 100);
 }
 
 void RHRRTStarVisualizer::visualize() {
   // Visualize only if a new waypoint was requested.
   if (!comm_->newWayPointIsRequested()) {
     return;
+  }
+
+  // Executed path, local planning is in dark blue.
+  if (config_.visualize_executed_path) {
+    visualization_msgs::Marker msg;
+    msg.header.frame_id = frame_id_;
+    msg.header.stamp = timestamp_;
+    msg.pose.orientation.w = 1.0;
+    msg.type = visualization_msgs::Marker::LINE_STRIP;
+    msg.id = executed_path_id_++;
+    msg.scale.x = 0.08;
+    msg.color.a = 1;
+    msg.color.r = 0.0;
+    msg.color.g = 0.0;
+    msg.color.b = 0.8;
+    msg.action = visualization_msgs::Marker::ADD;
+    geometry_msgs::Point pt;
+    pt.x = comm_->getPreviousWayPoint().x;
+    pt.y = comm_->getPreviousWayPoint().y;
+    pt.z = comm_->getPreviousWayPoint().z;
+    msg.points.push_back(pt);
+    pt.x = comm_->getRequestedWayPoint().x;
+    pt.y = comm_->getRequestedWayPoint().y;
+    pt.z = comm_->getRequestedWayPoint().z;
+    msg.points.push_back(pt);
+    path_pub_.publish(msg);
   }
 
   // initialize data
@@ -53,9 +85,8 @@ void RHRRTStarVisualizer::visualize() {
 
   // cached headers for all msgs
   timestamp_ = ros::Time::now();
-  frame_id_ = "mission";
 
-  // Display all trajectories in the input and erase previous ones
+  // Find min and max gain and value and other required data.
   double max_value = std::numeric_limits<double>::min();
   double min_value = std::numeric_limits<double>::max();
   double max_gain = std::numeric_limits<double>::min();
@@ -75,88 +106,81 @@ void RHRRTStarVisualizer::visualize() {
     }
   }
 
-  // clear previous visualizations
-  auto msg_array = visualization_msgs::MarkerArray();
-  if (config_.visualize_value) {
-    auto msg = visualization_msgs::Marker();
-    msg.ns = value_ns_;
-    msg.action = visualization_msgs::Marker::DELETEALL;
-    msg.header.frame_id = frame_id_;
-    msg.header.stamp = timestamp_;
-    msg_array.markers.push_back(msg);
-  }
-  if (config_.visualize_gain) {
+  // Visualizations.
+  if (config_.visualize_tree && value_pub_.getNumSubscribers() > 0) {
     auto msg = visualization_msgs::Marker();
     msg.action = visualization_msgs::Marker::DELETEALL;
     msg.header.frame_id = frame_id_;
     msg.header.stamp = timestamp_;
-    msg.ns = gain_ns_;
-    msg_array.markers.push_back(msg);
-  }
-  if (config_.visualize_text) {
-    auto msg = visualization_msgs::Marker();
-    msg.action = visualization_msgs::Marker::DELETEALL;
-    msg.header.frame_id = frame_id_;
-    msg.header.stamp = timestamp_;
-    msg.ns = text_ns_;
-    msg_array.markers.push_back(msg);
-  }
-  if (config_.visualize_text) {
-    auto msg = visualization_msgs::Marker();
-    msg.action = visualization_msgs::Marker::DELETEALL;
-    msg.header.frame_id = frame_id_;
-    msg.header.stamp = timestamp_;
-    msg.ns = voxel_ns_;
-    msg_array.markers.push_back(msg);
-  }
-  pub_.publish(msg_array);
+    value_pub_.publish(msg);
 
-  visualization_msgs::MarkerArray value_markers, gain_markers, text_markers,
-      visible_voxels;
-  for (int i = 0; i < points.size(); ++i) {
-    // visualize value
-    if (config_.visualize_value) {
-      value_markers.markers.push_back(
-          visualizeValue(*(points[i]), min_value, max_value, i));
-    }
-
-    // visualize gain
-    if (config_.visualize_gain) {
-      gain_markers.markers.push_back(
-          visualizeGain(*(points[i]), min_gain, max_gain, i));
-    }
-
-    // Text
-    if (config_.visualize_text) {
-      text_markers.markers.push_back(visualizeText(*(points[i]), i));
+    if (comm_->stateMachine()->currentState() ==
+        StateMachine::State::kLocalPlanning) {
+      for (int i = 0; i < points.size(); ++i) {
+        visualizeValue(*(points[i]), min_value, max_value, i);
+      }
     }
   }
 
-  if (config_.visualize_visible_voxels) {
-    // Display only the gain of the next selected viewpoint.
-    RHRRTStar::ViewPoint* next_point =
-        std::find_if(points.begin(), points.end(),
-                     [](const std::unique_ptr<RHRRTStar::ViewPoint>& p) {
-                       return p->is_root;
-                     })
-            ->get();
-    if (next_point) {
-      visible_voxels = visualizeVisibleVoxels(*next_point);
+  if (config_.visualize_gain && gain_pub_.getNumSubscribers() > 0) {
+    auto msg = visualization_msgs::Marker();
+    msg.action = visualization_msgs::Marker::DELETEALL;
+    msg.header.frame_id = frame_id_;
+    msg.header.stamp = timestamp_;
+    gain_pub_.publish(msg);
+    if (comm_->stateMachine()->currentState() ==
+        StateMachine::State::kLocalPlanning) {
+      for (int i = 0; i < points.size(); ++i) {
+        visualizeGain(*(points[i]), min_gain, max_gain, i);
+      }
+    }
+  }
+
+  if (config_.visualize_text && text_pub_.getNumSubscribers() > 0) {
+    auto msg = visualization_msgs::Marker();
+    msg.action = visualization_msgs::Marker::DELETEALL;
+    msg.header.frame_id = frame_id_;
+    msg.header.stamp = timestamp_;
+    text_pub_.publish(msg);
+    if (comm_->stateMachine()->currentState() ==
+        StateMachine::State::kLocalPlanning) {
+      for (int i = 0; i < points.size(); ++i) {
+        visualizeText(*(points[i]), i);
+      }
+    }
+  }
+
+  if (config_.visualize_visible_voxels && voxel_pub_.getNumSubscribers() > 0) {
+    if (comm_->stateMachine()->currentState() ==
+        StateMachine::State::kLocalPlanning) {
+      // Display only the gain of the next selected viewpoint.
+      RHRRTStar::ViewPoint* next_point =
+          std::find_if(points.begin(), points.end(),
+                       [](const std::unique_ptr<RHRRTStar::ViewPoint>& p) {
+                         return p->is_root;
+                       })
+              ->get();
+      if (next_point) {
+        visualizeVisibleVoxels(*next_point);
+      } else {
+        LOG(WARNING) << "Could not find a point labeled root to visualize.";
+      }
     } else {
-      LOG(WARNING) << "Could not find a point labeled root to visualize.";
+      // Clear the previous visualization.
+      auto msg = visualization_msgs::Marker();
+      msg.action = visualization_msgs::Marker::DELETEALL;
+      msg.header.frame_id = frame_id_;
+      msg.header.stamp = timestamp_;
+      auto array_msg = visualization_msgs::MarkerArray();
+      array_msg.markers.push_back(msg);
+      voxel_pub_.publish(array_msg);
     }
   }
-
-  // publish
-  pub_.publish(value_markers);
-  pub_.publish(gain_markers);
-  pub_.publish(text_markers);
-  pub_.publish(visible_voxels);
 }
 
-visualization_msgs::Marker RHRRTStarVisualizer::visualizeValue(
-    const RHRRTStar::ViewPoint& point, double min_value, double max_value,
-    int id) {
+void RHRRTStarVisualizer::visualizeValue(const RHRRTStar::ViewPoint& point,
+                                         double min_value, double max_value,
+                                         int id) {
   // Setup marker message
   auto msg = visualization_msgs::Marker();
   msg.header.frame_id = frame_id_;
@@ -164,7 +188,6 @@ visualization_msgs::Marker RHRRTStarVisualizer::visualizeValue(
   msg.pose.orientation.w = 1.0;
   msg.type = visualization_msgs::Marker::LINE_STRIP;
   msg.id = id;
-  msg.ns = value_ns_;
   msg.scale.x = 0.08;
   msg.color.a = 1;
   msg.action = visualization_msgs::Marker::ADD;
@@ -204,19 +227,18 @@ visualization_msgs::Marker RHRRTStarVisualizer::visualizeValue(
     msg.points.push_back(geometry_msgs::Point());  // suppress rviz warnings
     msg.points.push_back(geometry_msgs::Point());
   }
-  return msg;
+  value_pub_.publish(msg);
 }
 
-visualization_msgs::Marker RHRRTStarVisualizer::visualizeGain(
-    const RHRRTStar::ViewPoint& point, double min_gain, double max_gain,
-    int id) {
+void RHRRTStarVisualizer::visualizeGain(const RHRRTStar::ViewPoint& point,
+                                        double min_gain, double max_gain,
+                                        int id) {
   auto msg = visualization_msgs::Marker();
   msg.header.frame_id = frame_id_;
   msg.header.stamp = timestamp_;
   msg.type = visualization_msgs::Marker::ARROW;
   msg.action = visualization_msgs::Marker::ADD;
   msg.id = id;
-  msg.ns = gain_ns_;
   msg.scale.x = 0.2;
   msg.scale.y = 0.1;
   msg.scale.z = 0.1;
@@ -242,15 +264,14 @@ visualization_msgs::Marker RHRRTStarVisualizer::visualizeGain(
     msg.color.b = 1.0;
   }
   msg.color.a = 1.0;
-  return msg;
+  gain_pub_.publish(msg);
 }
 
-visualization_msgs::Marker RHRRTStarVisualizer::visualizeText(
-    const RHRRTStar::ViewPoint& point, int id) {
+void RHRRTStarVisualizer::visualizeText(const RHRRTStar::ViewPoint& point,
+                                        int id) {
   auto msg = visualization_msgs::Marker();
   msg.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
   msg.id = id;
-  msg.ns = text_ns_;
   msg.header.stamp = timestamp_;
   msg.header.frame_id = frame_id_;
   msg.scale.z = 0.3;
@@ -281,11 +302,13 @@ visualization_msgs::Marker RHRRTStarVisualizer::visualizeText(
          << (v > 1000 ? v / 1000 : v) << (v > 1000 ? "k" : "");
   msg.text = stream.str();
   msg.action = visualization_msgs::Marker::ADD;
-  return msg;
+  text_pub_.publish(msg);
 }
 
-visualization_msgs::MarkerArray RHRRTStarVisualizer::visualizeVisibleVoxels(
+void RHRRTStarVisualizer::visualizeVisibleVoxels(
     const RHRRTStar::ViewPoint& point) {
+  // NOTE(schmluk): This could also be a single message of type cube array but
+  // that won't display properly on my rviz.
   auto result = visualization_msgs::MarkerArray();
   std::vector<Eigen::Vector3d> voxels, colors;
   double scale;
@@ -298,7 +321,6 @@ visualization_msgs::MarkerArray RHRRTStarVisualizer::visualizeVisibleVoxels(
     msg.header.stamp = timestamp_;
     msg.pose.orientation.w = 1.0;
     msg.type = visualization_msgs::Marker::CUBE;
-    msg.ns = voxel_ns_;
     msg.id = i;
     msg.action = visualization_msgs::Marker::ADD;
     msg.scale.x = scale;
@@ -313,7 +335,7 @@ visualization_msgs::MarkerArray RHRRTStarVisualizer::visualizeVisibleVoxels(
     msg.color.a = 0.5;
     result.markers.push_back(msg);
   }
-  return result;
+  voxel_pub_.publish(result);
 }
 
 }  // namespace glocal_exploration

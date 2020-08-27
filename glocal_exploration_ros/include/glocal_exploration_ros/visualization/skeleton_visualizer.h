@@ -21,6 +21,9 @@ class SkeletonVisualizer : public GlobalPlannerVisualizerBase {
     std::string nh_namespace = "skeleton_planner_visualizer";
     bool visualize_frontiers = true;
     bool visualize_inactive_frontiers = false;
+    bool visualize_executed_path = true;
+    bool visualize_candidate_goals = true;
+    bool visualize_planned_path = true;
     int n_frontier_colors = 20;
 
     Config();
@@ -34,22 +37,31 @@ class SkeletonVisualizer : public GlobalPlannerVisualizerBase {
 
   void visualize() override;
 
+  // Visualization tasks.
+  void visualizeExecutedPath();
+  void visualizeFrontiers();
+  void visualizePlannedPath();
+  void visualizeGoalPoints();
+
  private:
-  visualization_msgs::MarkerArray visualizeFrontier(const Frontier& frontier,
-                                                    unsigned int* id);
+  void visualizeFrontier(const Frontier& frontier, unsigned int* id);
 
  private:
   const Config config_;
   std::shared_ptr<SkeletonPlanner> planner_;
   ros::NodeHandle nh_;
-  ros::Publisher pub_;
+  ros::Publisher frontier_pub_;
+  ros::Publisher executed_path_pub_;
+  ros::Publisher planned_path_pub_;
+  ros::Publisher goals_pub_;
 
-  // tracking
+  // Tracking.
   int frontier_msg_id_;
+  int executed_path_id_ = 0;
 
-  // Settings
+  // Settings.
   std::vector<voxblox::Color> color_list_;
-  const std::string frontier_ns = "frontiers";
+  const std::string frame_id_ = "mission";
 };
 
 }  // namespace glocal_exploration

@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <cblox_planning_global/linked_planning/skeleton/linked_skeleton_planner_ros.h>
@@ -21,7 +22,7 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
  public:
   struct Config : public config_utilities::Config<Config> {
     int verbosity = 1;
-    std::string nh_private_namespace = "~";
+    std::string nh_private_namespace = "~/SkeletonPlanner";
 
     // Frontier evaluator.
     SubmapFrontierEvaluator::Config submap_frontier_config;
@@ -32,11 +33,23 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
     void printFields() const override;
   };
 
+  struct VisualizationInfo {
+    bool frontiers_changed = false;
+    std::vector<std::pair<int, Point>>
+        goal_points;  // 0: reachable, 1: unreachable, 2: unchecked, 3: invalid
+                      // point
+    bool goals_changed = false;
+  };
+
   SkeletonPlanner(const Config& config,
                   std::shared_ptr<Communicator> communicator);
   ~SkeletonPlanner() override = default;
 
   void planningIteration() override;
+
+  // Visualization access.
+  VisualizationInfo& visualizationInfo() { return visualization_info_; }
+  const std::vector<WayPoint>& getWayPoints() const { return way_points_; }
 
  private:
   const Config config_;
@@ -69,6 +82,9 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
     double path_distance;
     std::vector<WayPoint> way_points;
   };
+
+  // Visualization
+  VisualizationInfo visualization_info_;
 
   // Cached data for feasible goal point lookup. Cube of side lenth 4 ordered by
   // distance to center.

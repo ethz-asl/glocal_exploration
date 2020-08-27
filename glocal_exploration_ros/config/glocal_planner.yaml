@@ -57,10 +57,10 @@ mapping:
   verbose: false
   color_mode: "normals"
   slice_level: -0.5
-  publish_pointclouds: true
-  publish_traversable: true
-  publish_slices: true
-  publish_pointclouds_on_update: true
+  publish_pointclouds: false
+  publish_traversable: false
+  publish_slices: false
+  publish_pointclouds_on_update: false
 
   # VOXGRAPH
   debug: false
@@ -82,7 +82,7 @@ mapping:
     use_weight_dropoff: true
     use_sparsity_compensation_factor: true
     sparsity_compensation_factor: 20.0
-    # integration_order_mode: "sorted"
+    # integration_order_mode "sorted"
   measurements:
     submap_registration:
       enabled: true
@@ -137,6 +137,11 @@ local_planner:
    - [ 0.0,        0.0,        0.0,        1.0]
    
   # Visualization
+  visualize_tree: true
+  visualize_gain: true
+  visualize_text: true
+  visualize_visible_voxels: true
+  visualize_executed_path: true  
  
 global_planner:
   type: "skeleton"
@@ -149,12 +154,16 @@ global_planner:
   # Visualization
   visualize_frontiers: true
   visualize_inactive_frontiers: false
-  
+  visualize_executed_path: true
+  visualize_candidate_goals: true
+  visualize_planned_path: true
+ 
   # CBLOX_SKELETON_PLANNER
   skeleton:
     verbose: false
     visualize: true
     do_smoothing: false
+    path_shortening: false
     min_value: false
     num_seconds_to_plan: 3.0
     grow_time: 3

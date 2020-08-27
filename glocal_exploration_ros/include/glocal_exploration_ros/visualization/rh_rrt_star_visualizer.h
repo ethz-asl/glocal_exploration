@@ -18,10 +18,11 @@ class RHRRTStarVisualizer : public LocalPlannerVisualizerBase {
  public:
   struct Config : public config_utilities::Config<Config> {
     std::string nh_namespace = "rh_rrt_star_visualizer";
+    bool visualize_tree = true;
     bool visualize_gain = true;
     bool visualize_text = true;
     bool visualize_visible_voxels = true;
-    bool visualize_value = true;
+    bool visualize_executed_path = true;
 
     Config();
     void checkParams() const override;
@@ -34,32 +35,27 @@ class RHRRTStarVisualizer : public LocalPlannerVisualizerBase {
   void visualize() override;
 
  private:
-  visualization_msgs::Marker visualizeValue(const RHRRTStar::ViewPoint& point,
-                                            double min_value, double max_value,
-                                            int id);
-  visualization_msgs::Marker visualizeGain(const RHRRTStar::ViewPoint& point,
-                                           double min_gain, double max_gain,
-                                           int id);
-  visualization_msgs::Marker visualizeText(const RHRRTStar::ViewPoint& point,
-                                           int id);
-  visualization_msgs::MarkerArray visualizeVisibleVoxels(
-      const RHRRTStar::ViewPoint& point);
+  void visualizeValue(const RHRRTStar::ViewPoint& point, double min_value,
+                      double max_value, int id);
+  void visualizeGain(const RHRRTStar::ViewPoint& point, double min_gain,
+                     double max_gain, int id);
+  void visualizeText(const RHRRTStar::ViewPoint& point, int id);
+  void visualizeVisibleVoxels(const RHRRTStar::ViewPoint& point);
 
  private:
   const Config config_;
   std::shared_ptr<RHRRTStar> planner_;
   ros::NodeHandle nh_;
-  ros::Publisher pub_;
+  ros::Publisher gain_pub_;
+  ros::Publisher value_pub_;
+  ros::Publisher text_pub_;
+  ros::Publisher voxel_pub_;
+  ros::Publisher path_pub_;
 
-  // variables
-  std::string frame_id_;
+  // Variables.
+  const std::string frame_id_ = "mission";
   ros::Time timestamp_;
-
-  // visualization namespace definitions
-  const std::string value_ns_ = "candidate_trajectories";
-  const std::string gain_ns_ = "candidate_gains";
-  const std::string text_ns_ = "candidate_text";
-  const std::string voxel_ns_ = "next_expected_gain";
+  int executed_path_id_ = 0;
 };
 
 }  // namespace glocal_exploration
