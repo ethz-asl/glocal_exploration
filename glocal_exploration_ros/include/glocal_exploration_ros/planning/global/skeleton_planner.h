@@ -50,15 +50,27 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   bool computeGoalPoint();
   void executeWayPoint();
 
-  // Helper methods
+  // Helper methods.
   bool computePath(const Point& goal, std::vector<WayPoint>* way_points);
   bool findValidGoalPoint(Point* goal);  // Changes goal to the new point.
 
-  // variables
+  // Variables.
   std::vector<WayPoint> way_points_;  // in mission frame
   Eigen::Vector3d goal_point_;
 
-  // cached data for feasible goal point lookup. Cube of side lenth 4 ordered by
+  // Stages of global planning.
+  enum class Stage { k1ComputeFrontiers, k2ComputeGoalAndPath, k3ExecutePath };
+  Stage stage_;
+
+  // Frontier search
+  struct FrontierSearchData {
+    Point centroid;
+    double euclidian_distance;
+    double path_distance;
+    std::vector<WayPoint> way_points;
+  };
+
+  // Cached data for feasible goal point lookup. Cube of side lenth 4 ordered by
   // distance to center.
   const double kNeighborStepSize_ = 1.0;  // m
   const std::vector<Point> kNeighborOffsets_{
@@ -94,18 +106,6 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
       Point(2, 2, 1),   Point(-2, -2, -2), Point(-2, -2, 2), Point(-2, 2, -2),
       Point(-2, 2, 2),  Point(2, -2, -2),  Point(2, -2, 2),  Point(2, 2, -2),
       Point(2, 2, 2),
-  };
-
-  // Stages of global planning.
-  enum class Stage { k1ComputeFrontiers, k2ComputeGoalAndPath, k3ExecutePath };
-  Stage stage_;
-
-  // Frontier search
-  struct FrontierSearchData {
-    Point centroid;
-    double euclidian_distance;
-    double path_distance;
-    std::vector<WayPoint> way_points;
   };
 };
 

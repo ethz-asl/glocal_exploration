@@ -148,7 +148,7 @@ global_planner:
   
   # Visualization
   visualize_frontiers: true
-  visualize_inactive_frontiers: true
+  visualize_inactive_frontiers: false
   
   # CBLOX_SKELETON_PLANNER
   skeleton:

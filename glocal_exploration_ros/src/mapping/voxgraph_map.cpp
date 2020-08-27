@@ -146,8 +146,9 @@ bool VoxgraphMap::isTraversableInGlobalMap(const Point& position) {
       // This means the voxel is observed.
       if (distance <= config_.traversability_radius) {
         return false;
+      } else {
+        traversable_anywhere = true;
       }
-      traversable_anywhere = true;
     }
   }
   // Avoid allowing never observed points to be traversable. Also we ignore the

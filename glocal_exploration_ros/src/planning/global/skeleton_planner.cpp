@@ -195,11 +195,15 @@ bool SkeletonPlanner::computeGoalPoint() {
         return lhs.path_distance < rhs.path_distance;
       });
   way_points_ = it->way_points;
-  LOG_IF(INFO, config_.verbosity >= 2)
-      << "Found a path of " << way_points_.size() << " waypoints to closest ("
-      << std::fixed << std::setprecision(2) << it->path_distance << "m/"
-      << std::fixed << std::setprecision(2) << it->euclidian_distance
-      << "m) frontier.";
+  ss = std::stringstream();
+  ss << "Found a path of " << way_points_.size()
+     << " waypoints to closest frontier.";
+  if (config_.verbosity >= 3) {
+    ss << " (" << std::fixed << std::setprecision(2) << it->path_distance
+       << "m path, " << std::fixed << std::setprecision(2)
+       << it->euclidian_distance << "m euclidean distance).";
+  }
+  LOG_IF(INFO, config_.verbosity >= 2) << ss.str();
   return true;
 }
 
