@@ -41,6 +41,7 @@ class VoxgraphMap : public MapBase {
   VoxelState getVoxelStateInLocalArea(const Point& position) override;
   Point getVoxelCenterInLocalArea(const Point& point) override;
   bool isObservedInGlobalMap(const Point& position) override;
+  bool isTraversableInGlobalMap(const Point& position) override;
   void getAllSubmapData(std::vector<SubmapData>* data) override;
 
  protected:

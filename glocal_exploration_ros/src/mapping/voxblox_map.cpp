@@ -69,6 +69,11 @@ bool VoxbloxMap::isObservedInGlobalMap(const Point& position) {
   return server_->getEsdfMapPtr()->isObserved(position);
 }
 
+bool VoxbloxMap::isTraversableInGlobalMap(const Point& position) {
+  // Since map is monolithic global = local.
+  return isTraversableInActiveSubmap(position);
+}
+
 void VoxbloxMap::getAllSubmapData(std::vector<SubmapData>* data) {
   CHECK_NOTNULL(data);
   SubmapData datum;

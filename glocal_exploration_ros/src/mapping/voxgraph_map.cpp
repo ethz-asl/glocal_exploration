@@ -122,12 +122,37 @@ void VoxgraphMap::updateLocalArea() {
 
 bool VoxgraphMap::isObservedInGlobalMap(const Point& position) {
   // TODO(@victorr): Don't know if you know of a nicer way to check this :)
-
+  if (voxblox_server_->getEsdfMapPtr()->isObserved(position)) {
+    return true;
+  }
   auto submaps = voxgraph_server_->getSubmapCollection().getSubmapConstPtrs();
   return std::any_of(submaps.begin(), submaps.end(),
                      [position](const voxgraph::VoxgraphSubmap::ConstPtr& s) {
                        return s->getEsdfMap().isObserved(position);
                      });
+}
+
+bool VoxgraphMap::isTraversableInGlobalMap(const Point& position) {
+  // TODO(@victorr): There should definitively be a better way to do this I
+  //  think, also this function is currently not performance critical.
+  if (!comm_->regionOfInterest()->contains(position)) {
+    return false;
+  }
+  bool traversable_anywhere = false;
+  for (const auto& submap :
+       voxgraph_server_->getSubmapCollection().getSubmapPtrs()) {
+    double distance = 0.0;
+    if (submap->getEsdfMap().getDistanceAtPosition(position, &distance)) {
+      // This means the voxel is observed.
+      if (distance <= config_.traversability_radius) {
+        return false;
+      }
+      traversable_anywhere = true;
+    }
+  }
+  // Avoid allowing never observed points to be traversable. Also we ignore the
+  // clearing radius for global planning.
+  return traversable_anywhere;
 }
 
 void VoxgraphMap::getAllSubmapData(std::vector<SubmapData>* data) {

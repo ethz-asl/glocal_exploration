@@ -44,6 +44,8 @@ class MapBase {
   /* Global planner */
   virtual bool isObservedInGlobalMap(const Point& position) = 0;
 
+  virtual bool isTraversableInGlobalMap(const Point& position) = 0;
+
   virtual void getAllSubmapData(std::vector<SubmapData>* data) = 0;
 
  protected:
