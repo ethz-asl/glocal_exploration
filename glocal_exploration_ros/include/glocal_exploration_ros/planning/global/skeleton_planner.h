@@ -2,8 +2,8 @@
 #define GLOCAL_EXPLORATION_ROS_PLANNING_GLOBAL_SKELETON_PLANNER_H_
 
 #include <memory>
-#include <queue>
 #include <string>
+#include <vector>
 
 #include <cblox_planning_global/linked_planning/skeleton/linked_skeleton_planner_ros.h>
 #include <ros/ros.h>
@@ -44,25 +44,69 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   // Skeleton planner.
   std::unique_ptr<mav_planning::CbloxSkeletonGlobalPlanner> skeleton_planner_;
 
-  // methods
+  // Planning iteration methods.
   void resetPlanner();
   bool computeFrontiers();
   bool computeGoalPoint();
-  bool computePathToGoal(const Point& goal);
+  void executeWayPoint();
+
+  // Helper methods
+  bool computePath(const Point& goal, std::vector<WayPoint>* way_points);
+  bool findValidGoalPoint(Point* goal);  // Changes goal to the new point.
 
   // variables
-  std::queue<Eigen::Vector3d> way_points_;  // in mission frame
+  std::vector<WayPoint> way_points_;  // in mission frame
   Eigen::Vector3d goal_point_;
-  ros::Time tmp_;
+
+  // cached data for feasible goal point lookup. Cube of side lenth 4 ordered by
+  // distance to center.
+  const double kNeighborStepSize_ = 1.0;  // m
+  const std::vector<Point> kNeighborOffsets_{
+      Point(0, 0, 0),   Point(-1, 0, 0),   Point(0, -1, 0),  Point(0, 0, -1),
+      Point(0, 0, 1),   Point(0, 1, 0),    Point(1, 0, 0),   Point(-1, -1, 0),
+      Point(-1, 0, -1), Point(-1, 0, 1),   Point(-1, 1, 0),  Point(0, -1, -1),
+      Point(0, -1, 1),  Point(0, 1, -1),   Point(0, 1, 1),   Point(1, -1, 0),
+      Point(1, 0, -1),  Point(1, 0, 1),    Point(1, 1, 0),   Point(-1, -1, -1),
+      Point(-1, -1, 1), Point(-1, 1, -1),  Point(-1, 1, 1),  Point(1, -1, -1),
+      Point(1, -1, 1),  Point(1, 1, -1),   Point(1, 1, 1),   Point(-2, 0, 0),
+      Point(0, -2, 0),  Point(0, 0, -2),   Point(0, 0, 2),   Point(0, 2, 0),
+      Point(2, 0, 0),   Point(-2, -1, 0),  Point(-2, 0, -1), Point(-2, 0, 1),
+      Point(-2, 1, 0),  Point(-1, -2, 0),  Point(-1, 0, -2), Point(-1, 0, 2),
+      Point(-1, 2, 0),  Point(0, -2, -1),  Point(0, -2, 1),  Point(0, -1, -2),
+      Point(0, -1, 2),  Point(0, 1, -2),   Point(0, 1, 2),   Point(0, 2, -1),
+      Point(0, 2, 1),   Point(1, -2, 0),   Point(1, 0, -2),  Point(1, 0, 2),
+      Point(1, 2, 0),   Point(2, -1, 0),   Point(2, 0, -1),  Point(2, 0, 1),
+      Point(2, 1, 0),   Point(-2, -1, -1), Point(-2, -1, 1), Point(-2, 1, -1),
+      Point(-2, 1, 1),  Point(-1, -2, -1), Point(-1, -2, 1), Point(-1, -1, -2),
+      Point(-1, -1, 2), Point(-1, 1, -2),  Point(-1, 1, 2),  Point(-1, 2, -1),
+      Point(-1, 2, 1),  Point(1, -2, -1),  Point(1, -2, 1),  Point(1, -1, -2),
+      Point(1, -1, 2),  Point(1, 1, -2),   Point(1, 1, 2),   Point(1, 2, -1),
+      Point(1, 2, 1),   Point(2, -1, -1),  Point(2, -1, 1),  Point(2, 1, -1),
+      Point(2, 1, 1),   Point(-2, -2, 0),  Point(-2, 0, -2), Point(-2, 0, 2),
+      Point(-2, 2, 0),  Point(0, -2, -2),  Point(0, -2, 2),  Point(0, 2, -2),
+      Point(0, 2, 2),   Point(2, -2, 0),   Point(2, 0, -2),  Point(2, 0, 2),
+      Point(2, 2, 0),   Point(-2, -2, -1), Point(-2, -2, 1), Point(-2, -1, -2),
+      Point(-2, -1, 2), Point(-2, 1, -2),  Point(-2, 1, 2),  Point(-2, 2, -1),
+      Point(-2, 2, 1),  Point(-1, -2, -2), Point(-1, -2, 2), Point(-1, 2, -2),
+      Point(-1, 2, 2),  Point(1, -2, -2),  Point(1, -2, 2),  Point(1, 2, -2),
+      Point(1, 2, 2),   Point(2, -2, -1),  Point(2, -2, 1),  Point(2, -1, -2),
+      Point(2, -1, 2),  Point(2, 1, -2),   Point(2, 1, 2),   Point(2, 2, -1),
+      Point(2, 2, 1),   Point(-2, -2, -2), Point(-2, -2, 2), Point(-2, 2, -2),
+      Point(-2, 2, 2),  Point(2, -2, -2),  Point(2, -2, 2),  Point(2, 2, -2),
+      Point(2, 2, 2),
+  };
 
   // Stages of global planning.
-  enum class Stage {
-    k1ComputeFrontiers,
-    k2ComputeGoalPoint,
-    k3ComputePath,
-    k4ExecutePath
-  };
+  enum class Stage { k1ComputeFrontiers, k2ComputeGoalAndPath, k3ExecutePath };
   Stage stage_;
+
+  // Frontier search
+  struct FrontierSearchData {
+    Point centroid;
+    double euclidian_distance;
+    double path_distance;
+    std::vector<WayPoint> way_points;
+  };
 };
 
 }  // namespace glocal_exploration

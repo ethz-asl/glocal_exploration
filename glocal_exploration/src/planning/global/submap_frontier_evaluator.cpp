@@ -97,7 +97,7 @@ void SubmapFrontierEvaluator::computeFrontiersForSubmap(
               .count()
        << "ms.";
   if (config_.verbosity >= 3 && number_of_discarded_frontiers > 0) {
-    info << "\nDiscarded " << number_of_discarded_frontiers
+    info << " Discarded " << number_of_discarded_frontiers
          << " frontiers below minimum size, totaling "
          << number_of_discarded_points << " points.";
   }
@@ -161,9 +161,9 @@ void SubmapFrontierEvaluator::updateFrontiers(
               .count()
        << "ms.";
   if (config_.verbosity >= 3) {
-    info << "\n"
-         << num_activated << " activated, " << num_deactivated
-         << " deactivated, " << num_active << " total active frontier points.";
+    info << " Activated " << num_activated << ", deactivated "
+         << num_deactivated << ", totalling " << num_active
+         << " active frontier points.";
   }
   LOG_IF(INFO, config_.verbosity >= 2) << info.str();
 }

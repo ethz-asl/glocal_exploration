@@ -36,6 +36,10 @@ class RHRRTStar : public LocalPlannerBase {
     // behavior
     int maximum_rewiring_iterations = 100;
 
+    // temrination
+    int terminaton_min_tree_size = 5;
+    double termination_min_gain = 100.0;
+
     // sensor model (currently just use lidar)
     LidarModel::Config lidar_config;
 

@@ -1,7 +1,7 @@
 #include "glocal_exploration_ros/planning/global/skeleton_planner.h"
 
+#include <algorithm>
 #include <memory>
-#include <queue>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -54,54 +54,22 @@ void SkeletonPlanner::planningIteration() {
     comm_->stateMachine()->signalGlobalPlanning();
   }
 
-  // TEST
-  if ((ros::Time::now() - tmp_).toSec() <= 3.0) {
-    return;
-  }
-  resetPlanner();
-  tmp_ = ros::Time::now();
-  // TODO(schmluk): check we have submaps.
-
   switch (stage_) {
     case Stage::k1ComputeFrontiers: {
       // Compute and update all frontiers to current state.
       if (computeFrontiers()) {
-        stage_ = Stage::k2ComputeGoalPoint;
+        stage_ = Stage::k2ComputeGoalAndPath;
       }
     }
-    case Stage::k2ComputeGoalPoint: {
-      // Select a frontier to move towards.
+    case Stage::k2ComputeGoalAndPath: {
+      // Select a frontier to move towards, including path generation.
       if (computeGoalPoint()) {
-        stage_ = Stage::k3ComputePath;
+        stage_ = Stage::k3ExecutePath;
       }
     }
-    case Stage::k3ComputePath: {
-      // let the skeleton planner compute a path to the target.
-      if (computePathToGoal(goal_point_)) {
-        stage_ = Stage::k4ExecutePath;
-      }
-    }
-    case Stage::k4ExecutePath: {
-      if (comm_->targetIsReached()) {
-        if (way_points_.empty()) {
-          // Finished execution.
-          comm_->stateMachine()->signalLocalPlanning();
-          LOG_IF(INFO, config_.verbosity >= 2)
-              << "Finished global path execution.";
-        } else {
-          // Request next way point.
-          // TODO(schmluk): collision checks, min length
-          WayPoint way_point;
-          way_point.x = way_points_.front().x();
-          way_point.y = way_points_.front().y();
-          way_point.z = way_points_.front().z();
-          way_point.yaw =
-              std::atan2((way_points_.front().y() - comm_->currentPose().y),
-                         (way_points_.front().x() - comm_->currentPose().x));
-          comm_->requestWayPoint(way_point);
-          way_points_.pop();
-        }
-      }
+    case Stage::k3ExecutePath: {
+      // Execute way points until finished, then switch back to local.
+      executeWayPoint();
     }
   }
 }
@@ -114,6 +82,16 @@ bool SkeletonPlanner::computeFrontiers() {
   // will do nothing.
   std::vector<MapBase::SubmapData> data;
   comm_->map()->getAllSubmapData(&data);
+
+  // Check there are enough submaps already.
+  if (data.empty()) {
+    LOG_IF(INFO, config_.verbosity >= 2)
+        << "No submaps finished yet for global planning, swtching back local.";
+    comm_->stateMachine()->signalLocalPlanning();
+    return false;
+  }
+
+  // Compute and update frontiers.
   std::unordered_map<int, Transformation> update_list;
   for (const auto& datum : data) {
     computeFrontiersForSubmap(datum, Point(0, 0, 0));
@@ -122,35 +100,153 @@ bool SkeletonPlanner::computeFrontiers() {
   updateFrontiers(update_list);
 
   // Check there are still frontiers left.
-  //  if (getActiveFrontiers().empty()) {
-  //    // No more open frontiers, exploration is done.
-  //    LOG_IF(INFO, config_.verbosity >= 1)
-  //    << "No active frontiers remaining, exploration succeeded.";
-  //    comm_->stateMachine()->signalFinished();
-  //    return false;
-  //  }
+  if (getActiveFrontiers().empty()) {
+    // No more open frontiers, exploration is done.
+    LOG_IF(INFO, config_.verbosity >= 1)
+        << "No active frontiers remaining, exploration terminated succesfully.";
+    comm_->stateMachine()->signalFinished();
+    return false;
+  }
   return true;
 }
 
 bool SkeletonPlanner::computeGoalPoint() {
-  // check there are enough submaps already
+  // Compute the frontier with the shortest path to it.
+  // Get all frontiers and order according to euclidian distance.
+  std::vector<FrontierSearchData> frontiers;
+  for (const auto& frontier : getActiveFrontiers()) {
+    FrontierSearchData& data = frontiers.emplace_back();
+    data.centroid = frontier->centroid();
+    data.euclidian_distance =
+        (comm_->currentPose().position() - frontier->centroid()).norm();
+  }
+  if (frontiers.empty()) {
+    return false;
+  }
+  std::sort(frontiers.begin(), frontiers.end(),
+            [](const FrontierSearchData& lhs, const FrontierSearchData& rhs) {
+              return lhs.euclidian_distance > rhs.euclidian_distance;
+            });
 
-  // compute the best frontier
+  // Compute paths to frontiers to determine the closest reachable one. Start
+  // with closest and use euclidian distance as lower bound to prune candidates.
+  auto t_start = std::chrono::high_resolution_clock::now();
+  int path_counter = 0;
+  int unreachable_goal_counter = 0;
+  const int total_frontiers = frontiers.size();
+  std::vector<WayPoint> way_points;
+  for (auto it = frontiers.begin(); it != frontiers.end();) {
+    // Find feasible goal near frontier centroid.
+    Point goal = it->centroid;
+    if (!findValidGoalPoint(&goal)) {
+      unreachable_goal_counter++;
+      it = frontiers.erase(it);
+      continue;
+    }
 
-  // check it is not in the active submap
+    // Try to find a path via linked skeleton planning.
+    path_counter++;
+    if (computePath(it->centroid, &way_points)) {
+      it->way_points = way_points;
+      it->path_distance =
+          (way_points[0].position() - comm_->currentPose().position()).norm();
+      for (size_t i = 1; i < way_points.size(); ++i) {
+        it->path_distance +=
+            (way_points[i].position() - way_points[i - 1].position()).norm();
+      }
 
-  // find a reachable point near the best frontier
+      // Prune paths that can not be shorter than this one.
+      double dist = it->path_distance;
+      frontiers.erase(std::remove_if(++it, frontiers.end(),
+                                     [dist](const FrontierSearchData& x) {
+                                       return x.euclidian_distance >= dist;
+                                     }),
+                      frontiers.end());
+    } else {
+      // Remove inaccessible frontiers.
+      it = frontiers.erase(it);
+    }
+  }
 
-  goal_point_ = Eigen::Vector3d(2, 0, 0);
+  // Logging.
+  auto t_end = std::chrono::high_resolution_clock::now();
+  std::stringstream ss;
+  ss << "Evaluated " << path_counter << " of " << total_frontiers
+     << " global paths in "
+     << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start)
+            .count()
+     << "ms.";
+  if (config_.verbosity >= 4) {
+    ss << " Skipped " << unreachable_goal_counter
+       << " unreachable goal points.";
+  }
+  LOG_IF(INFO, config_.verbosity >= 3) << ss.str();
+
+  // Select result.
+  if (frontiers.empty()) {
+    LOG_IF(INFO, config_.verbosity >= 2)
+        << "No reachable frontier found, returning to local planning.";
+    comm_->stateMachine()->signalLocalPlanning();
+    return false;
+  }
+  auto it = std::min_element(
+      frontiers.begin(), frontiers.end(),
+      [](const FrontierSearchData& lhs, const FrontierSearchData& rhs) {
+        return lhs.path_distance < rhs.path_distance;
+      });
+  way_points_ = it->way_points;
+  LOG_IF(INFO, config_.verbosity >= 2)
+      << "Found a path of " << way_points_.size() << " waypoints to closest ("
+      << std::fixed << std::setprecision(2) << it->path_distance << "m/"
+      << std::fixed << std::setprecision(2) << it->euclidian_distance
+      << "m) frontier.";
   return true;
 }
 
-bool SkeletonPlanner::computePathToGoal(const Point& goal) {
+void SkeletonPlanner::executeWayPoint() {
+  if (comm_->targetIsReached()) {
+    if (way_points_.empty()) {
+      // Finished execution.
+      comm_->stateMachine()->signalLocalPlanning();
+      LOG_IF(INFO, config_.verbosity >= 2) << "Finished global path execution.";
+    } else {
+      // Request next way point.
+      // TODO(schmluk): collision checks, min length
+      WayPoint& way_point = way_points_[0];
+      way_point.yaw = std::atan2((way_point.y - comm_->currentPose().y),
+                                 (way_point.x - comm_->currentPose().x));
+      comm_->requestWayPoint(way_point);
+      std::cout
+          << "length: "
+          << (way_point.position() - comm_->currentPose().position()).norm()
+          << std::endl;
+      way_points_.erase(way_points_.begin());
+    }
+  }
+}
+
+bool SkeletonPlanner::findValidGoalPoint(Point* goal) {
+  if (comm_->map()->isTraversableInGlobalMap(*goal)) {
+    return true;
+  }
+  // Sample from a cube to find candidates.
+  for (const Point& offset : kNeighborOffsets_) {
+    Point candidate = *goal + offset * kNeighborStepSize_;
+    if (comm_->map()->isTraversableInGlobalMap(candidate)) {
+      *goal = candidate;
+      return true;
+    }
+  }
+  return false;
+}
+
+bool SkeletonPlanner::computePath(const Point& goal,
+                                  std::vector<WayPoint>* way_points) {
+  CHECK_NOTNULL(way_points);
   // Setup data.
-  auto t_start = std::chrono::high_resolution_clock::now();
   geometry_msgs::PoseStamped start_pose;
   geometry_msgs::PoseStamped goal_pose;
-  geometry_msgs::PoseArray way_points;
+  geometry_msgs::PoseArray path;
   start_pose.pose.position.x = comm_->currentPose().x;
   start_pose.pose.position.y = comm_->currentPose().y;
   start_pose.pose.position.z = comm_->currentPose().z;
@@ -161,32 +257,23 @@ bool SkeletonPlanner::computePathToGoal(const Point& goal) {
   goal_pose.pose.orientation.w = 1.0;
 
   // Compute path.
-  if (!skeleton_planner_->planPath(start_pose, goal_pose, &way_points)) {
-    LOG(WARNING) << "Global path computation failed.";
-    // TODO(schmluk): what todo in this case?
+  if (!skeleton_planner_->planPath(start_pose, goal_pose, &path)) {
     return false;
   }
-  if (way_points.poses.empty()) {
-    LOG(WARNING) << "Global path did not contain any waypoints.";
-    // TODO(schmluk): what todo in this case?
+  if (path.poses.empty()) {
     return false;
   }
 
-  // Enqueue all way points.
-  way_points_ = std::queue<Eigen::Vector3d>();
-  for (const auto& point : way_points.poses) {
-    Point temp_point;
-    temp_point.x() = point.position.x;
-    temp_point.y() = point.position.y;
-    temp_point.z() = point.position.z;
-    way_points_.push(temp_point);
+  // Write all way points to result.
+  way_points->clear();
+  way_points->reserve(path.poses.size());
+  for (const auto& point : path.poses) {
+    WayPoint temp_point;
+    temp_point.x = point.position.x;
+    temp_point.y = point.position.y;
+    temp_point.z = point.position.z;
+    way_points->emplace_back(temp_point);
   }
-  auto t_end = std::chrono::high_resolution_clock::now();
-  LOG_IF(INFO, config_.verbosity >= 2)
-      << "Found a path to goal in "
-      << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start)
-             .count()
-      << "ms.";
   return true;
 }
 

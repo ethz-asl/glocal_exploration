@@ -103,18 +103,14 @@ void GlocalSystem::loopIteration() {
       global_planner_visualizer_->visualize();
       break;
     }
-    }
+  }
 
-  // TEST(schmluk): force global planning
-    comm_->globalPlanner()->planningIteration();
-    global_planner_visualizer_->visualize();
-
-    // move requests
-    if (comm_->newWayPointIsRequested()) {
-      WayPoint next_point = comm_->getRequestedWayPoint();
-      target_position_ = next_point.position();
-      target_yaw_ = next_point.yaw;
-      publishTargetPose();
+  // move requests
+  if (comm_->newWayPointIsRequested()) {
+    WayPoint next_point = comm_->getRequestedWayPoint();
+    target_position_ = next_point.position();
+    target_yaw_ = next_point.yaw;
+    publishTargetPose();
   }
 }
 

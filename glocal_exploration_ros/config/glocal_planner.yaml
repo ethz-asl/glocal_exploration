@@ -119,6 +119,8 @@ local_planner:
   path_cropping_length: 0.5 # m
   max_number_of_neighbors: 20
   maximum_rewiring_iterations: 100
+  terminaton_min_tree_size: 5
+  termination_min_gain: 100
   
   # Lidar Model
   ray_length: 10  # m
@@ -146,7 +148,7 @@ global_planner:
   
   # Visualization
   visualize_frontiers: true
-  visualize_inactive_frontiers: false
+  visualize_inactive_frontiers: true
   
   # CBLOX_SKELETON_PLANNER
   skeleton:

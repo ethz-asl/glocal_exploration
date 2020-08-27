@@ -38,6 +38,8 @@ void RHRRTStar::Config::fromRosParam() {
   rosParam("path_cropping_length", &path_cropping_length);
   rosParam("max_number_of_neighbors", &max_number_of_neighbors);
   rosParam("maximum_rewiring_iterations", &maximum_rewiring_iterations);
+  rosParam("terminaton_min_tree_size", &terminaton_min_tree_size);
+  rosParam("termination_min_gain", &termination_min_gain);
   rosParam(&lidar_config);
 }
 
@@ -52,6 +54,8 @@ void RHRRTStar::Config::printFields() const {
   printField("path_cropping_length", path_cropping_length);
   printField("max_number_of_neighbors", max_number_of_neighbors);
   printField("maximum_rewiring_iterations", maximum_rewiring_iterations);
+  printField("terminaton_min_tree_size", terminaton_min_tree_size);
+  printField("termination_min_gain", termination_min_gain);
   printField("lidar_config", lidar_config);
 }
 
@@ -91,7 +95,20 @@ void RHRRTStar::planningIteration() {
     }
   }
 
-  // TODO(schmluk): Somewhere here we need to identify when to switch to global
+  // Check whether a local minimum is reached and change to global planning.
+  if (tree_data_.points.size() >= config_.terminaton_min_tree_size) {
+    double max_gain = std::numeric_limits<double>::min();
+    for (const auto& point : tree_data_.points) {
+      if (point->gain > max_gain) {
+        max_gain = point->gain;
+      }
+    }
+    if (max_gain < config_.termination_min_gain) {
+      comm_->stateMachine()->signalGlobalPlanning();
+    }
+  }
+
+  // TEST
   if (executed_segments_ >= 3) {
     comm_->stateMachine()->signalGlobalPlanning();
   }
