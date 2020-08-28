@@ -18,12 +18,12 @@ class SensorModel {
   virtual ~SensorModel() = default;
 
   // Return the voxel centers of all visible voxels for that viewpoint
-  virtual bool getVisibleVoxels(std::vector<Eigen::Vector3d>* centers,
-                                std::vector<MapBase::VoxelState>* states,
-                                const WayPoint& waypoint) = 0;
+  virtual bool getVisibleVoxels(const WayPoint& waypoint,
+                                std::vector<Eigen::Vector3d>* centers,
+                                std::vector<MapBase::VoxelState>* states) = 0;
 
-  virtual void getVisibleUnknownVoxels(voxblox::LongIndexSet* voxels,
-                                       const WayPoint& waypoint) {}
+  virtual void getVisibleUnknownVoxels(const WayPoint& waypoint,
+                                       voxblox::LongIndexSet* voxels) {}
 
  protected:
   std::shared_ptr<Communicator> comm_;

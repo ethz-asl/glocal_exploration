@@ -81,9 +81,9 @@ LidarModel::LidarModel(const Config& config,
   c_voxel_size_inv_ = 1.0 / comm_->map()->getVoxelSize();
 }
 
-bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d>* centers,
-                                  std::vector<MapBase::VoxelState>* states,
-                                  const WayPoint& waypoint) {
+bool LidarModel::getVisibleVoxels(const WayPoint& waypoint,
+                                  std::vector<Eigen::Vector3d>* centers,
+                                  std::vector<MapBase::VoxelState>* states) {
   // NOTE(schmluk): Legacy raycasting for general gain computations.
 
   // Setup ray table (contains at which segment to start, -1 if occluded)
@@ -151,8 +151,8 @@ bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d>* centers,
   return true;
 }
 
-void LidarModel::getVisibleUnknownVoxels(voxblox::LongIndexSet* voxels,
-                                         const WayPoint& waypoint) {
+void LidarModel::getVisibleUnknownVoxels(const WayPoint& waypoint,
+                                         voxblox::LongIndexSet* voxels) {
   // NOTE(schmluk): This is a slightly more specialized version for gain
   // computation that is still independent of the map representation.
 

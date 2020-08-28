@@ -38,12 +38,12 @@ class LidarModel : public SensorModel {
   ~LidarModel() override = default;
 
   // Legacy method
-  bool getVisibleVoxels(std::vector<Eigen::Vector3d>* centers,
-                        std::vector<MapBase::VoxelState>* states,
-                        const WayPoint& waypoint) override;
+  bool getVisibleVoxels(const WayPoint& waypoint,
+                        std::vector<Eigen::Vector3d>* centers,
+                        std::vector<MapBase::VoxelState>* states) override;
 
-  void getVisibleUnknownVoxels(voxblox::LongIndexSet* voxels,
-                               const WayPoint& waypoint) override;
+  void getVisibleUnknownVoxels(const WayPoint& waypoint,
+                               voxblox::LongIndexSet* voxels) override;
 
  protected:
   const Config config_;

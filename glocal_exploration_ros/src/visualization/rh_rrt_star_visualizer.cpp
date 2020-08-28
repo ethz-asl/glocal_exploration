@@ -312,7 +312,7 @@ void RHRRTStarVisualizer::visualizeVisibleVoxels(
   auto result = visualization_msgs::MarkerArray();
   std::vector<Eigen::Vector3d> voxels, colors;
   double scale;
-  planner_->visualizeGain(&voxels, &colors, &scale, point.pose);
+  planner_->visualizeGain(point.pose, &voxels, &colors, &scale);
 
   // add voxels
   for (size_t i = 0; i < voxels.size(); ++i) {

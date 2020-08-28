@@ -110,9 +110,8 @@ class RHRRTStar : public LocalPlannerBase {
   // accessors for visualization
   const Config& getConfig() const { return config_; }
   const TreeData& getTreeData() const { return tree_data_; }
-  void visualizeGain(std::vector<Eigen::Vector3d>* voxels,
-                     std::vector<Eigen::Vector3d>* colors, double* scale,
-                     const WayPoint& pose) const;
+  void visualizeGain(const WayPoint& pose, std::vector<Eigen::Vector3d>* voxels,
+                     std::vector<Eigen::Vector3d>* colors, double* scale) const;
 
  protected:
   /* components */
@@ -149,7 +148,7 @@ class RHRRTStar : public LocalPlannerBase {
 
   /* variables */
   int local_sampled_points_;
-  bool should_update_;
+  bool gain_update_needed_;
   ViewPoint* root_;  // root pointer so it does not need to be searched for all
   // the time
   Connection* current_connection_;  // the connection currently being executed

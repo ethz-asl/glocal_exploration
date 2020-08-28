@@ -76,9 +76,9 @@ void RHRRTStar::planningIteration() {
   }
 
   // Requested a view point so update.
-  if (should_update_) {
+  if (gain_update_needed_) {
     updateGains();
-    should_update_ = false;
+    gain_update_needed_ = false;
   }
 
   // expansion step
@@ -90,7 +90,7 @@ void RHRRTStar::planningIteration() {
     updateCollision();
     if (selectNextBestWayPoint(&next_waypoint)) {
       comm_->requestWayPoint(next_waypoint);
-      should_update_ = true;
+      gain_update_needed_ = true;
       executed_segments_++;
     }
   }
@@ -130,7 +130,7 @@ void RHRRTStar::resetPlanner(const WayPoint& origin) {
   root_ = tree_data_.points[0].get();
   current_connection_ = nullptr;
   local_sampled_points_ = config_.min_local_points;
-  should_update_ = false;
+  gain_update_needed_ = false;
   pruned_points_ = 0;
   new_points_ = 0;
 
@@ -470,7 +470,7 @@ bool RHRRTStar::selectBestConnection(ViewPoint* view_point) {
 
 void RHRRTStar::evaluateViewPoint(ViewPoint* view_point) {
   voxblox::LongIndexSet voxels;
-  sensor_model_->getVisibleUnknownVoxels(&voxels, view_point->pose);
+  sensor_model_->getVisibleUnknownVoxels(view_point->pose, &voxels);
   view_point->gain = voxels.size();
 }
 
@@ -593,9 +593,10 @@ bool RHRRTStar::findNearestNeighbors(Eigen::Vector3d position,
   return true;
 }
 
-void RHRRTStar::visualizeGain(std::vector<Eigen::Vector3d>* voxels,
+void RHRRTStar::visualizeGain(const WayPoint& pose,
+                              std::vector<Eigen::Vector3d>* voxels,
                               std::vector<Eigen::Vector3d>* colors,
-                              double* scale, const WayPoint& pose) const {
+                              double* scale) const {
   CHECK_NOTNULL(voxels);
   CHECK_NOTNULL(colors);
   CHECK_NOTNULL(scale);
@@ -604,7 +605,7 @@ void RHRRTStar::visualizeGain(std::vector<Eigen::Vector3d>* voxels,
 
   // get voxel indices
   voxblox::LongIndexSet voxels_idx;
-  sensor_model_->getVisibleUnknownVoxels(&voxels_idx, pose);
+  sensor_model_->getVisibleUnknownVoxels(pose, &voxels_idx);
 
   // voxel size
   *scale = comm_->map()->getVoxelSize();
