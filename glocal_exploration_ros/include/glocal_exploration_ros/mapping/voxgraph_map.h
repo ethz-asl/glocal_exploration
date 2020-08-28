@@ -6,7 +6,7 @@
 #include <vector>
 
 #include <glocal_exploration/mapping/map_base.h>
-#include <3rd_party/config_utilities.hpp>
+#include <glocal_exploration/3rd_party/config_utilities.hpp>
 
 #include "glocal_exploration_ros/mapping/threadsafe_wrappers/threadsafe_voxblox_server.h"
 #include "glocal_exploration_ros/mapping/threadsafe_wrappers/threadsafe_voxgraph_server.h"

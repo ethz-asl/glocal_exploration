@@ -6,9 +6,9 @@
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
 #include <std_srvs/SetBool.h>
-#include <3rd_party/config_utilities.hpp>
 
 #include <glocal_exploration/state/communicator.h>
+#include <glocal_exploration/3rd_party/config_utilities.hpp>
 
 #include "glocal_exploration_ros/visualization/global_planner_visualizer_base.h"
 #include "glocal_exploration_ros/visualization/local_planner_visualizer_base.h"

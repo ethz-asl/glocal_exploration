@@ -16,6 +16,8 @@ void SkeletonPlanner::Config::checkParams() const {}
 
 void SkeletonPlanner::Config::fromRosParam() {
   rosParam("verbosity", &verbosity);
+  rosParam("use_frontier_clustering", &use_frontier_clustering);
+  rosParam("frontier_clustering_radius", &frontier_clustering_radius);
   rosParam(&submap_frontier_config);
   nh_private_namespace = rosParamNameSpace() + "/skeleton";
 }
@@ -119,37 +121,60 @@ bool SkeletonPlanner::computeGoalPoint() {
   visualization_info_.goals_changed = true;
   visualization_info_.goal_points.clear();
 
-  // Get all frontiers and order according to euclidean distance.
+  // Get all frontiers.
   std::vector<FrontierSearchData> frontiers;
   for (const auto& frontier : getActiveFrontiers()) {
+    // Compute active centroid.
     FrontierSearchData& data = frontiers.emplace_back();
     data.centroid = Point(0.0, 0.0, 0.0);
-    double num_points = 0.0;
     for (const auto& point : *frontier) {
       if (point.is_active) {
         data.centroid += point.position;
-        num_points += 1.0;
+        data.num_points++;
       }
     }
-    if (num_points == 0.0) {
+    if (data.num_points <= 0) {
       LOG(WARNING) << "Tried to compute the centroid for a frontier without "
-                      "active points.";
+                      "any active points.";
       continue;
     }
-    data.centroid /= num_points;
+    data.centroid /= static_cast<FloatingPoint>(data.num_points);
     data.euclidean_distance =
         (comm_->currentPose().position() - frontier->centroid()).norm();
   }
   if (frontiers.empty()) {
     return false;
   }
+
+  // Frontier clustering.
+  if (config_.use_frontier_clustering) {
+    const int num_frontiers = frontiers.size();
+    for (auto it = frontiers.begin(); it !=frontiers.end(); ++it) {
+      auto it2 = it;
+      it2++;
+      while (it2 != frontiers.end()) {
+        if ((it2->centroid - it->centroid).norm() <= config_.frontier_clustering_radius) {
+          // Nearby frontier centroids are weighted merged.
+          it->centroid = it->centroid * static_cast<FloatingPoint>(it->num_points) + it2->centroid * static_cast<FloatingPoint>(it2->num_points);
+          it->num_points += it2->num_points;
+          it->centroid /= static_cast<FloatingPoint>(it->num_points);
+          it2 = frontiers.erase(it2);
+        } else {
+          it2++;
+        }
+      }
+    }
+    // Logging.
+    LOG_IF(INFO, config_.verbosity >= 3) << "Clustered " << num_frontiers -frontiers.size() << " frontiers (" << num_frontiers << "->" << frontiers.size() << ").";
+  }
+
+
+  // Compute paths to frontiers to determine the closest reachable one. Start
+  // with closest and use euclidean distance as lower bound to prune candidates.
   std::sort(frontiers.begin(), frontiers.end(),
             [](const FrontierSearchData& lhs, const FrontierSearchData& rhs) {
               return lhs.euclidean_distance > rhs.euclidean_distance;
             });
-
-  // Compute paths to frontiers to determine the closest reachable one. Start
-  // with closest and use euclidean distance as lower bound to prune candidates.
   auto t_start = std::chrono::high_resolution_clock::now();
   int path_counter = 0;
   int unreachable_goal_counter = 0;

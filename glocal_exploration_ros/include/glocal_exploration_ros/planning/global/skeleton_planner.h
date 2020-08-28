@@ -8,9 +8,9 @@
 
 #include <cblox_planning_global/linked_planning/skeleton/linked_skeleton_planner_ros.h>
 #include <ros/ros.h>
-#include <3rd_party/config_utilities.hpp>
 
 #include <glocal_exploration/state/communicator.h>
+#include <glocal_exploration/3rd_party/config_utilities.hpp>
 
 #include "glocal_exploration/planning/global/submap_frontier_evaluator.h"
 
@@ -23,6 +23,8 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   struct Config : public config_utilities::Config<Config> {
     int verbosity = 1;
     std::string nh_private_namespace = "~/SkeletonPlanner";
+    bool use_frontier_clustering = false;
+    double frontier_clustering_radius = 1.0; // m
 
     // Frontier evaluator.
     SubmapFrontierEvaluator::Config submap_frontier_config;
@@ -78,8 +80,9 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   // Frontier search
   struct FrontierSearchData {
     Point centroid;
-    double euclidean_distance;
-    double path_distance;
+    double euclidean_distance = 0;
+    double path_distance = 0;
+    int num_points = 0;
     std::vector<WayPoint> way_points;
   };
 

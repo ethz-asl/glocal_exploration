@@ -1,7 +1,8 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 #include <ros/ros.h>
-#include <3rd_party/config_utilities.hpp>
+
+#include <glocal_exploration/3rd_party/config_utilities.hpp>
 
 #include "glocal_exploration_ros/glocal_system.h"
 

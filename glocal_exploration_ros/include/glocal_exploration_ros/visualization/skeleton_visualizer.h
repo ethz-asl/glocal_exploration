@@ -8,7 +8,8 @@
 #include <ros/ros.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <voxblox/core/common.h>
-#include <3rd_party/config_utilities.hpp>
+
+#include <glocal_exploration/3rd_party/config_utilities.hpp>
 
 #include "glocal_exploration_ros/planning/global/skeleton_planner.h"
 #include "glocal_exploration_ros/visualization/global_planner_visualizer_base.h"

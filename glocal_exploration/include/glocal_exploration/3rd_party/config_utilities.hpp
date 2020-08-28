@@ -3,6 +3,7 @@ AUTHOR:       Lukas Schmid <schmluk@mavt.ethz.ch>
 AFFILIATION:  Autonomous Systems Lab (ASL), ETH Zürich
 SOURCE:       https://github.com/ethz-asl/config_utilities
 VERSION:      1.0.1
+LICENSE:      BSD-3-Clause
 
 Copyright 2020 Autonomous Systems Lab (ASL), ETH Zürich.
 
@@ -31,6 +32,9 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+// Raise a redefined warning if different versions are used. v=MMmmPP.
+#define CONFIG_UTILITIES_VERSION 010001
 
 /**
  * Depending on which headers are available, ROS dependencies are included in
@@ -136,7 +140,7 @@ class RequiredArguments {
     for (int i = old_args.size(); i < *argc; ++i) {
       argv_aux_[i].reset(
           new char[std::strlen(added_args[i - old_args.size()].c_str()) +
-                   1]);  // Extra char for null-terminated string.
+              1]);  // Extra char for null-terminated string.
       strcpy(argv_aux_[i].get(), added_args[i - old_args.size()].c_str());
     }
 
@@ -336,7 +340,7 @@ class ConfigChecker {
       : name_(std::move(module_name)),
         print_width_(GlobalSettings().default_print_width){}
 
-  bool isValid(bool print_warnings = false) const {
+  [[nodiscard]] bool isValid(bool print_warnings = false) const {
     if (warnings_.empty()) {
       return true;
     }
@@ -458,7 +462,7 @@ struct ConfigInternal : public ConfigInternalVerificator {
     return *this;
   }
 
-  bool isValid(bool print_warnings = false) const {
+  [[nodiscard]] bool isValid(bool print_warnings = false) const {
     meta_data_->checker = std::make_unique<ConfigChecker>(name_);
     meta_data_->checker->setPrintWidth(meta_data_->print_width);
     meta_data_->print_warnings = print_warnings;
@@ -468,7 +472,7 @@ struct ConfigInternal : public ConfigInternalVerificator {
     return result;
   }
 
-  std::string toString() const {
+  [[nodiscard]] std::string toString() const {
     meta_data_->messages = std::make_unique<std::vector<std::string>>();
     printFields();
     std::string result =
@@ -708,15 +712,15 @@ struct ConfigInternal : public ConfigInternalVerificator {
   void printConfigInternal(const std::string& name,
                            const internal::ConfigInternal* field) const {
     meta_data_->messages->emplace_back(std::string(meta_data_->indent, ' ') +
-                                       name + ":");
+        name + ":");
     meta_data_->messages->emplace_back(field->toStringInternal(
         meta_data_->indent +
             GlobalSettings::instance().default_subconfig_indent,
         meta_data_->print_width, meta_data_->print_indent));
   }
 
-  std::string toStringInternal(int indent, int print_width,
-                               int print_indent) const {
+  [[nodiscard]] std::string toStringInternal(int indent, int print_width,
+                                             int print_indent) const {
     int print_width_prev = meta_data_->print_width;
     int print_indent_prev = meta_data_->print_indent;
     int indent_prev = meta_data_->indent;

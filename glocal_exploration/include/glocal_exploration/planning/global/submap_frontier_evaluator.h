@@ -5,11 +5,10 @@
 #include <unordered_map>
 #include <vector>
 
-#include <3rd_party/config_utilities.hpp>
-
 #include "glocal_exploration/planning/global/global_planner_base.h"
 #include "glocal_exploration/planning/global/submap_frontier.h"
 #include "glocal_exploration/planning/global/wavefront_detector.h"
+#include "glocal_exploration/3rd_party/config_utilities.hpp"
 
 namespace glocal_exploration {
 /**
@@ -44,7 +43,6 @@ class SubmapFrontierEvaluator : public GlobalPlannerBase {
   const std::unordered_map<int, FrontierCollection>& getFrontiers() const {
     return frontiers_;
   }
-  // access
   std::vector<const Frontier*> getActiveFrontiers() const;
 
  private:

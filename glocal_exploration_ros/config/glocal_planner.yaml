@@ -147,6 +147,10 @@ global_planner:
   type: "skeleton"
   verbosity: 4
   
+  # Skeleton Planner
+  use_frontier_clustering: true
+  frontier_clustering_radius: 1.0
+  
   # Submap Frontiers Evaluator
   min_frontier_size: 10
   submaps_are_frozen: true

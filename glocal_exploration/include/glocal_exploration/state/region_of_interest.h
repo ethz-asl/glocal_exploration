@@ -1,9 +1,8 @@
 #ifndef GLOCAL_EXPLORATION_STATE_REGION_OF_INTEREST_H_
 #define GLOCAL_EXPLORATION_STATE_REGION_OF_INTEREST_H_
 
-#include <3rd_party/config_utilities.hpp>
-
 #include "glocal_exploration/common.h"
+#include "glocal_exploration/3rd_party/config_utilities.hpp"
 
 namespace glocal_exploration {
 
