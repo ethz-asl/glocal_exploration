@@ -9,6 +9,7 @@
 #include <glocal_exploration/state/communicator.h>
 #include <glocal_exploration/utility/config_checker.h>
 
+
 namespace glocal_exploration {
 
 bool VoxgraphMap::Config::isValid() const {

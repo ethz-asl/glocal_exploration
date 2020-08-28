@@ -5,7 +5,7 @@
 #include <pcl/conversions.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include "voxblox_ros/ptcloud_vis.h"
+#include <voxblox_ros/ptcloud_vis.h>
 
 namespace glocal_exploration {
 
@@ -17,11 +17,12 @@ void VoxgraphLocalArea::update(
   voxblox::BlockIndexList local_map_blocks;
   local_map.getEsdfLayer().getAllAllocatedBlocks(&local_map_blocks);
   for (const voxblox::BlockIndex& block_index : local_map_blocks) {
-    local_map_aabb.min = local_map_aabb.min.cwiseMin(
-        local_area_layer_.block_size() * block_index.cast<FloatingPoint>());
+    local_map_aabb.min =
+        local_map_aabb.min.cwiseMin(local_area_layer_.block_size() *
+                                    block_index.cast<voxblox::FloatingPoint>());
     local_map_aabb.max = local_map_aabb.max.cwiseMax(
         local_area_layer_.block_size() *
-        (block_index.cast<FloatingPoint>() + Point::Ones()));
+        (block_index.cast<voxblox::FloatingPoint>() + Point::Ones()));
   }
 
   // Find the submaps that currently overlap with the local map
@@ -114,17 +115,17 @@ void VoxgraphLocalArea::prune() {
 VoxgraphLocalArea::VoxelState VoxgraphLocalArea::getVoxelStateAtPosition(
     const Eigen::Vector3d& position) {
   TsdfVoxel* voxel_ptr = local_area_layer_.getVoxelPtrByCoordinates(
-      position.cast<FloatingPoint>());
+      position.cast<voxblox::FloatingPoint>());
   if (voxel_ptr) {
     if (voxel_ptr->weight > kTsdfObservedWeight) {
       if (voxel_ptr->distance > local_area_layer_.voxel_size()) {
-        return VoxelState::Free;
+        return VoxelState::kFree;
       } else {
-        return VoxelState::Occupied;
+        return VoxelState::kOccupied;
       }
     }
   }
-  return VoxelState::Unknown;
+  return VoxelState::kUnknown;
 }
 
 void VoxgraphLocalArea::publishLocalArea(ros::Publisher local_area_pub) {
@@ -230,10 +231,12 @@ bool VoxgraphLocalArea::submapPoseChanged(
   const Transformation& submap_pose_old = submap_old_it->second;
 
   const Transformation pose_delta = submap_pose_old.inverse() * new_submap_pose;
-  const FloatingPoint angle_delta = pose_delta.log().tail<3>().norm();
-  const FloatingPoint translation_delta = pose_delta.log().head<3>().norm();
-  constexpr FloatingPoint kAngleThresholdRad = 0.0523599;  // 3 degrees
-  const FloatingPoint translation_threshold = local_area_layer_.voxel_size();
+  const voxblox::FloatingPoint angle_delta = pose_delta.log().tail<3>().norm();
+  const voxblox::FloatingPoint translation_delta =
+      pose_delta.log().head<3>().norm();
+  constexpr voxblox::FloatingPoint kAngleThresholdRad = 0.0523599;  // 3 degrees
+  const voxblox::FloatingPoint translation_threshold =
+      local_area_layer_.voxel_size();
 
   return (translation_threshold < translation_delta ||
           kAngleThresholdRad < angle_delta);

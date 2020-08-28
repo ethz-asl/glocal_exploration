@@ -10,40 +10,33 @@
 #include <utility>
 #include <vector>
 
+#include <voxblox/core/block_hash.h>
+#include <voxblox/core/common.h>
+
+#include "glocal_exploration/utility/config_checker.h"
+
 namespace glocal_exploration {
+
+bool RHRRTStar::Config::isValid() const {
+  ConfigChecker checker("RHRRTStar");
+  checker.check_gt(max_path_length, 0.0, "max_path_length");
+  checker.check_gt(path_cropping_length, 0.0, "path_cropping_length");
+  checker.check_gt(max_number_of_neighbors, 0, "max_number_of_neighbors");
+  checker.check_gt(maximum_rewiring_iterations, 0,
+                   "maximum_rewiring_iterations");
+  return checker.isValid();
+}
+
+RHRRTStar::Config RHRRTStar::Config::checkValid() const {
+  CHECK(isValid());
+  return Config(*this);
+}
 
 RHRRTStar::RHRRTStar(const Config& config,
                      std::shared_ptr<Communicator> communicator)
     : LocalPlannerBase(std::move(communicator)), config_(config.checkValid()) {
   // initialize the sensor model
   sensor_model_ = std::make_unique<LidarModel>(config_.lidar_config, comm_);
-}
-
-bool RHRRTStar::Config::isValid() const {
-  bool is_valid = true;
-  if (max_path_length <= 0.0) {
-    LOG(WARNING) << "The maximal path length is expected > 0.0.";
-    is_valid = false;
-  }
-  if (path_cropping_length <= 0.0) {
-    LOG(WARNING) << "The path cropping length is expected > 0.0.";
-    is_valid = false;
-  }
-  if (max_number_of_neighbors <= 0) {
-    LOG(WARNING) << "The maximal number of neighbors is expected > 0.";
-    is_valid = false;
-  }
-  if (maximum_rewiring_iterations <= 0) {
-    LOG(WARNING)
-        << "The maximal number of rewiring iterations is expected > 0.";
-    is_valid = false;
-  }
-  return is_valid;
-}
-
-RHRRTStar::Config RHRRTStar::Config::checkValid() const {
-  CHECK(isValid());
-  return Config(*this);
 }
 
 void RHRRTStar::planningIteration() {
@@ -55,9 +48,9 @@ void RHRRTStar::planningIteration() {
   }
 
   // Requested a view point so update
-  if (next_root_index_ > -1) {
-    updateTree();
-    next_root_index_ = -1;
+  if (should_update_) {
+    updateGains();
+    should_update_ = false;
   }
 
   // expansion step
@@ -66,8 +59,10 @@ void RHRRTStar::planningIteration() {
   // Goal reached: request next point if there is a valid candidate
   if (comm_->targetIsReached()) {
     WayPoint next_waypoint;
+    updateCollision();
     if (selectNextBestWayPoint(&next_waypoint)) {
       comm_->requestWayPoint(next_waypoint);
+      should_update_ = true;
     }
   }
 
@@ -86,9 +81,11 @@ void RHRRTStar::resetPlanner(const WayPoint& origin) {
 
   // reset counters
   root_ = tree_data_.points[0].get();
+  current_connection_ = nullptr;
   local_sampled_points_ = config_.min_local_points;
-  num_previous_points_ = 1;
-  next_root_index_ = -1;
+  should_update_ = false;
+  pruned_points_ = 0;
+  new_points_ = 0;
 }
 
 void RHRRTStar::expandTree() {
@@ -111,15 +108,19 @@ void RHRRTStar::expandTree() {
   tree_data_.points.push_back(std::move(new_point));
   kdtree_->addPoints(tree_data_.points.size() - 1,
                      tree_data_.points.size() - 1);
+
+  // update tracking and stats
   if (local_sampled_points_ > 0) {
     local_sampled_points_ -= 1;
   }
+  new_points_++;
 }
 
 bool RHRRTStar::selectNextBestWayPoint(WayPoint* next_waypoint) {
   if (tree_data_.points.size() < 2) {
     return false;
   }
+
   // set up
   int iterations = 0;
   auto t_start = std::chrono::high_resolution_clock::now();
@@ -173,45 +174,33 @@ bool RHRRTStar::selectNextBestWayPoint(WayPoint* next_waypoint) {
       << "ms, " << iterations << " iterations.";
 
   // select the best node from the current root
-  int next_point = -1;
+  int next_point_idx = -1;
   double best_value = -std::numeric_limits<double>::max();
   for (size_t i = 0; i < root_->connections.size(); ++i) {
     ViewPoint* target = root_->getConnectedViewPoint(i);
     if (target->getConnectedViewPoint(target->active_connection) == root_) {
+      // the candidate is wired to the root
       if (target->value > best_value) {
         best_value = target->value;
-        next_point = i;
+        next_point_idx = i;
       }
     }
   }
-  if (next_point < 0) {
+  if (next_point_idx < 0) {
+    // This should never happen as the previous segment should remain active.
     return false;
   }
 
   // result
-  next_root_index_ = next_point;
-  *next_waypoint = root_->getConnectedViewPoint(next_root_index_)->pose;
-  return true;
-}
+  *next_waypoint = root_->getConnectedViewPoint(next_point_idx)->pose;
 
-void RHRRTStar::updateTree() {
-  // NOTE: this method requires the next_root_index_ to be computed by
-  // selectNextBestWayPoint() previously. counting
-  int points_before_update = tree_data_.points.size();
-  auto t_start = std::chrono::high_resolution_clock::now();
-
-  // update collision
-  updateCollision();
-
-  // update gains
-  updateGains();
-
-  // reset the root (after the gains so the correct nodes get updated)
-  ViewPoint* new_root = root_->getConnectedViewPoint(next_root_index_);
+  // update the roots
+  ViewPoint* new_root = root_->getConnectedViewPoint(next_point_idx);
   root_->is_root = false;
   new_root->is_root = true;
   root_->active_connection =
-      next_root_index_;  // make the old root connect to the new root
+      next_point_idx;  // make the old root connect to the new root
+  current_connection_ = root_->connections[next_point_idx].second.get();
   root_ = new_root;
 
   // refresh the number of local points
@@ -229,22 +218,17 @@ void RHRRTStar::updateTree() {
   }
 
   // logging
-  auto t_end = std::chrono::high_resolution_clock::now();
   LOG_IF(INFO, config_.verbosity >= 2)
-      << "Update took "
-      << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start)
-             .count()
-      << "ms: " << points_before_update - num_previous_points_ << " new, "
-      << points_before_update - tree_data_.points.size() << " killed, "
-      << tree_data_.points.size() << " total.";
-  num_previous_points_ = tree_data_.points.size();
+      << "Published next segment: " << new_points_ << " new, " << pruned_points_
+      << " killed, " << tree_data_.points.size() << " total.";
+  pruned_points_ = 0;
+  new_points_ = 0;
+
+  return true;
 }
 
 void RHRRTStar::updateCollision() {
-  // cache the next connection so the index can be corrected after pruning
-  Connection* next_connection =
-      root_->connections[next_root_index_].second.get();
-
+  int num_previous_points = tree_data_.points.size();
   // update all connections
   for (auto& viewpoint : tree_data_.points) {
     int offset = 0;
@@ -254,8 +238,7 @@ void RHRRTStar::updateCollision() {
       // update every connection only once (by the parent)
       if (viewpoint->connections[i].first) {
         Connection* connection = viewpoint->connections[i].second.get();
-        ViewPoint* target = connection->target;
-        if (connection == next_connection) {
+        if (connection == current_connection_) {
           // don't update the currently executed connection, this always allows
           // backtracking as well.
           continue;
@@ -272,6 +255,7 @@ void RHRRTStar::updateCollision() {
 
         // remove these connections
         if (collided) {
+          ViewPoint* target = connection->target;
           target->connections.erase(std::remove_if(target->connections.begin(),
                                                    target->connections.end(),
                                                    [connection](auto& c) {
@@ -299,13 +283,8 @@ void RHRRTStar::updateCollision() {
   kdtree_ = std::make_unique<KDTree>(3, tree_data_);
   kdtree_->addPoints(0, tree_data_.points.size() - 1);
 
-  // adjust the next_root index
-  for (size_t i = 0; i < root_->connections.size(); ++i) {
-    if (root_->connections[i].second.get() == next_connection) {
-      next_root_index_ = i;
-      break;
-    }
-  }
+  // track stats
+  pruned_points_ += num_previous_points - tree_data_.points.size();
 }
 
 void RHRRTStar::computePointsConnectedToRoot(
@@ -349,15 +328,25 @@ void RHRRTStar::computePointsConnectedToRoot(
 }
 
 void RHRRTStar::updateGains() {
+  auto t_start = std::chrono::high_resolution_clock::now();
+
+  // update all relevant points
   for (auto& point : tree_data_.points) {
-    if (point->is_root ||
-        point.get() == root_->getConnectedViewPoint(next_root_index_)) {
+    if (point->getActiveConnection() == current_connection_) {
       // don't update the old or new root
       point->gain = 0.0;
       continue;
     }
     evaluateViewPoint(point.get());
   }
+
+  // logging
+  auto t_end = std::chrono::high_resolution_clock::now();
+  LOG_IF(INFO, config_.verbosity >= 3)
+      << "Updated all gains in "
+      << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start)
+             .count()
+      << "ms.";
 }
 
 bool RHRRTStar::connectViewPoint(ViewPoint* view_point) {
@@ -429,16 +418,10 @@ bool RHRRTStar::selectBestConnection(ViewPoint* view_point) {
   return true;
 }
 
-double RHRRTStar::computeGain(
-    const std::vector<Eigen::Vector3d>& visible_voxels) {
-  double gain = 0.0;
-  for (auto& point : visible_voxels) {
-    if (comm_->map()->getVoxelStateInLocalArea(point) ==
-        MapBase::VoxelState::kUnknown) {
-      gain += 1.0;
-    }
-  }
-  return gain;
+void RHRRTStar::evaluateViewPoint(ViewPoint* view_point) {
+  voxblox::LongIndexSet voxels;
+  sensor_model_->getVisibleUnknownVoxels(&voxels, view_point->pose);
+  view_point->gain = voxels.size();
 }
 
 double RHRRTStar::computeCost(const Connection& connection) {
@@ -561,33 +544,33 @@ bool RHRRTStar::findNearestNeighbors(Eigen::Vector3d position,
   return true;
 }
 
-void RHRRTStar::evaluateViewPoint(ViewPoint* view_point) {
-  std::vector<Eigen::Vector3d> visible_voxels;
-  sensor_model_->getVisibleVoxels(&visible_voxels, view_point->pose);
-  view_point->gain = computeGain(visible_voxels);
-}
-
 void RHRRTStar::visualizeGain(std::vector<Eigen::Vector3d>* voxels,
                               std::vector<Eigen::Vector3d>* colors,
                               double* scale, const WayPoint& pose) const {
   CHECK_NOTNULL(voxels);
   CHECK_NOTNULL(colors);
   CHECK_NOTNULL(scale);
-  // get voxels
-  sensor_model_->getVisibleVoxels(voxels, pose);
-  voxels->erase(
-      std::remove_if(voxels->begin(), voxels->end(),
-                     [this](const Eigen::Vector3d& pt) {
-                       return comm_->map()->getVoxelStateInLocalArea(pt) !=
-                              MapBase::VoxelState::kUnknown;
-                     }),
-      voxels->end());
+  // TODO(schmluk): This is neither beautiful nor efficient but it doesn't get
+  //  called often...
 
-  // uniform coloring [0, 1]
-  colors->assign(voxels->size(), Eigen::Vector3d(1, 0.8, 0));
+  // get voxel indices
+  voxblox::LongIndexSet voxels_idx;
+  sensor_model_->getVisibleUnknownVoxels(&voxels_idx, pose);
 
   // voxel size
   *scale = comm_->map()->getVoxelSize();
+  const double voxel_size = comm_->map()->getVoxelSize();
+
+  // get centers
+  voxels->clear();
+  voxels->reserve(voxels_idx.size());
+  for (const auto& idx : voxels_idx) {
+    voxels->push_back(
+        voxblox::getCenterPointFromGridIndex(idx, voxel_size).cast<double>());
+  }
+
+  // uniform coloring [0, 1]
+  colors->assign(voxels->size(), Eigen::Vector3d(1, 0.8, 0));
 }
 
 bool RHRRTStar::ViewPoint::tryAddConnection(ViewPoint* target, MapBase* map) {
@@ -616,10 +599,16 @@ bool RHRRTStar::ViewPoint::tryAddConnection(ViewPoint* target, MapBase* map) {
 }
 
 RHRRTStar::Connection* RHRRTStar::ViewPoint::getActiveConnection() {
+  if (active_connection < 0 || active_connection >= connections.size()) {
+    return nullptr;
+  }
   return connections[active_connection].second.get();
 }
 
 RHRRTStar::Connection const* RHRRTStar::ViewPoint::getActiveConnection() const {
+  if (active_connection < 0 || active_connection >= connections.size()) {
+    return nullptr;
+  }
   return connections[active_connection].second.get();
 }
 

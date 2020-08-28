@@ -32,7 +32,7 @@ class VoxgraphLocalArea {
   void publishLocalArea(ros::Publisher local_area_pub);
 
  protected:
-  static constexpr FloatingPoint kTsdfObservedWeight = 1e-3;
+  static constexpr voxblox::FloatingPoint kTsdfObservedWeight = 1e-3;
   std::unordered_map<SubmapId, Transformation> submaps_in_local_area_;
   voxblox::Layer<TsdfVoxel> local_area_layer_;
 
