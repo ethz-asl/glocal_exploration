@@ -9,7 +9,7 @@
 int main(int argc, char** argv) {
   // Setup logging.
   config_utilities::RequiredArguments ra(
-      &argc, &argv, {"--logtostderr", "--colorlogtostderr"});
+      &argc, &argv, {"--alsologtostderr", "--colorlogtostderr"});
   google::InitGoogleLogging(argv[0]);
   google::InstallFailureSignalHandler();
   google::ParseCommandLineFlags(&argc, &argv, false);

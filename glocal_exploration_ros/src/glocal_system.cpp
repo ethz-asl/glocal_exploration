@@ -20,7 +20,16 @@ void GlocalSystem::Config::fromRosParam() {
   rosParam("verbosity", &verbosity);
   rosParam("replan_position_threshold", &replan_position_threshold);
   rosParam("replan_yaw_threshold", &replan_yaw_threshold);
-  rosParam("waypoint_timeout", &waypoint_timeout);
+  rosParam("replan_timeout_constant", &replan_timeout_constant);
+  rosParam("replan_timeout_velocity", &replan_timeout_velocity);
+}
+
+void GlocalSystem::Config::printFields() const {
+  printField("verbosity", verbosity);
+  printField("replan_position_threshold", replan_position_threshold);
+  printField("replan_yaw_threshold", replan_yaw_threshold);
+  printField("replan_timeout_constant", replan_timeout_constant);
+  printField("replan_timeout_velocity", replan_timeout_velocity);
 }
 
 GlocalSystem::GlocalSystem(const ros::NodeHandle& nh,
@@ -32,6 +41,7 @@ GlocalSystem::GlocalSystem(const ros::NodeHandle& nh,
                            const ros::NodeHandle& nh_private,
                            const Config& config)
     : nh_(nh), nh_private_(nh_private), config_(config.checkValid()) {
+  LOG_IF(INFO, config_.verbosity >= 1) << "\n" + config_.toString();
   // build communicator and components
   buildComponents(nh_private_);
 
@@ -129,9 +139,16 @@ void GlocalSystem::publishTargetPose() {
   msg.orientation.w = q.w();
   target_pub_.publish(msg);
 
-  // update the tracking state.
+  // Update the tracking state.
   comm_->setTargetReached(false);
-  time_last_waypoint_started_ = ros::Time::now();
+
+  // Compute the timeout limit.
+  double duration = config_.replan_timeout_constant;
+  if (config_.replan_timeout_velocity > 0) {
+    duration += (comm_->currentPose().position() - target_position_).norm() /
+                config_.replan_timeout_velocity;
+  }
+  replan_timeout_ = ros::Time::now() + ros::Duration(duration);
 }
 
 void GlocalSystem::odomCallback(const nav_msgs::Odometry& msg) {
@@ -170,14 +187,16 @@ void GlocalSystem::odomCallback(const nav_msgs::Odometry& msg) {
       }
     }
 
-    // check whether the last move command is timing out.
-    if (config_.waypoint_timeout > 0.0) {
-      if ((msg.header.stamp - time_last_waypoint_started_).toSec() >
-          config_.waypoint_timeout) {
+    // Check whether the last move command is timing out.
+    if (config_.replan_timeout_velocity > 0.0 ||
+        config_.replan_timeout_constant > 0.0) {
+      if (msg.header.stamp > replan_timeout_) {
         // NOTE(schmluk): This usually means the MAV is close to the target but
         // the controller did not exactly reach the threshold. Therefore we
         // assume the target is reached and continue planning.
         comm_->setTargetReached(true);
+        LOG_IF(INFO, config_.verbosity >= 3)
+            << "Waypoint timed out, continuing with next goal.";
       }
     }
   }
