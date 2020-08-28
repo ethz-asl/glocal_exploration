@@ -5,10 +5,10 @@
 #include <unordered_map>
 #include <vector>
 
+#include "glocal_exploration/3rd_party/config_utilities.hpp"
 #include "glocal_exploration/planning/global/global_planner_base.h"
 #include "glocal_exploration/planning/global/submap_frontier.h"
 #include "glocal_exploration/planning/global/wavefront_detector.h"
-#include "glocal_exploration/3rd_party/config_utilities.hpp"
 
 namespace glocal_exploration {
 /**

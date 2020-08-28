@@ -5,13 +5,12 @@
 #include <utility>
 #include <vector>
 
+#include "glocal_exploration/3rd_party/config_utilities.hpp"
+#include "glocal_exploration/3rd_party/nanoflann.hpp"
 #include "glocal_exploration/common.h"
 #include "glocal_exploration/planning/local/lidar_model.h"
 #include "glocal_exploration/planning/local/local_planner_base.h"
 #include "glocal_exploration/planning/local/sensor_model.h"
-#include "glocal_exploration/3rd_party/config_utilities.hpp"
-#include "glocal_exploration/3rd_party/nanoflann.hpp"
-
 
 namespace glocal_exploration {
 

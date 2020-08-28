@@ -149,13 +149,16 @@ bool SkeletonPlanner::computeGoalPoint() {
   // Frontier clustering.
   if (config_.use_frontier_clustering) {
     const int num_frontiers = frontiers.size();
-    for (auto it = frontiers.begin(); it !=frontiers.end(); ++it) {
+    for (auto it = frontiers.begin(); it != frontiers.end(); ++it) {
       auto it2 = it;
       it2++;
       while (it2 != frontiers.end()) {
-        if ((it2->centroid - it->centroid).norm() <= config_.frontier_clustering_radius) {
+        if ((it2->centroid - it->centroid).norm() <=
+            config_.frontier_clustering_radius) {
           // Nearby frontier centroids are weighted merged.
-          it->centroid = it->centroid * static_cast<FloatingPoint>(it->num_points) + it2->centroid * static_cast<FloatingPoint>(it2->num_points);
+          it->centroid =
+              it->centroid * static_cast<FloatingPoint>(it->num_points) +
+              it2->centroid * static_cast<FloatingPoint>(it2->num_points);
           it->num_points += it2->num_points;
           it->centroid /= static_cast<FloatingPoint>(it->num_points);
           it2 = frontiers.erase(it2);
@@ -165,9 +168,10 @@ bool SkeletonPlanner::computeGoalPoint() {
       }
     }
     // Logging.
-    LOG_IF(INFO, config_.verbosity >= 3) << "Clustered " << num_frontiers -frontiers.size() << " frontiers (" << num_frontiers << "->" << frontiers.size() << ").";
+    LOG_IF(INFO, config_.verbosity >= 3)
+        << "Clustered " << num_frontiers - frontiers.size() << " frontiers ("
+        << num_frontiers << "->" << frontiers.size() << ").";
   }
-
 
   // Compute paths to frontiers to determine the closest reachable one. Start
   // with closest and use euclidean distance as lower bound to prune candidates.

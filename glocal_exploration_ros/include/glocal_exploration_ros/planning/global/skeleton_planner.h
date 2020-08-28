@@ -24,7 +24,7 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
     int verbosity = 1;
     std::string nh_private_namespace = "~/SkeletonPlanner";
     bool use_frontier_clustering = false;
-    double frontier_clustering_radius = 1.0; // m
+    double frontier_clustering_radius = 1.0;  // m
 
     // Frontier evaluator.
     SubmapFrontierEvaluator::Config submap_frontier_config;

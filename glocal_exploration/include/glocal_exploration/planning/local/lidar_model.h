@@ -8,8 +8,8 @@
 #include <voxblox/core/block_hash.h>
 #include <voxblox/core/common.h>
 
-#include "glocal_exploration/planning/local/sensor_model.h"
 #include "glocal_exploration/3rd_party/config_utilities.hpp"
+#include "glocal_exploration/planning/local/sensor_model.h"
 
 namespace glocal_exploration {
 

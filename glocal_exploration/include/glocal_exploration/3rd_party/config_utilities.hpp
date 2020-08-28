@@ -140,7 +140,7 @@ class RequiredArguments {
     for (int i = old_args.size(); i < *argc; ++i) {
       argv_aux_[i].reset(
           new char[std::strlen(added_args[i - old_args.size()].c_str()) +
-              1]);  // Extra char for null-terminated string.
+                   1]);  // Extra char for null-terminated string.
       strcpy(argv_aux_[i].get(), added_args[i - old_args.size()].c_str());
     }
 
@@ -340,7 +340,7 @@ class ConfigChecker {
       : name_(std::move(module_name)),
         print_width_(GlobalSettings().default_print_width){}
 
-  [[nodiscard]] bool isValid(bool print_warnings = false) const {
+            [[nodiscard]] bool isValid(bool print_warnings = false) const {
     if (warnings_.empty()) {
       return true;
     }
@@ -472,7 +472,7 @@ struct ConfigInternal : public ConfigInternalVerificator {
     return result;
   }
 
-  [[nodiscard]] std::string toString() const {
+      [[nodiscard]] std::string toString() const {
     meta_data_->messages = std::make_unique<std::vector<std::string>>();
     printFields();
     std::string result =
@@ -712,7 +712,7 @@ struct ConfigInternal : public ConfigInternalVerificator {
   void printConfigInternal(const std::string& name,
                            const internal::ConfigInternal* field) const {
     meta_data_->messages->emplace_back(std::string(meta_data_->indent, ' ') +
-        name + ":");
+                                       name + ":");
     meta_data_->messages->emplace_back(field->toStringInternal(
         meta_data_->indent +
             GlobalSettings::instance().default_subconfig_indent,
