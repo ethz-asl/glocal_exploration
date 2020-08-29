@@ -15,7 +15,6 @@ namespace glocal_exploration {
 VoxgraphMap::Config::Config() { setConfigName("VoxgraphMap"); }
 
 void VoxgraphMap::Config::checkParams() const {
-  // TODO(@victorr): check param validity
   checkParamGT(traversability_radius, 0.0, "traversability_radius");
 }
 
