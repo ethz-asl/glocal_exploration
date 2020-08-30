@@ -24,6 +24,14 @@ void RHRRTStar::Config::checkParams() const {
   checkParamGE(path_cropping_length, 0.0, "path_cropping_length");
   checkParamGT(max_number_of_neighbors, 0, "max_number_of_neighbors");
   checkParamGT(maximum_rewiring_iterations, 0, "maximum_rewiring_iterations");
+  checkParamGT(global_sampling_radius, 0.0, "global_sampling_radius");
+  checkParamGT(local_sampling_radius, 0.0, "local_sampling_radius");
+  checkParamGE(min_local_points, 0, "min_local_points");
+  checkParamGE(min_path_length, 0.0, "min_path_length");
+  checkParamGE(min_sampling_distance, 0.0, "min_sampling_distance");
+  checkParamGE(terminaton_min_tree_size, 0, "terminaton_min_tree_size");
+  checkParamGE(termination_max_gain, 0.0, "termination_max_gain");
+
   checkParamConfig(lidar_config);
 }
 
@@ -39,7 +47,7 @@ void RHRRTStar::Config::fromRosParam() {
   rosParam("max_number_of_neighbors", &max_number_of_neighbors);
   rosParam("maximum_rewiring_iterations", &maximum_rewiring_iterations);
   rosParam("terminaton_min_tree_size", &terminaton_min_tree_size);
-  rosParam("termination_min_gain", &termination_min_gain);
+  rosParam("termination_max_gain", &termination_max_gain);
   rosParam(&lidar_config);
 }
 
@@ -55,7 +63,7 @@ void RHRRTStar::Config::printFields() const {
   printField("max_number_of_neighbors", max_number_of_neighbors);
   printField("maximum_rewiring_iterations", maximum_rewiring_iterations);
   printField("terminaton_min_tree_size", terminaton_min_tree_size);
-  printField("termination_min_gain", termination_min_gain);
+  printField("termination_max_gain", termination_max_gain);
   printField("lidar_config", lidar_config);
 }
 
@@ -67,7 +75,7 @@ RHRRTStar::RHRRTStar(const Config& config,
   LOG_IF(INFO, config_.verbosity >= 1) << "\n" + config_.toString();
 }
 
-void RHRRTStar::planningIteration() {
+void RHRRTStar::executePlanningIteration() {
   // Newly started local planning.
   if (comm_->stateMachine()->previousState() !=
       StateMachine::State::kLocalPlanning) {
@@ -103,7 +111,7 @@ void RHRRTStar::planningIteration() {
         max_gain = point->gain;
       }
     }
-    if (max_gain < config_.termination_min_gain) {
+    if (max_gain < config_.termination_max_gain) {
       comm_->stateMachine()->signalGlobalPlanning();
     }
   }

@@ -42,7 +42,7 @@ class Frontier {
   std::vector<FrontierCandidate>::iterator end() { return points_.end(); }
 
   // accessors
-  const Point& centroid() const { return centroid_; }
+  const Point& getCentroid() const { return centroid_; }
   bool isActive() const { return is_active_; }
 
   // interaction

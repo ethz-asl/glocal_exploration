@@ -1,6 +1,5 @@
 # glocal_exploration
-Efficient local and global exploration on submap collections with changing past pose estimates
-d gloca
+Efficient local and global exploration on submap collections with changing past pose estimates.
 # Maze demo
 These are just preliminary instructions to setup for development.
 

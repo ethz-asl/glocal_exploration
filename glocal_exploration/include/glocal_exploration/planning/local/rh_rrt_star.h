@@ -37,7 +37,7 @@ class RHRRTStar : public LocalPlannerBase {
 
     // temrination
     int terminaton_min_tree_size = 5;
-    double termination_min_gain = 100.0;
+    double termination_max_gain = 100.0;
 
     // sensor model (currently just use lidar)
     LidarModel::Config lidar_config;
@@ -53,7 +53,7 @@ class RHRRTStar : public LocalPlannerBase {
   ~RHRRTStar() override = default;
 
   // planning
-  void planningIteration() override;
+  void executePlanningIteration() override;
 
   struct Connection;
   // View points are the vertices in the tree.

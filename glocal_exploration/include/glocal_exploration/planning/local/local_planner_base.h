@@ -19,7 +19,7 @@ class LocalPlannerBase {
   virtual ~LocalPlannerBase() = default;
 
   // interface
-  virtual void planningIteration() = 0;
+  virtual void executePlanningIteration() = 0;
 
  protected:
   const std::shared_ptr<Communicator> comm_;
