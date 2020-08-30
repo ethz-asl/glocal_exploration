@@ -148,9 +148,9 @@ void SkeletonVisualizer::visualizeGoalPoints() {
     msg.header.stamp = ros::Time::now();
     msg.type = visualization_msgs::Marker::SPHERE;
     msg.action = visualization_msgs::Marker::ADD;
-    msg.scale.x = 0.3;
-    msg.scale.y = 0.3;
-    msg.scale.z = 0.3;
+    msg.scale.x = 0.5;
+    msg.scale.y = 0.5;
+    msg.scale.z = 0.5;
     msg.pose.orientation.w = 1.0;
     msg.color.a = 1.0;
 

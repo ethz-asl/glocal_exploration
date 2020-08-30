@@ -18,12 +18,18 @@ void SkeletonPlanner::Config::fromRosParam() {
   rosParam("verbosity", &verbosity);
   rosParam("use_frontier_clustering", &use_frontier_clustering);
   rosParam("frontier_clustering_radius", &frontier_clustering_radius);
+  rosParam("use_path_verification", &use_path_verification);
+  rosParam("path_verification_min_distance", &path_verification_min_distance);
   rosParam(&submap_frontier_config);
   nh_private_namespace = rosParamNameSpace() + "/skeleton";
 }
 
 void SkeletonPlanner::Config::printFields() const {
   printField("verbosity", verbosity);
+  printField("use_frontier_clustering", use_frontier_clustering);
+  printField("frontier_clustering_radius", frontier_clustering_radius);
+  printField("use_path_verification", use_path_verification);
+  printField("path_verification_min_distance", path_verification_min_distance);
   printField("nh_private_namespace", nh_private_namespace);
   printField("submap_frontier_config", submap_frontier_config);
 }
@@ -148,29 +154,7 @@ bool SkeletonPlanner::computeGoalPoint() {
 
   // Frontier clustering.
   if (config_.use_frontier_clustering) {
-    const int num_frontiers = frontiers.size();
-    for (auto it = frontiers.begin(); it != frontiers.end(); ++it) {
-      auto it2 = it;
-      it2++;
-      while (it2 != frontiers.end()) {
-        if ((it2->centroid - it->centroid).norm() <=
-            config_.frontier_clustering_radius) {
-          // Nearby frontier centroids are weighted merged.
-          it->centroid =
-              it->centroid * static_cast<FloatingPoint>(it->num_points) +
-              it2->centroid * static_cast<FloatingPoint>(it2->num_points);
-          it->num_points += it2->num_points;
-          it->centroid /= static_cast<FloatingPoint>(it->num_points);
-          it2 = frontiers.erase(it2);
-        } else {
-          it2++;
-        }
-      }
-    }
-    // Logging.
-    LOG_IF(INFO, config_.verbosity >= 3)
-        << "Clustered " << num_frontiers - frontiers.size() << " frontiers ("
-        << num_frontiers << "->" << frontiers.size() << ").";
+    clusterFrontiers(&frontiers);
   }
 
   // Compute paths to frontiers to determine the closest reachable one. Start
@@ -263,6 +247,37 @@ bool SkeletonPlanner::computeGoalPoint() {
   return true;
 }
 
+void SkeletonPlanner::clusterFrontiers(
+    std::vector<FrontierSearchData>* frontiers) {
+  CHECK_NOTNULL(frontiers);
+  // Search all frontiers for nearby centroids and merge incrementally until all
+  // centroids are further than 'frontier_clustering_radius' apart.
+  const int num_frontiers = frontiers->size();
+  for (auto it = frontiers->begin(); it != frontiers->end(); ++it) {
+    auto it2 = it;
+    it2++;
+    while (it2 != frontiers->end()) {
+      if ((it2->centroid - it->centroid).norm() <=
+          config_.frontier_clustering_radius) {
+        // Nearby frontier centroids are merged by weight.
+        it->centroid =
+            it->centroid * static_cast<FloatingPoint>(it->num_points) +
+            it2->centroid * static_cast<FloatingPoint>(it2->num_points);
+        it->num_points += it2->num_points;
+        it->centroid /= static_cast<FloatingPoint>(it->num_points);
+        it2 = frontiers->erase(it2);
+      } else {
+        it2++;
+      }
+    }
+  }
+  // Logging.
+  LOG_IF(INFO, config_.verbosity >= 3)
+      << "Clustered " << num_frontiers - frontiers->size()
+      << " frontier centroids (" << num_frontiers << "->" << frontiers->size()
+      << " frontiers).";
+}
+
 void SkeletonPlanner::executeWayPoint() {
   if (comm_->targetIsReached()) {
     if (way_points_.empty()) {
@@ -271,7 +286,11 @@ void SkeletonPlanner::executeWayPoint() {
       LOG_IF(INFO, config_.verbosity >= 2) << "Finished global path execution.";
     } else {
       // Request next way point.
-      // TODO(schmluk): collision checks, min length
+      if (config_.use_path_verification) {
+        verifyNextWayPoints();
+      }
+
+      // Send the next waypoint in the list.
       WayPoint& way_point = way_points_[0];
       way_point.yaw = std::atan2((way_point.y - comm_->currentPose().y),
                                  (way_point.x - comm_->currentPose().x));
@@ -279,6 +298,68 @@ void SkeletonPlanner::executeWayPoint() {
       way_points_.erase(way_points_.begin());
     }
   }
+}
+
+void SkeletonPlanner::verifyNextWayPoints() {
+  // Connect as many waypoints as possible with a single line, all points
+  // are checked in the sliding window map to guarantee safety.
+  int waypoint_index = 0;
+  Point goal;
+  while (waypoint_index < way_points_.size()) {
+    goal = way_points_[waypoint_index].position();
+    if (lineIsIntraversableInSlidingWindowAt(&goal)) {
+      break;
+    } else {
+      waypoint_index++;
+    }
+  }
+
+  // If less than one segment is connected check for minimum distance.
+  if (waypoint_index == 0) {
+    if ((comm_->currentPose().position() - goal).norm() >=
+        config_.path_verification_min_distance) {
+      // Insert intermediate goal s.t. path can be observed.
+      WayPoint way_point;
+      way_point.position() = goal;
+      way_points_.insert(way_points_.begin(), way_point);
+    } else {
+      // The global path is no longer feasible, try to recompute it.
+      goal = way_points_.back().position();
+      if (computePath(goal, &way_points_)) {
+        LOG_IF(INFO, config_.verbosity >= 2)
+            << "Global path became infeasible, was successfully recomputed.";
+      } else {
+        // The goal is inaccessible, return to local planning.
+        comm_->stateMachine()->signalLocalPlanning();
+        LOG_IF(INFO, config_.verbosity >= 2)
+            << "Global path became infeasible, returning to local planning.";
+      }
+    }
+  } else {
+    // The ith path was intraversible, remove previous way points.
+    auto it = way_points_.begin();
+    for (int i = 0; i < waypoint_index - 1; ++i) {
+      it = way_points_.erase(it);
+    }
+  }
+}
+
+bool SkeletonPlanner::lineIsIntraversableInSlidingWindowAt(Point* goal_point) {
+  // Check for collision and return the distance [m] after which the line path
+  // is no longer feasible. -1 If it is fully feasible.
+  const Point start = comm_->currentPose().position();
+  int n_points =
+      std::floor((start - *goal_point).norm() / comm_->map()->getVoxelSize()) +
+      1;
+  for (int i = 1; i <= n_points; ++i) {
+    Point candidate = start + *goal_point * static_cast<double>(i) /
+                                  static_cast<double>(n_points);
+    if (!comm_->map()->isTraversableInActiveSubmap(candidate)) {
+      *goal_point = candidate;
+      return true;
+    }
+  }
+  return false;
 }
 
 bool SkeletonPlanner::findValidGoalPoint(Point* goal) {

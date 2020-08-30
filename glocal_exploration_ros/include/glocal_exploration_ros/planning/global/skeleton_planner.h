@@ -25,6 +25,8 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
     std::string nh_private_namespace = "~/SkeletonPlanner";
     bool use_frontier_clustering = false;
     double frontier_clustering_radius = 1.0;  // m
+    bool use_path_verification = true;  // Check traversability in temporal map.
+    double path_verification_min_distance = 1.0;  // m
 
     // Frontier evaluator.
     SubmapFrontierEvaluator::Config submap_frontier_config;
@@ -56,6 +58,15 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
  private:
   const Config config_;
 
+  // Frontier search data collection.
+  struct FrontierSearchData {
+    Point centroid;
+    double euclidean_distance = 0;
+    double path_distance = 0;
+    int num_points = 0;
+    std::vector<WayPoint> way_points;
+  };
+
   // Skeleton planner.
   std::unique_ptr<mav_planning::CbloxSkeletonGlobalPlanner> skeleton_planner_;
 
@@ -68,6 +79,9 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   // Helper methods.
   bool computePath(const Point& goal, std::vector<WayPoint>* way_points);
   bool findValidGoalPoint(Point* goal);  // Changes goal to the new point.
+  void clusterFrontiers(std::vector<FrontierSearchData>* frontiers);
+  bool lineIsIntraversableInSlidingWindowAt(Point* goal_point);
+  void verifyNextWayPoints();
 
   // Variables.
   std::vector<WayPoint> way_points_;  // in mission frame
@@ -76,15 +90,6 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   // Stages of global planning.
   enum class Stage { k1ComputeFrontiers, k2ComputeGoalAndPath, k3ExecutePath };
   Stage stage_;
-
-  // Frontier search
-  struct FrontierSearchData {
-    Point centroid;
-    double euclidean_distance = 0;
-    double path_distance = 0;
-    int num_points = 0;
-    std::vector<WayPoint> way_points;
-  };
 
   // Visualization
   VisualizationInfo visualization_info_;
