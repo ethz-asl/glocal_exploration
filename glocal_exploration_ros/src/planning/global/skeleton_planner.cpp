@@ -1,6 +1,7 @@
 #include "glocal_exploration_ros/planning/global/skeleton_planner.h"
 
 #include <algorithm>
+#include <list>
 #include <memory>
 #include <unordered_map>
 #include <utility>
@@ -48,7 +49,7 @@ SkeletonPlanner::SkeletonPlanner(const Config& config,
   skeleton_planner_->setupPlannerAndSmoother();
 }
 
-void SkeletonPlanner::planningIteration() {
+void SkeletonPlanner::executePlanningIteration() {
   // Newly started global planning.
   if (comm_->stateMachine()->previousState() !=
       StateMachine::State::kGlobalPlanning) {
@@ -86,8 +87,7 @@ bool SkeletonPlanner::computeFrontiers() {
   // state. If they are already pre-computed and frozen the computation step
   // will do nothing.
   visualization_info_.frontiers_changed = true;
-  std::vector<MapBase::SubmapData> data;
-  comm_->map()->getAllSubmapData(&data);
+  std::vector<MapBase::SubmapData> data = comm_->map()->getAllSubmapData();
 
   // Check there are enough submaps already.
   if (data.empty()) {
@@ -102,7 +102,7 @@ bool SkeletonPlanner::computeFrontiers() {
   for (const auto& datum : data) {
     // NOTE: The submap origin is in free space since it corresponds
     //       to a robot pose by construction.
-    const Point submap_origin(0.0,0.0,0.0);
+    const Point submap_origin(0.0, 0.0, 0.0);
     computeFrontiersForSubmap(datum, /* initial_point= */ submap_origin);
     update_list[datum.id] = datum.T_M_S;
   }
@@ -125,7 +125,7 @@ bool SkeletonPlanner::computeGoalPoint() {
   visualization_info_.goal_points.clear();
 
   // Get all frontiers.
-  std::vector<FrontierSearchData> frontiers;
+  std::list<FrontierSearchData> frontiers;
   for (const auto& frontier : getActiveFrontiers()) {
     // Compute active centroid.
     FrontierSearchData& data = frontiers.emplace_back();
@@ -143,7 +143,7 @@ bool SkeletonPlanner::computeGoalPoint() {
     }
     data.centroid /= static_cast<FloatingPoint>(data.num_points);
     data.euclidean_distance =
-        (comm_->currentPose().position() - frontier->centroid()).norm();
+        (comm_->currentPose().position() - data.centroid).norm();
   }
   if (frontiers.empty()) {
     return false;
@@ -178,10 +178,10 @@ bool SkeletonPlanner::computeGoalPoint() {
 
   // Compute paths to frontiers to determine the closest reachable one. Start
   // with closest and use euclidean distance as lower bound to prune candidates.
-  std::sort(frontiers.begin(), frontiers.end(),
-            [](const FrontierSearchData& lhs, const FrontierSearchData& rhs) {
-              return lhs.euclidean_distance > rhs.euclidean_distance;
-            });
+  frontiers.sort(
+      [](const FrontierSearchData& lhs, const FrontierSearchData& rhs) {
+        return lhs.euclidean_distance > rhs.euclidean_distance;
+      });
   auto t_start = std::chrono::high_resolution_clock::now();
   int path_counter = 0;
   int unreachable_goal_counter = 0;
@@ -192,7 +192,8 @@ bool SkeletonPlanner::computeGoalPoint() {
     Point goal = it->centroid;
     if (!findValidGoalPoint(&goal)) {
       unreachable_goal_counter++;
-      visualization_info_.goal_points.emplace_back(std::make_pair(3, goal));
+      visualization_info_.goal_points.emplace_back(
+          std::make_pair(VisualizationInfo::kInvalidGoal, goal));
       it = frontiers.erase(it);
       continue;
     }
@@ -207,14 +208,16 @@ bool SkeletonPlanner::computeGoalPoint() {
         it->path_distance +=
             (way_points[i].position() - way_points[i - 1].position()).norm();
       }
-      visualization_info_.goal_points.emplace_back(std::make_pair(0, goal));
+      visualization_info_.goal_points.emplace_back(
+          std::make_pair(VisualizationInfo::kReachable, goal));
 
       // Prune paths that can not be shorter than this one.
       double dist = it->path_distance;
       auto it2 = ++it;
       while (it2 != frontiers.end()) {
         if (it2->euclidean_distance >= dist) {
-          visualization_info_.goal_points.emplace_back(std::make_pair(2, goal));
+          visualization_info_.goal_points.emplace_back(
+              std::make_pair(VisualizationInfo::kUnchecked, goal));
           it2 = frontiers.erase(it2);
         } else {
           it2++;
@@ -222,7 +225,8 @@ bool SkeletonPlanner::computeGoalPoint() {
       }
     } else {
       // Remove inaccessible frontiers.
-      visualization_info_.goal_points.emplace_back(std::make_pair(1, goal));
+      visualization_info_.goal_points.emplace_back(
+          std::make_pair(VisualizationInfo::kUnreachable, goal));
       it = frontiers.erase(it);
     }
   }

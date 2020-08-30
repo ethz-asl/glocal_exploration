@@ -15,10 +15,8 @@ void WaveFrontDetector::resetDetectorToLayer(
   voxels_per_side_ = layer_->voxels_per_side();
 }
 
-void WaveFrontDetector::computeFrontiers(
-    const Point& initial_point, std::vector<std::vector<Point>>* result) {
-  result->clear();
-
+std::vector<std::vector<Point>> WaveFrontDetector::computeFrontiers(
+    const Point& initial_point) {
   // Reset map queue and lists.
   map_queue_ = std::queue<Index>();
   map_open_list_.clear();
@@ -28,11 +26,12 @@ void WaveFrontDetector::computeFrontiers(
   enqueueMap(indexFromPoint(initial_point));
 
   // Run the search through the map and add frontiers to the result.
-  mapBFS(result);
+  return mapBFS();
 }
 
-void WaveFrontDetector::mapBFS(std::vector<std::vector<Point>>* result) {
+std::vector<std::vector<Point>> WaveFrontDetector::mapBFS() {
   // First BFS through observed free space.
+  std::vector<std::vector<Point>> result;
   while (!map_queue_.empty()) {
     Index candidate = popMap();
 
@@ -48,7 +47,7 @@ void WaveFrontDetector::mapBFS(std::vector<std::vector<Point>>* result) {
 
       // Find all connected points of this frontier and add them to the result.
       enqueueFrontier(candidate);
-      frontierBFS(result);
+      result.emplace_back(frontierBFS());
     }
 
     for (const Index& offset : kNeighborOffsets) {
@@ -67,7 +66,7 @@ void WaveFrontDetector::mapBFS(std::vector<std::vector<Point>>* result) {
   }
 }
 
-void WaveFrontDetector::frontierBFS(std::vector<std::vector<Point>>* result) {
+std::vector<Point> WaveFrontDetector::frontierBFS() {
   // Second BFS search for connected frontiers.
   std::vector<Point> frontier;
   while (!frontier_queue_.empty()) {
@@ -93,13 +92,12 @@ void WaveFrontDetector::frontierBFS(std::vector<std::vector<Point>>* result) {
     }
     frontier_closed_list_.insert(frontier_candidate);
   }
-  // Append new frontier to result.
-  result->push_back(frontier);
 
   // Mark the new points as traversed.
   for (const Index& point : frontier_closed_list_) {
     map_closed_list_.insert(point);
   }
+  return frontier;
 }
 
 WaveFrontDetector::Index WaveFrontDetector::indexFromPoint(

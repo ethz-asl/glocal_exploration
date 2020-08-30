@@ -94,12 +94,12 @@ void GlocalSystem::loopIteration() {
   // Actions.
   switch (comm_->stateMachine()->currentState()) {
     case StateMachine::State::kLocalPlanning: {
-      comm_->localPlanner()->planningIteration();
+      comm_->localPlanner()->executePlanningIteration();
       local_planner_visualizer_->visualize();
       break;
     }
     case StateMachine::State::kGlobalPlanning: {
-      comm_->globalPlanner()->planningIteration();
+      comm_->globalPlanner()->executePlanningIteration();
       global_planner_visualizer_->visualize();
       break;
     }

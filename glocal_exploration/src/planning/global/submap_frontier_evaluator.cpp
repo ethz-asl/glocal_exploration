@@ -32,8 +32,8 @@ void SubmapFrontierEvaluator::Config::printFields() const {
 std::vector<const Frontier*> SubmapFrontierEvaluator::getActiveFrontiers()
     const {
   std::vector<const Frontier*> result;
-  for (const auto& frontiers : frontiers_) {
-    for (const auto& frontier : frontiers.second) {
+  for (const auto& submap_id_frontiers_pair : submap_frontier_collections_) {
+    for (const auto& frontier : submap_id_frontiers_pair.second) {
       if (frontier.isActive()) {
         result.push_back(&frontier);
       }
@@ -52,9 +52,10 @@ void SubmapFrontierEvaluator::computeFrontiersForSubmap(
   // Initialize all frontier candidates for the given layer and id.
 
   // Setup the frontier collection.
-  auto it = frontiers_.find(data.id);
-  if (it == frontiers_.end()) {
-    it = frontiers_.insert(std::make_pair(data.id, FrontierCollection(data.id)))
+  auto it = submap_frontier_collections_.find(data.id);
+  if (it == submap_frontier_collections_.end()) {
+    it = submap_frontier_collections_
+             .insert(std::make_pair(data.id, FrontierCollection(data.id)))
              .first;
   } else if (config_.submaps_are_frozen) {
     // Found an existing frozen frontier.
@@ -67,10 +68,9 @@ void SubmapFrontierEvaluator::computeFrontiersForSubmap(
 
   // Compute all frontiers using the wavefront detector.
   auto t_start = std::chrono::high_resolution_clock::now();
-
-  std::vector<std::vector<Point>> frontiers;
   wave_front_detector_.resetDetectorToLayer(data.tsdf_layer);
-  wave_front_detector_.computeFrontiers(initial_point, &frontiers);
+  std::vector<std::vector<Point>> frontiers =
+      wave_front_detector_.computeFrontiers(initial_point);
 
   // Parse the result into a frontier collection.
   unsigned int number_of_points = 0;
@@ -114,8 +114,8 @@ void SubmapFrontierEvaluator::updateFrontiers(
 
   for (const auto& id_tf_pair : T_M_S) {
     // Check all submaps that need to be updated.
-    auto it = frontiers_.find(id_tf_pair.first);
-    if (it == frontiers_.end()) {
+    auto it = submap_frontier_collections_.find(id_tf_pair.first);
+    if (it == submap_frontier_collections_.end()) {
       LOG(WARNING) << "Tried to update non-existing frontiers for submap id "
                    << id_tf_pair.first << ".";
       continue;

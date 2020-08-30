@@ -155,7 +155,7 @@ bool VoxgraphMap::isTraversableInGlobalMap(const Point& position) {
   return traversable_anywhere;
 }
 
-void VoxgraphMap::getAllSubmapData(std::vector<SubmapData>* data) {
+std::vector<MapBase::SubmapData> VoxgraphMap::getAllSubmapData() {
   // TODO(@victorr): This is a first implementation for global frontier
   //  tracking. The global planner has a function computeFrontiers (or similar)
   //  that can be called upon submap completion to store frontiers.
@@ -164,7 +164,7 @@ void VoxgraphMap::getAllSubmapData(std::vector<SubmapData>* data) {
   //  frontiers for a given ID. Btw I don't know this includes the active
   //  submap, but it should not be included here.
 
-  CHECK_NOTNULL(data);
+  std::vector<SubmapData> data;
   auto submaps = voxgraph_server_->getSubmapCollection().getSubmapConstPtrs();
   for (const auto& submap : submaps) {
     SubmapData datum;
@@ -176,8 +176,9 @@ void VoxgraphMap::getAllSubmapData(std::vector<SubmapData>* data) {
     datum.tsdf_layer =
         std::make_shared<const voxblox::Layer<voxblox::TsdfVoxel>>(
             submap->getTsdfMap().getTsdfLayer());
-    data->push_back(datum);
+    data.push_back(datum);
   }
+  return data;
 }
 
 }  // namespace glocal_exploration

@@ -74,14 +74,15 @@ bool VoxbloxMap::isTraversableInGlobalMap(const Point& position) {
   return isTraversableInActiveSubmap(position);
 }
 
-void VoxbloxMap::getAllSubmapData(std::vector<SubmapData>* data) {
-  CHECK_NOTNULL(data);
+std::vector<MapBase::SubmapData> VoxbloxMap::getAllSubmapData() {
+  std::vector<SubmapData> data;
   SubmapData datum;
   datum.id = 0;
   datum.T_M_S.setIdentity();
   datum.tsdf_layer = std::make_shared<const voxblox::Layer<voxblox::TsdfVoxel>>(
       server_->getTsdfMapPtr()->getTsdfLayer());
-  data->push_back(datum);
+  data.push_back(datum);
+  return data;
 }
 
 }  // namespace glocal_exploration

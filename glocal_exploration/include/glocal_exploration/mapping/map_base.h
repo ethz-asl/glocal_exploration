@@ -46,7 +46,7 @@ class MapBase {
 
   virtual bool isTraversableInGlobalMap(const Point& position) = 0;
 
-  virtual void getAllSubmapData(std::vector<SubmapData>* data) = 0;
+  virtual std::vector<SubmapData> getAllSubmapData() = 0;
 
  protected:
   const std::shared_ptr<Communicator> comm_;

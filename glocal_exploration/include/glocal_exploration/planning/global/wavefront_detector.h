@@ -30,12 +30,11 @@ class WaveFrontDetector {
       std::shared_ptr<const voxblox::Layer<voxblox::TsdfVoxel>> layer);
 
   // The result contains vectors of points that belong to the same frontier.
-  void computeFrontiers(const Point& initial_point,
-                        std::vector<std::vector<Point>>*);
+  std::vector<std::vector<Point>> computeFrontiers(const Point& initial_point);
 
  private:
-  void mapBFS(std::vector<std::vector<Point>>* result);
-  void frontierBFS(std::vector<std::vector<Point>>* result);
+  std::vector<std::vector<Point>> mapBFS();
+  std::vector<Point> frontierBFS();
   Index indexFromPoint(const Point& point) const;
   Point centerPointFromIndex(const Index& index) const;
   void enqueueMap(const Index& index);

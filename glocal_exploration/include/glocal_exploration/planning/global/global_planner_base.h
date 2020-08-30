@@ -22,8 +22,7 @@ class GlobalPlannerBase {
       : comm_(std::move(communicator)) {}
   virtual ~GlobalPlannerBase() = default;
 
-  /* General and Accessors */
-  virtual void planningIteration() = 0;
+  virtual void executePlanningIteration() = 0;
 
   // NOTE(schmluk): these are curently exposed in the base class for simplicity.
   virtual void computeFrontiersForSubmap(const MapBase::SubmapData& data,

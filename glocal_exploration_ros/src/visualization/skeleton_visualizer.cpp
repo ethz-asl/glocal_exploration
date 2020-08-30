@@ -156,32 +156,33 @@ void SkeletonVisualizer::visualizeGoalPoints() {
 
     // Go through all points.
     int id = 0;
-    for (const auto& id_point_pair :
+    for (const auto& reachability_point_pair :
          planner_->visualizationInfo().goal_points) {
-      msg.pose.position.x = id_point_pair.second.x();
-      msg.pose.position.y = id_point_pair.second.y();
-      msg.pose.position.z = id_point_pair.second.z();
+      msg.pose.position.x = reachability_point_pair.second.x();
+      msg.pose.position.y = reachability_point_pair.second.y();
+      msg.pose.position.z = reachability_point_pair.second.z();
       msg.id = id++;
 
-      // 0: reachable, 1: unreachable, 2: unchecked, 3: invalid point
-      if (id_point_pair.first == 0) {
+      if (reachability_point_pair.first ==
+          SkeletonPlanner::VisualizationInfo::kReachable) {
         msg.color.r = 0.0;
         msg.color.g = 1.0;
         msg.color.b = 0.0;
-      } else if (id_point_pair.first == 1) {
+      } else if (reachability_point_pair.first ==
+                 SkeletonPlanner::VisualizationInfo::kUnreachable) {
         msg.color.r = 1.0;
         msg.color.g = 0.0;
         msg.color.b = 0.0;
-      } else if (id_point_pair.first == 2) {
+      } else if (reachability_point_pair.first ==
+                 SkeletonPlanner::VisualizationInfo::kUnchecked) {
         msg.color.r = 1.0;
         msg.color.g = 1.0;
         msg.color.b = 0.0;
-      } else if (id_point_pair.first == 3) {
+      } else if (reachability_point_pair.first ==
+                 SkeletonPlanner::VisualizationInfo::kInvalidGoal) {
         msg.color.r = 1.0;
         msg.color.g = 0.0;
         msg.color.b = 1.0;
-      } else {
-        continue;
       }
       goals_pub_.publish(msg);
     }

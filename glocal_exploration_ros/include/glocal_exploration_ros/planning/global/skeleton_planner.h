@@ -16,7 +16,7 @@
 
 namespace glocal_exploration {
 /**
- * Uses the submap skeleton planner to ind paths to frontiers.
+ * Uses the submap skeleton planner to find paths to frontiers.
  */
 class SkeletonPlanner : public SubmapFrontierEvaluator {
  public:
@@ -37,9 +37,8 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
 
   struct VisualizationInfo {
     bool frontiers_changed = false;
-    std::vector<std::pair<int, Point>>
-        goal_points;  // 0: reachable, 1: unreachable, 2: unchecked, 3: invalid
-                      // point
+    enum Reachability { kReachable, kUnreachable, kUnchecked, kInvalidGoal };
+    std::vector<std::pair<Reachability, Point>> goal_points;
     bool goals_changed = false;
   };
 
@@ -47,7 +46,7 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
                   std::shared_ptr<Communicator> communicator);
   ~SkeletonPlanner() override = default;
 
-  void planningIteration() override;
+  void executePlanningIteration() override;
 
   // Visualization access.
   VisualizationInfo& visualizationInfo() { return visualization_info_; }

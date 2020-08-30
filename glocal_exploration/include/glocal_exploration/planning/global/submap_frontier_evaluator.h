@@ -41,7 +41,7 @@ class SubmapFrontierEvaluator : public GlobalPlannerBase {
 
   // access
   const std::unordered_map<int, FrontierCollection>& getFrontiers() const {
-    return frontiers_;
+    return submap_frontier_collections_;
   }
   std::vector<const Frontier*> getActiveFrontiers() const;
 
@@ -49,7 +49,7 @@ class SubmapFrontierEvaluator : public GlobalPlannerBase {
   const Config config_;
   WaveFrontDetector wave_front_detector_;
 
-  std::unordered_map<int, FrontierCollection> frontiers_;
+  std::unordered_map<int, FrontierCollection> submap_frontier_collections_;
 };
 
 }  // namespace glocal_exploration
