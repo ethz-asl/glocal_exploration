@@ -64,6 +64,7 @@ std::vector<std::vector<Point>> WaveFrontDetector::mapBFS() {
     }
     map_closed_list_.insert(candidate);
   }
+  return result;
 }
 
 std::vector<Point> WaveFrontDetector::frontierBFS() {

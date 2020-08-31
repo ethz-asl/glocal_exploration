@@ -156,8 +156,6 @@ class RHRRTStar : public LocalPlannerBase {
   // stats
   int pruned_points_;
   int new_points_;
-
-  int executed_segments_;
 };
 
 }  // namespace glocal_exploration

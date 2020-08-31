@@ -163,26 +163,31 @@ void SkeletonVisualizer::visualizeGoalPoints() {
       msg.pose.position.z = reachability_point_pair.second.z();
       msg.id = id++;
 
-      if (reachability_point_pair.first ==
-          SkeletonPlanner::VisualizationInfo::kReachable) {
-        msg.color.r = 0.0;
-        msg.color.g = 1.0;
-        msg.color.b = 0.0;
-      } else if (reachability_point_pair.first ==
-                 SkeletonPlanner::VisualizationInfo::kUnreachable) {
-        msg.color.r = 1.0;
-        msg.color.g = 0.0;
-        msg.color.b = 0.0;
-      } else if (reachability_point_pair.first ==
-                 SkeletonPlanner::VisualizationInfo::kUnchecked) {
-        msg.color.r = 1.0;
-        msg.color.g = 1.0;
-        msg.color.b = 0.0;
-      } else if (reachability_point_pair.first ==
-                 SkeletonPlanner::VisualizationInfo::kInvalidGoal) {
-        msg.color.r = 1.0;
-        msg.color.g = 0.0;
-        msg.color.b = 1.0;
+      switch (reachability_point_pair.first) {
+        case SkeletonPlanner::VisualizationInfo::kReachable: {
+          msg.color.r = 0.0;
+          msg.color.g = 1.0;
+          msg.color.b = 0.0;
+          break;
+        }
+        case SkeletonPlanner::VisualizationInfo::kUnreachable: {
+          msg.color.r = 1.0;
+          msg.color.g = 0.0;
+          msg.color.b = 0.0;
+          break;
+        }
+        case SkeletonPlanner::VisualizationInfo::kUnchecked: {
+          msg.color.r = 1.0;
+          msg.color.g = 1.0;
+          msg.color.b = 0.0;
+          break;
+        }
+        case SkeletonPlanner::VisualizationInfo::kInvalidGoal: {
+          msg.color.r = 1.0;
+          msg.color.g = 0.0;
+          msg.color.b = 1.0;
+          break;
+        }
       }
       goals_pub_.publish(msg);
     }
