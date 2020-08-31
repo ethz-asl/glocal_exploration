@@ -99,6 +99,7 @@ void RHRRTStar::executePlanningIteration() {
     if (selectNextBestWayPoint(&next_waypoint)) {
       comm_->requestWayPoint(next_waypoint);
       gain_update_needed_ = true;
+      executed_segments_++;
     }
   }
 
@@ -114,9 +115,16 @@ void RHRRTStar::executePlanningIteration() {
       comm_->stateMachine()->signalGlobalPlanning();
     }
   }
+
+  // TEST
+  if (executed_segments_ >= 3) {
+    comm_->stateMachine()->signalGlobalPlanning();
+  }
 }
 
 void RHRRTStar::resetPlanner(const WayPoint& origin) {
+  executed_segments_ = 0;
+
   // clear the tree and initialize with a point at the current pose
   tree_data_.points.clear();
   auto point = std::make_unique<ViewPoint>();
