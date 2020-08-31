@@ -1,22 +1,23 @@
 #include "glocal_exploration_ros/mapping/voxblox_map.h"
 
 #include <memory>
+#include <vector>
 
 #include <glocal_exploration/common.h>
 #include <glocal_exploration/state/communicator.h>
-#include <glocal_exploration/utility/config_checker.h>
 
 namespace glocal_exploration {
 
-bool VoxbloxMap::Config::isValid() const {
-  ConfigChecker checker("VoxbloxMap");
-  checker.check_gt(traversability_radius, 0.0, "traversability_radius");
-  return checker.isValid();
+VoxbloxMap::Config::Config() { setConfigName("VoxbloxMap"); }
+
+void VoxbloxMap::Config::checkParams() const {
+  checkParamGT(traversability_radius, 0.0, "traversability_radius");
 }
 
-VoxbloxMap::Config VoxbloxMap::Config::checkValid() const {
-  CHECK(isValid());
-  return Config(*this);
+void VoxbloxMap::Config::fromRosParam() {
+  rosParam("traversability_radius", &traversability_radius);
+  rosParam("clearing_radius", &clearing_radius);
+  nh_private_namespace = rosParamNameSpace();
 }
 
 VoxbloxMap::VoxbloxMap(const Config& config,
@@ -34,8 +35,7 @@ VoxbloxMap::VoxbloxMap(const Config& config,
 
 double VoxbloxMap::getVoxelSize() { return c_voxel_size_; }
 
-bool VoxbloxMap::isTraversableInActiveSubmap(
-    const Eigen::Vector3d& position, const Eigen::Quaterniond& orientation) {
+bool VoxbloxMap::isTraversableInActiveSubmap(const Point& position) {
   if (!comm_->regionOfInterest()->contains(position)) {
     return false;
   }
@@ -49,9 +49,9 @@ bool VoxbloxMap::isTraversableInActiveSubmap(
 }
 
 MapBase::VoxelState VoxbloxMap::getVoxelStateInLocalArea(
-    const Eigen::Vector3d& point) {
+    const Point& position) {
   double distance = 0.0;
-  if (server_->getEsdfMapPtr()->getDistanceAtPosition(point, &distance)) {
+  if (server_->getEsdfMapPtr()->getDistanceAtPosition(position, &distance)) {
     // This means the voxel is observed
     if (distance > c_voxel_size_) {
       return VoxelState::kFree;
@@ -61,9 +61,28 @@ MapBase::VoxelState VoxbloxMap::getVoxelStateInLocalArea(
   return VoxelState::kUnknown;
 }
 
-Eigen::Vector3d VoxbloxMap::getVoxelCenterInLocalArea(
-    const Eigen::Vector3d& point) {
-  return (point / c_voxel_size_).array().round() * c_voxel_size_;
+Point VoxbloxMap::getVoxelCenterInLocalArea(const Point& position) {
+  return (position / c_voxel_size_).array().round() * c_voxel_size_;
+}
+
+bool VoxbloxMap::isObservedInGlobalMap(const Point& position) {
+  return server_->getEsdfMapPtr()->isObserved(position);
+}
+
+bool VoxbloxMap::isTraversableInGlobalMap(const Point& position) {
+  // Since map is monolithic global = local.
+  return isTraversableInActiveSubmap(position);
+}
+
+std::vector<MapBase::SubmapData> VoxbloxMap::getAllSubmapData() {
+  std::vector<SubmapData> data;
+  SubmapData datum;
+  datum.id = 0;
+  datum.T_M_S.setIdentity();
+  datum.tsdf_layer = std::make_shared<const voxblox::Layer<voxblox::TsdfVoxel>>(
+      server_->getTsdfMapPtr()->getTsdfLayer());
+  data.push_back(datum);
+  return data;
 }
 
 }  // namespace glocal_exploration

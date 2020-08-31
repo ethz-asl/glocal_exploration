@@ -19,14 +19,12 @@ class LocalPlannerBase {
   virtual ~LocalPlannerBase() = default;
 
   // interface
-  virtual void planningIteration() = 0;
+  virtual void executePlanningIteration() = 0;
 
  protected:
   const std::shared_ptr<Communicator> comm_;
 };
 
 }  // namespace glocal_exploration
-
-#include "glocal_exploration/state/communicator.h"
 
 #endif  // GLOCAL_EXPLORATION_PLANNING_LOCAL_LOCAL_PLANNER_BASE_H_

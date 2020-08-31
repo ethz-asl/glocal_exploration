@@ -1,6 +1,7 @@
 #ifndef GLOCAL_EXPLORATION_STATE_REGION_OF_INTEREST_H_
 #define GLOCAL_EXPLORATION_STATE_REGION_OF_INTEREST_H_
 
+#include "glocal_exploration/3rd_party/config_utilities.hpp"
 #include "glocal_exploration/common.h"
 
 namespace glocal_exploration {
@@ -21,7 +22,7 @@ class RegionOfInterest {
  */
 class BoundingBox : public RegionOfInterest {
  public:
-  struct Config {
+  struct Config : public config_utilities::Config<Config> {
     double x_min = 0.0;
     double y_min = 0.0;
     double z_min = 0.0;
@@ -29,12 +30,13 @@ class BoundingBox : public RegionOfInterest {
     double y_max = 0.0;
     double z_max = 0.0;
 
-    bool isValid() const;
-    Config checkValid() const;
+    Config();
+    void checkParams() const override;
+    void fromRosParam() override;
   };
 
   explicit BoundingBox(const Config& config);
-  virtual ~BoundingBox() = default;
+  ~BoundingBox() override = default;
 
   bool contains(const Eigen::Vector3d& point) override;
 

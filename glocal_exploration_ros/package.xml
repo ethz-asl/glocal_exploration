@@ -19,20 +19,23 @@
   <depend>message_runtime</depend>
   <depend>rospy</depend>
   <depend>roscpp</depend>
-  
-  <depend>glocal_exploration</depend>
-  
-  <depend>voxgraph</depend>
-  <depend>voxgraph_msgs</depend>
-
-  <depend>eigen_catkin</depend>
-  <depend>glog_catkin</depend>
-  <depend>gflags_catkin</depend>
 
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>tf2_ros</depend>
+
+  <depend>eigen_catkin</depend>
+  <depend>glog_catkin</depend>
+  <depend>gflags_catkin</depend>
+
+  <depend>voxblox</depend>
+  <depend>voxblox_ros</depend>
+  <depend>voxgraph</depend>
+  <depend>voxgraph_msgs</depend>
+  <depend>cblox_planning_global</depend>
+
+  <depend>glocal_exploration</depend>
 
   <export>
   </export>

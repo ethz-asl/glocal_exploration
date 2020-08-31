@@ -6,7 +6,13 @@
 
 #include <ros/node_handle.h>
 
-#include "glocal_exploration/state/communicator.h"
+#include <glocal_exploration/mapping/map_base.h>
+#include <glocal_exploration/planning/global/global_planner_base.h>
+#include <glocal_exploration/planning/local/local_planner_base.h>
+#include <glocal_exploration/state/communicator.h>
+#include <glocal_exploration/state/region_of_interest.h>
+
+#include "glocal_exploration_ros/visualization/global_planner_visualizer_base.h"
 #include "glocal_exploration_ros/visualization/local_planner_visualizer_base.h"
 
 namespace glocal_exploration {
@@ -19,6 +25,9 @@ class ComponentFactoryROS {
       const ros::NodeHandle& nh,
       const std::shared_ptr<Communicator>& communicator);
 
+  static std::shared_ptr<RegionOfInterest> createRegionOfInterest(
+      const ros::NodeHandle& nh);
+
   static std::shared_ptr<LocalPlannerBase> createLocalPlanner(
       const ros::NodeHandle& nh,
       const std::shared_ptr<Communicator>& communicator);
@@ -28,8 +37,14 @@ class ComponentFactoryROS {
       const ros::NodeHandle& nh,
       const std::shared_ptr<Communicator>& communicator);
 
-  static std::shared_ptr<RegionOfInterest> createRegionOfInterest(
-      const ros::NodeHandle& nh);
+  static std::shared_ptr<GlobalPlannerBase> createGlobalPlanner(
+      const ros::NodeHandle& nh,
+      const std::shared_ptr<Communicator>& communicator);
+
+  static std::shared_ptr<GlobalPlannerVisualizerBase>
+  createGlobalPlannerVisualizer(
+      const ros::NodeHandle& nh,
+      const std::shared_ptr<Communicator>& communicator);
 
  private:
   ComponentFactoryROS() = default;

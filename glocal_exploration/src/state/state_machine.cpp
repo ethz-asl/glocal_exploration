@@ -23,7 +23,7 @@ void StateMachine::signalState(const State& state) {
 }
 
 void StateMachine::signalFinished() {
-  if (state_ == State::kSettingUp) {
+  if (state_ == State::kSettingUp || state_ == State::kReady) {
     LOG(WARNING) << "Can not transition from '" << stateToString(state_)
                  << " to 'kFinished'.";
   } else {

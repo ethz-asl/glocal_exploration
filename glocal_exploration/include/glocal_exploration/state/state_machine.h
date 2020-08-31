@@ -7,7 +7,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "glocal_exploration/common.h"
-#include "glocal_exploration/planning/waypoint.h"
+#include "glocal_exploration/state/waypoint.h"
 
 namespace glocal_exploration {
 /**
@@ -28,11 +28,8 @@ class StateMachine {
   virtual ~StateMachine() = default;
 
   // access
-  [[nodiscard]] const State& currentState() const {
-    return state_;
-  }[[nodiscard]] const State& previousState() const {
-    return previous_state_;
-  }
+  const State& currentState() const { return state_; }
+  const State& previousState() const { return previous_state_; }
 
   // interactions
   void signalReady();

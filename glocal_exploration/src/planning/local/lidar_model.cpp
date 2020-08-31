@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <memory>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -10,24 +9,41 @@
 #include <voxblox/core/common.h>
 
 #include "glocal_exploration/state/communicator.h"
-#include "glocal_exploration/utility/config_checker.h"
 
 namespace glocal_exploration {
 
-bool LidarModel::Config::isValid() const {
-  ConfigChecker checker("LidarModel");
-  checker.check_gt(vertical_fov, 0.0, "vertical_fov");
-  checker.check_gt(horizontal_fov, 0.0, "horizontal_fov");
-  checker.check_gt(vertical_resolution, 0, "vertical_resolution");
-  checker.check_gt(horizontal_resolution, 0, "horizontal_resolution");
-  checker.check_gt(ray_length, 0.0, "ray_length");
-  checker.check_gt(downsampling_factor, 0.0, "downsampling_factor");
-  return checker.isValid();
+LidarModel::Config::Config() { setConfigName("LidarModel"); }
+
+void LidarModel::Config::checkParams() const {
+  checkParamGT(vertical_fov, 0.0, "vertical_fov");
+  checkParamGT(horizontal_fov, 0.0, "horizontal_fov");
+  checkParamGT(vertical_resolution, 0, "vertical_resolution");
+  checkParamGT(horizontal_resolution, 0, "horizontal_resolution");
+  checkParamGT(ray_length, 0.0, "ray_length");
+  checkParamGT(ray_step, 0.0, "ray_step");
+  checkParamGT(downsampling_factor, 0.0, "downsampling_factor");
 }
 
-LidarModel::Config LidarModel::Config::checkValid() const {
-  CHECK(isValid());
-  return Config(*this);
+void LidarModel::Config::fromRosParam() {
+  rosParam("vertical_fov", &vertical_fov);
+  rosParam("horizontal_fov", &horizontal_fov);
+  rosParam("vertical_resolution", &vertical_resolution);
+  rosParam("horizontal_resolution", &horizontal_resolution);
+  rosParam("ray_length", &ray_length);
+  rosParam("ray_step", &ray_step);
+  rosParam("downsampling_factor", &downsampling_factor);
+  rosParam("T_baselink_sensor", &T_baselink_sensor);
+}
+
+void LidarModel::Config::printFields() const {
+  printField("vertical_fov", vertical_fov);
+  printField("horizontal_fov", horizontal_fov);
+  printField("vertical_resolution", vertical_resolution);
+  printField("horizontal_resolution", horizontal_resolution);
+  printField("ray_length", ray_length);
+  printField("ray_step", ray_step);
+  printField("downsampling_factor", downsampling_factor);
+  printField("T_baselink_sensor", T_baselink_sensor);
 }
 
 LidarModel::LidarModel(const Config& config,
@@ -65,9 +81,9 @@ LidarModel::LidarModel(const Config& config,
   c_voxel_size_inv_ = 1.0 / comm_->map()->getVoxelSize();
 }
 
-bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d>* centers,
-                                  std::vector<MapBase::VoxelState>* states,
-                                  const WayPoint& waypoint) {
+bool LidarModel::getVisibleVoxels(const WayPoint& waypoint,
+                                  std::vector<Eigen::Vector3d>* centers,
+                                  std::vector<MapBase::VoxelState>* states) {
   // NOTE(schmluk): Legacy raycasting for general gain computations.
 
   // Setup ray table (contains at which segment to start, -1 if occluded)
@@ -135,8 +151,8 @@ bool LidarModel::getVisibleVoxels(std::vector<Eigen::Vector3d>* centers,
   return true;
 }
 
-void LidarModel::getVisibleUnknownVoxels(voxblox::LongIndexSet* voxels,
-                                         const WayPoint& waypoint) {
+void LidarModel::getVisibleUnknownVoxels(const WayPoint& waypoint,
+                                         voxblox::LongIndexSet* voxels) {
   // NOTE(schmluk): This is a slightly more specialized version for gain
   // computation that is still independent of the map representation.
 

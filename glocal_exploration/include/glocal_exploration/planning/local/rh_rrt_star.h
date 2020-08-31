@@ -5,8 +5,8 @@
 #include <utility>
 #include <vector>
 
-#include <3rd_party/nanoflann.hpp>
-
+#include "glocal_exploration/3rd_party/config_utilities.hpp"
+#include "glocal_exploration/3rd_party/nanoflann.hpp"
 #include "glocal_exploration/common.h"
 #include "glocal_exploration/planning/local/lidar_model.h"
 #include "glocal_exploration/planning/local/local_planner_base.h"
@@ -16,7 +16,7 @@ namespace glocal_exploration {
 
 class RHRRTStar : public LocalPlannerBase {
  public:
-  struct Config {
+  struct Config : public config_utilities::Config<Config> {
     int verbosity = 1;
     // sampling
     double local_sampling_radius = 1.5;   // m
@@ -35,23 +35,28 @@ class RHRRTStar : public LocalPlannerBase {
     // behavior
     int maximum_rewiring_iterations = 100;
 
+    // temrination
+    int terminaton_min_tree_size = 5;
+    double termination_max_gain = 100.0;
+
     // sensor model (currently just use lidar)
     LidarModel::Config lidar_config;
 
-    [[nodiscard]] bool isValid() const;
-    [[nodiscard]] Config checkValid() const;
+    void checkParams() const override;
+    void fromRosParam() override;
+    void printFields() const override;
+    Config();
   };
 
   // setup
-  explicit RHRRTStar(const Config& config,
-                     std::shared_ptr<Communicator> communicator);
+  RHRRTStar(const Config& config, std::shared_ptr<Communicator> communicator);
   ~RHRRTStar() override = default;
 
   // planning
-  void planningIteration() override;
+  void executePlanningIteration() override;
 
   struct Connection;
-  // View points are the vertices in the tree
+  // View points are the vertices in the tree.
   struct ViewPoint {
     WayPoint pose;
     double gain = 0;
@@ -65,8 +70,8 @@ class RHRRTStar : public LocalPlannerBase {
     // helper methods
     bool tryAddConnection(ViewPoint* target, MapBase* map);
     Connection* getActiveConnection();
-    [[nodiscard]] Connection const* getActiveConnection() const;
-    ViewPoint* getConnectedViewPoint(size_t index);
+    Connection const* getActiveConnection() const;
+    ViewPoint* getConnectedViewPoint(size_t index) const;
   };
 
   // connections are the edges in the tree
@@ -81,7 +86,7 @@ class RHRRTStar : public LocalPlannerBase {
   struct TreeData {
     std::vector<std::unique_ptr<ViewPoint>> points;
 
-    // nanoflann functionality (This is required s.t. nanoflann can run)
+    // Nanoflann functionality (this is required s.t. nanoflann can run).
     inline std::size_t kdtree_get_point_count() const { return points.size(); }
 
     inline double kdtree_get_pt(const size_t idx, const size_t dim) const {
@@ -103,14 +108,10 @@ class RHRRTStar : public LocalPlannerBase {
       KDTree;
 
   // accessors for visualization
-  [[nodiscard]] const Config& getConfig() const {
-    return config_;
-  }[[nodiscard]] const TreeData& getTreeData() const {
-    return tree_data_;
-  }
-  void visualizeGain(std::vector<Eigen::Vector3d>* voxels,
-                     std::vector<Eigen::Vector3d>* colors, double* scale,
-                     const WayPoint& pose) const;
+  const Config& getConfig() const { return config_; }
+  const TreeData& getTreeData() const { return tree_data_; }
+  void visualizeGain(const WayPoint& pose, std::vector<Eigen::Vector3d>* voxels,
+                     std::vector<Eigen::Vector3d>* colors, double* scale) const;
 
  protected:
   /* components */
@@ -147,11 +148,10 @@ class RHRRTStar : public LocalPlannerBase {
 
   /* variables */
   int local_sampled_points_;
-  bool should_update_;
+  bool gain_update_needed_;
   ViewPoint* root_;  // root pointer so it does not need to be searched for all
   // the time
-  Connection*
-      current_connection_;  // the connection that is currently being executed
+  Connection* current_connection_;  // the connection currently being executed
 
   // stats
   int pruned_points_;

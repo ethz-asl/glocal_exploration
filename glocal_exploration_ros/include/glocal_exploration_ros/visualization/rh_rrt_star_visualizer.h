@@ -4,22 +4,30 @@
 #include <memory>
 #include <string>
 
-#include "glocal_exploration/planning/local/rh_rrt_star.h"
+#include <ros/ros.h>
+#include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
+
+#include <glocal_exploration/planning/local/rh_rrt_star.h>
+#include <glocal_exploration/3rd_party/config_utilities.hpp>
+
 #include "glocal_exploration_ros/visualization/local_planner_visualizer_base.h"
 
 namespace glocal_exploration {
 
 class RHRRTStarVisualizer : public LocalPlannerVisualizerBase {
  public:
-  struct Config {
-    std::string nh_namespace = "";
+  struct Config : public config_utilities::Config<Config> {
+    std::string nh_namespace = "rh_rrt_star_visualizer";
+    bool visualize_tree = true;
     bool visualize_gain = true;
     bool visualize_text = true;
     bool visualize_visible_voxels = true;
-    bool visualize_value = true;
+    bool visualize_executed_path = true;
 
-    bool isValid() const { return true; }
-    Config checkValid() const;
+    Config();
+    void checkParams() const override;
+    void fromRosParam() override;
   };
 
   RHRRTStarVisualizer(const Config& config,
@@ -27,17 +35,28 @@ class RHRRTStarVisualizer : public LocalPlannerVisualizerBase {
 
   void visualize() override;
 
- protected:
+ private:
+  void visualizeValue(const RHRRTStar::ViewPoint& point, double min_value,
+                      double max_value, int id);
+  void visualizeGain(const RHRRTStar::ViewPoint& point, double min_gain,
+                     double max_gain, int id);
+  void visualizeText(const RHRRTStar::ViewPoint& point, int id);
+  void visualizeVisibleVoxels(const RHRRTStar::ViewPoint& point);
+
+ private:
   const Config config_;
   std::shared_ptr<RHRRTStar> planner_;
   ros::NodeHandle nh_;
-  ros::Publisher pub_;
+  ros::Publisher gain_pub_;
+  ros::Publisher value_pub_;
+  ros::Publisher text_pub_;
+  ros::Publisher voxel_pub_;
+  ros::Publisher path_pub_;
 
-  // visualization namespaces
-  const std::string value_ns_ = "candidate_trajectories";
-  const std::string gain_ns_ = "candidate_gains";
-  const std::string text_ns_ = "candidate_text";
-  const std::string voxel_ns_ = "next_expected_gain";
+  // Variables.
+  const std::string frame_id_ = "mission";
+  ros::Time timestamp_;
+  int executed_path_id_ = 0;
 };
 
 }  // namespace glocal_exploration

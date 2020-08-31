@@ -1,35 +1,43 @@
 #include "glocal_exploration_ros/mapping/voxgraph_map.h"
 
+#include <algorithm>
 #include <memory>
+#include <vector>
 
 #include <pcl/conversions.h>
 #include <pcl/point_types.h>
 #include <voxblox_ros/ptcloud_vis.h>
 
 #include <glocal_exploration/state/communicator.h>
-#include <glocal_exploration/utility/config_checker.h>
-
 
 namespace glocal_exploration {
 
-bool VoxgraphMap::Config::isValid() const {
-  ConfigChecker checker("VoxgraphMap");
-  // TODO(@victorr): check param validity
-  checker.check_gt(traversability_radius, 0.0, "traversability_radius");
-  return checker.isValid();
+VoxgraphMap::Config::Config() { setConfigName("VoxgraphMap"); }
+
+void VoxgraphMap::Config::checkParams() const {
+  checkParamGT(traversability_radius, 0.0, "traversability_radius");
 }
 
+void VoxgraphMap::Config::fromRosParam() {
+  rosParam("traversability_radius", &traversability_radius);
+  rosParam("clearing_radius", &clearing_radius);
+  rosParam("verbosity", &verbosity);
+  nh_private_namespace = rosParamNameSpace();
+}
 
-VoxgraphMap::Config VoxgraphMap::Config::checkValid() const {
-  CHECK(isValid());
-  return Config(*this);
+void VoxgraphMap::Config::printFields() const {
+  printField("verbosity", verbosity);
+  printField("clearing_radius", clearing_radius);
+  printField("traversability_radius", traversability_radius);
+  printField("nh_private_namespace", nh_private_namespace);
 }
 
 VoxgraphMap::VoxgraphMap(const Config& config,
                          const std::shared_ptr<Communicator>& communicator)
-    : MapBase(communicator), 
-      config_(config.checkValid()), 
+    : MapBase(communicator),
+      config_(config.checkValid()),
       local_area_needs_update_(false) {
+  LOG_IF(INFO, config_.verbosity >= 1) << "\n" + config_.toString();
   // Launch the sliding window local map and global map servers
   ros::NodeHandle nh(ros::names::parentNamespace(config_.nh_private_namespace));
   ros::NodeHandle nh_private(config_.nh_private_namespace);
@@ -52,15 +60,14 @@ VoxgraphMap::VoxgraphMap(const Config& config,
   c_block_size_ = voxblox_server_->getEsdfMapPtr()->block_size();
 }
 
-bool VoxgraphMap::isTraversableInActiveSubmap(
-    const Eigen::Vector3d& position, const Eigen::Quaterniond& orientation) {
+bool VoxgraphMap::isTraversableInActiveSubmap(const Point& position) {
   if (!comm_->regionOfInterest()->contains(position)) {
     return false;
   }
   double distance = 0.0;
   if (voxblox_server_->getEsdfMapPtr()->getDistanceAtPosition(position,
                                                               &distance)) {
-    // This means the voxel is observed
+    // This means the voxel is observed.
     return (distance > config_.traversability_radius);
   }
   return (position - comm_->currentPose().position()).norm() <
@@ -68,7 +75,7 @@ bool VoxgraphMap::isTraversableInActiveSubmap(
 }
 
 MapBase::VoxelState VoxgraphMap::getVoxelStateInLocalArea(
-    const Eigen::Vector3d& position) {
+    const Point& position) {
   // NOTE: The local area consists of the local map + all overlapping global
   //       submaps. We cache and incrementally update the merged global submap
   //       neighborhood. But instead of also merging in the local map, we keep
@@ -96,9 +103,8 @@ MapBase::VoxelState VoxgraphMap::getVoxelStateInLocalArea(
   return local_area_->getVoxelStateAtPosition(position);
 }
 
-Eigen::Vector3d VoxgraphMap::getVoxelCenterInLocalArea(
-    const Eigen::Vector3d& point) {
-  return (point / c_voxel_size_).array().round() * c_voxel_size_;
+Point VoxgraphMap::getVoxelCenterInLocalArea(const Point& position) {
+  return (position / c_voxel_size_).array().round() * c_voxel_size_;
 }
 
 void VoxgraphMap::updateLocalArea() {
@@ -111,6 +117,68 @@ void VoxgraphMap::updateLocalArea() {
   if (local_area_pub_.getNumSubscribers() > 0) {
     local_area_->publishLocalArea(local_area_pub_);
   }
+}
+
+bool VoxgraphMap::isObservedInGlobalMap(const Point& position) {
+  // TODO(@victorr): Don't know if you know of a nicer way to check this :)
+  if (voxblox_server_->getEsdfMapPtr()->isObserved(position)) {
+    return true;
+  }
+  auto submaps = voxgraph_server_->getSubmapCollection().getSubmapConstPtrs();
+  return std::any_of(submaps.begin(), submaps.end(),
+                     [position](const voxgraph::VoxgraphSubmap::ConstPtr& s) {
+                       return s->getEsdfMap().isObserved(position);
+                     });
+}
+
+bool VoxgraphMap::isTraversableInGlobalMap(const Point& position) {
+  // TODO(@victorr): There should definitively be a better way to do this I
+  //  think, also this function is currently not performance critical.
+  if (!comm_->regionOfInterest()->contains(position)) {
+    return false;
+  }
+  bool traversable_anywhere = false;
+  for (const auto& submap :
+       voxgraph_server_->getSubmapCollection().getSubmapPtrs()) {
+    double distance = 0.0;
+    if (submap->getEsdfMap().getDistanceAtPosition(position, &distance)) {
+      // This means the voxel is observed.
+      if (distance <= config_.traversability_radius) {
+        return false;
+      } else {
+        traversable_anywhere = true;
+      }
+    }
+  }
+  // Avoid allowing never observed points to be traversable. Also we ignore the
+  // clearing radius for global planning.
+  return traversable_anywhere;
+}
+
+std::vector<MapBase::SubmapData> VoxgraphMap::getAllSubmapData() {
+  // TODO(@victorr): This is a first implementation for global frontier
+  //  tracking. The global planner has a function computeFrontiers (or similar)
+  //  that can be called upon submap completion to store frontiers.
+  //  This function is solely needed to guarantee all maps get frontiers, the
+  //  evaluator has a param sumaps_are_fronzen that prevents it from recomputing
+  //  frontiers for a given ID. Btw I don't know this includes the active
+  //  submap, but it should not be included here.
+
+  std::vector<SubmapData> data;
+  auto submaps = voxgraph_server_->getSubmapCollection().getSubmapConstPtrs();
+  for (const auto& submap : submaps) {
+    SubmapData datum;
+    datum.id = submap->getID();
+    datum.T_M_S = submap->getPose().cast<FloatingPoint>();
+    // NOTE(schmluk): This is a layer t copy initialization s.t. it does not
+    // interfere with the other things voxgraph is doing (the server can
+    // segfault otherwise).
+    datum.tsdf_layer =
+        std::make_shared<const voxblox::Layer<voxblox::TsdfVoxel>>(
+            submap->getTsdfMap().getTsdfLayer());
+    data.push_back(datum);
+  }
+  return data;
 }
 
 }  // namespace glocal_exploration

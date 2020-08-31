@@ -3,8 +3,10 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <glocal_exploration/mapping/map_base.h>
+#include <glocal_exploration/3rd_party/config_utilities.hpp>
 
 #include "glocal_exploration_ros/mapping/threadsafe_wrappers/threadsafe_voxblox_server.h"
 
@@ -14,27 +16,28 @@ namespace glocal_exploration {
  */
 class VoxbloxMap : public MapBase {
  public:
-  struct Config {
+  struct Config : public config_utilities::Config<Config> {
     // Since this is a ros-class anyways we make it easy and just get the nh.
     std::string nh_private_namespace = "~";
     double traversability_radius = 0.3;  // m
     double clearing_radius = 0.5;        // m
 
-    bool isValid() const;
-    Config checkValid() const;
+    Config();
+    void checkParams() const override;
+    void fromRosParam() override;
   };
 
   explicit VoxbloxMap(const Config& config,
                       const std::shared_ptr<Communicator>& communicator);
-  virtual ~VoxbloxMap() = default;
+  ~VoxbloxMap() override = default;
 
   double getVoxelSize() override;
-  bool isTraversableInActiveSubmap(
-      const Eigen::Vector3d& position,
-      const Eigen::Quaterniond& orientation) override;
-  VoxelState getVoxelStateInLocalArea(const Eigen::Vector3d& point) override;
-  Eigen::Vector3d getVoxelCenterInLocalArea(
-      const Eigen::Vector3d& point) override;
+  bool isTraversableInActiveSubmap(const Point& position) override;
+  VoxelState getVoxelStateInLocalArea(const Point& position) override;
+  Point getVoxelCenterInLocalArea(const Point& position) override;
+  bool isObservedInGlobalMap(const Point& position) override;
+  bool isTraversableInGlobalMap(const Point& position) override;
+  std::vector<SubmapData> getAllSubmapData() override;
 
  protected:
   const Config config_;

@@ -8,26 +8,29 @@
 #include <voxblox/core/block_hash.h>
 #include <voxblox/core/common.h>
 
+#include "glocal_exploration/3rd_party/config_utilities.hpp"
 #include "glocal_exploration/planning/local/sensor_model.h"
 
 namespace glocal_exploration {
 
 class LidarModel : public SensorModel {
  public:
-  struct Config {
+  struct Config : public config_utilities::Config<Config> {
     double ray_length = 5.0;   // m
     double vertical_fov = 45;  // Total fields of view [deg], expected symmetric
     // w.r.t. sensor facing direction
     double horizontal_fov = 360;
     int vertical_resolution = 64;
     int horizontal_resolution = 1024;
-    double ray_step = 0.0;  // m, use 0 to default to voxel size
+    double ray_step = 0.1;  // m
     double downsampling_factor =
         1.0;  // reduce the number of checks by this factor
     Transformation T_baselink_sensor;
 
-    [[nodiscard]] bool isValid() const;
-    [[nodiscard]] Config checkValid() const;
+    Config();
+    void checkParams() const override;
+    void fromRosParam() override;
+    void printFields() const override;
   };
 
   explicit LidarModel(const Config& config,
@@ -35,12 +38,12 @@ class LidarModel : public SensorModel {
   ~LidarModel() override = default;
 
   // Legacy method
-  bool getVisibleVoxels(std::vector<Eigen::Vector3d>* centers,
-                        std::vector<MapBase::VoxelState>* states,
-                        const WayPoint& waypoint) override;
+  bool getVisibleVoxels(const WayPoint& waypoint,
+                        std::vector<Eigen::Vector3d>* centers,
+                        std::vector<MapBase::VoxelState>* states) override;
 
-  void getVisibleUnknownVoxels(voxblox::LongIndexSet* voxels,
-                               const WayPoint& waypoint) override;
+  void getVisibleUnknownVoxels(const WayPoint& waypoint,
+                               voxblox::LongIndexSet* voxels) override;
 
  protected:
   const Config config_;

@@ -1,5 +1,5 @@
-#ifndef GLOCAL_EXPLORATION_PLANNING_WAYPOINT_H_
-#define GLOCAL_EXPLORATION_PLANNING_WAYPOINT_H_
+#ifndef GLOCAL_EXPLORATION_STATE_WAYPOINT_H_
+#define GLOCAL_EXPLORATION_STATE_WAYPOINT_H_
 
 #include "glocal_exploration/common.h"
 
@@ -22,4 +22,4 @@ struct WayPoint {
 
 }  // namespace glocal_exploration
 
-#endif  // GLOCAL_EXPLORATION_PLANNING_WAYPOINT_H_
+#endif  // GLOCAL_EXPLORATION_STATE_WAYPOINT_H_

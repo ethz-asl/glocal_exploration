@@ -5,28 +5,28 @@
 #include <geometry_msgs/Pose.h>
 #include <tf2/utils.h>
 
-#include <glocal_exploration/utility/config_checker.h>
-
 #include "glocal_exploration_ros/conversions/ros_component_factory.h"
-#include "glocal_exploration_ros/conversions/ros_params.h"
 
 namespace glocal_exploration {
 
-bool GlocalSystem::Config::isValid() const {
-  ConfigChecker checker("GlocalSystem");
-  checker.check_gt(replan_position_threshold, 0.0, "replan_position_threshold");
-  checker.check_gt(replan_yaw_threshold, 0.0, "replan_yaw_threshold");
-  return checker.isValid();
+GlocalSystem::Config::Config() { setConfigName("GlocalSystem"); }
+
+void GlocalSystem::Config::checkParams() const {
+  checkParamGT(replan_position_threshold, 0.0, "replan_position_threshold");
+  checkParamGT(replan_yaw_threshold, 0.0, "replan_yaw_threshold");
 }
 
-GlocalSystem::Config GlocalSystem::Config::checkValid() const {
-  CHECK(isValid());
-  return Config(*this);
+void GlocalSystem::Config::fromRosParam() {
+  rosParam("verbosity", &verbosity);
+  rosParam("replan_position_threshold", &replan_position_threshold);
+  rosParam("replan_yaw_threshold", &replan_yaw_threshold);
+  rosParam("waypoint_timeout", &waypoint_timeout);
 }
 
 GlocalSystem::GlocalSystem(const ros::NodeHandle& nh,
                            const ros::NodeHandle& nh_private)
-    : GlocalSystem(nh, nh_private, getGlocalSystemConfigFromRos(nh_private)) {}
+    : GlocalSystem(nh, nh_private,
+                   config_utilities::getConfigFromRos<Config>(nh_private)) {}
 
 GlocalSystem::GlocalSystem(const ros::NodeHandle& nh,
                            const ros::NodeHandle& nh_private,
@@ -62,6 +62,14 @@ void GlocalSystem::buildComponents(const ros::NodeHandle& nh) {
       ComponentFactoryROS::createLocalPlanner(nh_local_planner, comm_));
   local_planner_visualizer_ = ComponentFactoryROS::createLocalPlannerVisualizer(
       nh_local_planner, comm_);
+
+  // setup the global planner + visualizer
+  ros::NodeHandle nh_global_planner(nh, "global_planner");
+  comm_->setupGlobalPlanner(
+      ComponentFactoryROS::createGlobalPlanner(nh_global_planner, comm_));
+  global_planner_visualizer_ =
+      ComponentFactoryROS::createGlobalPlannerVisualizer(nh_global_planner,
+                                                         comm_);
 }
 
 void GlocalSystem::mainLoop() {
@@ -83,30 +91,27 @@ void GlocalSystem::mainLoop() {
 }
 
 void GlocalSystem::loopIteration() {
-  // actions
+  // Actions.
   switch (comm_->stateMachine()->currentState()) {
-    case StateMachine::State::kReady:
-      return;
     case StateMachine::State::kLocalPlanning: {
-      comm_->localPlanner()->planningIteration();
+      comm_->localPlanner()->executePlanningIteration();
+      local_planner_visualizer_->visualize();
+      break;
+    }
+    case StateMachine::State::kGlobalPlanning: {
+      comm_->globalPlanner()->executePlanningIteration();
+      global_planner_visualizer_->visualize();
       break;
     }
   }
 
-  // move requests
-  WayPoint next_point;
-  if (comm_->getNewWayPointIfRequested(&next_point)) {
+  // Move requests.
+  if (comm_->newWayPointIsRequested()) {
+    const WayPoint& next_point = comm_->getRequestedWayPoint();
     target_position_ = next_point.position();
     target_yaw_ = next_point.yaw;
     publishTargetPose();
-
-    // visualizations
-    switch (comm_->stateMachine()->currentState()) {
-      case StateMachine::State::kLocalPlanning: {
-        local_planner_visualizer_->visualize();
-        break;
-      }
-    }
+    comm_->setRequestedWayPointRead();
   }
 }
 
@@ -187,7 +192,7 @@ bool GlocalSystem::startExploration() {
   // setup initial state.
   comm_->stateMachine()->signalLocalPlanning();
   comm_->setTargetReached(true);
-  LOG_IF(INFO, config_.verbosity >= 1) << "Started Glocal Exploration.";
+  LOG_IF(INFO, config_.verbosity >= 1) << "Started Glocal Exploration Planner.";
   return true;
 }
 

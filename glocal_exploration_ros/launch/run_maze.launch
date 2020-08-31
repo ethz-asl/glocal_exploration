@@ -29,7 +29,8 @@
   <node name="experiment_manager" pkg="glocal_exploration_ros" type="experiment_manager.py" output="screen"/>
   
   <!-- tf -->
-  <node pkg="tf" type="static_transform_publisher" name="static_tf" args="0 0 0 0 0 0 1 /odom /world 100"/>
+  <node pkg="tf" type="static_transform_publisher" name="static_tf_odom_world" args="0 0 0 0 0 0 1 /odom /world 100"/>
+  <node pkg="tf" type="static_transform_publisher" name="static_tf_mission_world" args="0 0 0 0 0 0 1 /world /mission 100"/>
   
   <!-- airsim client -->
   <node name="airsim_simulator" pkg="unreal_airsim" type="airsim_simulator_node" required="true" output="screen" args="-alsologtostderr">
@@ -39,11 +40,13 @@
   <group ns="glocal">
     <!-- Planner -->
     <node name="glocal_system" pkg="glocal_exploration_ros" type="glocal_system_node"
-          output="screen" args="--alsologtostderr" launch-prefix="$(arg launch_prefix)">
+          output="screen" launch-prefix="$(arg launch_prefix)">
       <rosparam command="load" file="$(find glocal_exploration_ros)/config/$(arg planner_config)"/>
       <remap from="~pointcloud" to="/$(arg mav_name)/Lidar" />
       <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
       <remap from="command/pose" to="/$(arg mav_name)/command/pose" />
+      <remap from="~/global_planner/submap_in" to="~/mapping/submap_esdfs" />
+      <remap from="~/global_planner/submap_pose_in" to="~/mapping/submap_poses" />
     </node>  
   </group>
 

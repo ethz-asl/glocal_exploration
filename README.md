@@ -1,5 +1,5 @@
 # glocal_exploration
-Efficient local and global exploration on submap collections with changing past pose estimates
+Efficient local and global exploration on submap collections with changing past pose estimates.
 
 ### Time for Voxiverse v0 (:
 * `mav_voxblox_planning` on branch [hotfix/glocal](https://github.com/ethz-asl/mav_voxblox_planning/tree/hotfix/glocal) (alternatively: [devel/voxgraph_planning](https://github.com/ethz-asl/mav_voxblox_planning/tree/devel/voxgraph_planning)).

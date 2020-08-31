@@ -1,4 +1,11 @@
-# Config for the Planner
+# Config for the Glocal System.
+
+# Global (shared) parameters:
+voxel_size: &voxel_size 0.2
+voxels_per_side: &voxels_per_side 16
+truncation_distance: &truncation_distance 0.6
+collision_radius: &collision_radius 1.0
+
 # General params
 replan_position_threshold: 0.3  # m
 replan_yaw_threshold: 5   # deg
@@ -18,15 +25,16 @@ mapping:
   type: voxgraph
 
   clearing_radius: 1.0
-  traversability_radius: 1.4
+  traversability_radius: *collision_radius
+  verbosity: 1
 
   # VOXBLOX sliding window
   # Grid settings
-  tsdf_voxel_size: 0.2
-  tsdf_voxels_per_side: 16
+  tsdf_voxel_size: *voxel_size
+  tsdf_voxels_per_side: *voxels_per_side
   # Integrator settings general
   method: "projective"
-  truncation_distance: 0.60
+  truncation_distance: *truncation_distance
   min_ray_length_m: 1.0
   max_ray_length_m: 10
   max_weight: 1000
@@ -42,20 +50,20 @@ mapping:
   use_missing_points_for_clearing: true
   # Integrator settings temporal window (for compatibility with voxgraph)
   pointcloud_deintegration_queue_length: 40
-  publish_map_every_n_sec: 20.0
+  publish_map_every_n_sec: 5 #20.0
   publish_map_with_trajectory: true
   publish_tsdf_map: true
   # Visualization
   verbose: false
   color_mode: "normals"
   slice_level: -0.5
-  publish_pointclouds: true
-  publish_traversable: true
-  publish_slices: true
-  publish_pointclouds_on_update: true
+  publish_pointclouds: false
+  publish_traversable: false
+  publish_slices: false
+  publish_pointclouds_on_update: false
 
   # VOXGRAPH
-  debug: true
+  debug: false
   submap_topic: "/glocal/glocal_system/mapping/tsdf_map_out"
   submap_creation_interval: 6
   loop_closure_topic_queue_length: 1000
@@ -74,7 +82,7 @@ mapping:
     use_weight_dropoff: true
     use_sparsity_compensation_factor: true
     sparsity_compensation_factor: 20.0
-    # integration_order_mode: "sorted"
+    # integration_order_mode "sorted"
   measurements:
     submap_registration:
       enabled: true
@@ -100,10 +108,10 @@ mapping:
 
 local_planner:
   type: rh_rrt_star
-  verbosity: 3
+  verbosity: 4
   # RH-RRT-Star params
   local_sampling_radius: 3.0  # m
-  global_sampling_radius: 100 # m
+  global_sampling_radius: 40 # m
   min_local_points: 5
   min_path_length: 1.0  # m
   min_sampling_distance: 0.5 # m
@@ -111,6 +119,8 @@ local_planner:
   path_cropping_length: 0.5 # m
   max_number_of_neighbors: 20
   maximum_rewiring_iterations: 100
+  terminaton_min_tree_size: 5
+  termination_max_gain: 100
   
   # Lidar Model
   ray_length: 10  # m
@@ -125,4 +135,52 @@ local_planner:
    - [ 0.0000000,  1.0000000,  0.0000000,  0.0]
    - [-0.4226183,  0.0000000,  0.9063078,  0.0]
    - [ 0.0,        0.0,        0.0,        1.0]
-    
+   
+  # Visualization
+  visualize_tree: true
+  visualize_gain: true
+  visualize_text: true
+  visualize_visible_voxels: true
+  visualize_executed_path: true  
+ 
+global_planner:
+  type: "skeleton"
+  verbosity: 4
+  
+  # Skeleton Planner
+  use_frontier_clustering: true
+  frontier_clustering_radius: 1.0
+  
+  # Submap Frontiers Evaluator
+  min_frontier_size: 10
+  submaps_are_frozen: true
+  
+  # Visualization
+  visualize_frontiers: true
+  visualize_inactive_frontiers: false
+  visualize_executed_path: true
+  visualize_candidate_goals: true
+  visualize_planned_path: true
+ 
+  # CBLOX_SKELETON_PLANNER
+  skeleton:
+    verbose: false
+    visualize: true
+    do_smoothing: false
+    path_shortening: false
+    min_value: false
+    num_seconds_to_plan: 3.0
+    grow_time: 3
+    edge_density: 1.5
+    frame_id: mission
+    world_frame: mission
+    mission_frame: mission
+    odom_frame: mission # TODO is this correct?
+    robot_radius: *collision_radius
+    tsdf_voxel_size: *voxel_size
+    tsdf_voxels_per_side: *voxels_per_side
+    esdf_voxel_size: *voxel_size
+    esdf_voxels_per_side: *voxels_per_side
+    truncation_distance: *truncation_distance
+  
+  

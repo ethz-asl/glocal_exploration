@@ -21,6 +21,11 @@ void Communicator::setupLocalPlanner(
   local_planner_ = std::move(local_planner);
 }
 
+void Communicator::setupGlobalPlanner(
+    std::shared_ptr<GlobalPlannerBase> global_planner) {
+  global_planner_ = std::move(global_planner);
+}
+
 void Communicator::setupRegionOfInterest(
     std::shared_ptr<RegionOfInterest> roi) {
   roi_ = std::move(roi);
@@ -28,17 +33,8 @@ void Communicator::setupRegionOfInterest(
 
 void Communicator::requestWayPoint(const WayPoint& way_point) {
   new_waypoint_requested_ = true;
+  previous_target_way_point_ = target_way_point_;
   target_way_point_ = way_point;
-}
-
-bool Communicator::getNewWayPointIfRequested(WayPoint* way_point) {
-  if (!new_waypoint_requested_) {
-    return false;
-  }
-  CHECK_NOTNULL(way_point);
-  *way_point = target_way_point_;
-  new_waypoint_requested_ = false;
-  return true;
 }
 
 }  // namespace glocal_exploration
