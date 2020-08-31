@@ -7,11 +7,12 @@ truncation_distance: &truncation_distance 0.6
 collision_radius: &collision_radius 1.0
 
 # General params
+verbosity: 2
 replan_position_threshold: 0.3  # m
 replan_yaw_threshold: 5   # deg
-waypoint_timeout_constant: 2
-waypoint_timeout_velocity: 0.7
-verbosity: 2
+replan_timeout_constant: 2
+replan_timeout_velocity: 0.7
+
 
 region_of_interest:
   type: bounding_box
@@ -27,7 +28,7 @@ mapping:
 
   clearing_radius: 1.0
   traversability_radius: *collision_radius
-  verbosity: 1
+  verbosity: 0
 
   # VOXBLOX sliding window
   # Grid settings
@@ -109,7 +110,7 @@ mapping:
 
 local_planner:
   type: rh_rrt_star
-  verbosity: 4
+  verbosity: 0
   # RH-RRT-Star params
   local_sampling_radius: 3.0  # m
   global_sampling_radius: 40 # m

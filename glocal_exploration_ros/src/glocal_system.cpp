@@ -143,12 +143,13 @@ void GlocalSystem::publishTargetPose() {
   comm_->setTargetReached(false);
 
   // Compute the timeout limit.
-  double duration = config_.replan_timeout_constant;
+  last_waypoint_timeout_ = config_.replan_timeout_constant;
   if (config_.replan_timeout_velocity > 0) {
-    duration += (comm_->currentPose().position() - target_position_).norm() /
-                config_.replan_timeout_velocity;
+    last_waypoint_timeout_ +=
+        (comm_->currentPose().position() - target_position_).norm() /
+        config_.replan_timeout_velocity;
   }
-  replan_timeout_ = ros::Time::now() + ros::Duration(duration);
+  last_waypoint_published_ = ros::Time::now();
 }
 
 void GlocalSystem::odomCallback(const nav_msgs::Odometry& msg) {
@@ -190,13 +191,15 @@ void GlocalSystem::odomCallback(const nav_msgs::Odometry& msg) {
     // Check whether the last move command is timing out.
     if (config_.replan_timeout_velocity > 0.0 ||
         config_.replan_timeout_constant > 0.0) {
-      if (msg.header.stamp > replan_timeout_) {
+      if ((msg.header.stamp - last_waypoint_published_).toSec() >
+          last_waypoint_timeout_) {
         // NOTE(schmluk): This usually means the MAV is close to the target but
         // the controller did not exactly reach the threshold. Therefore we
         // assume the target is reached and continue planning.
         comm_->setTargetReached(true);
         LOG_IF(INFO, config_.verbosity >= 3)
-            << "Waypoint timed out, continuing with next goal.";
+            << "Waypoint timed out after " << std::fixed << std::setprecision(2)
+            << last_waypoint_timeout_ << "s, continuing with next goal.";
       }
     }
   }

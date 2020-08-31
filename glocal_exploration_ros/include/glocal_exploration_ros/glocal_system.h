@@ -70,7 +70,8 @@ class GlocalSystem {
   Eigen::Quaterniond current_orientation_;
   Eigen::Vector3d target_position_;
   double target_yaw_;                     // rad
-  ros::Time replan_timeout_;  // time at which the current waypoint times out.
+  double last_waypoint_timeout_;          // s
+  ros::Time last_waypoint_published_;
 };
 
 }  // namespace glocal_exploration
