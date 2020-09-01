@@ -23,10 +23,12 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   struct Config : public config_utilities::Config<Config> {
     int verbosity = 1;
     std::string nh_private_namespace = "~/SkeletonPlanner";
-    bool use_frontier_clustering = false;
-    double frontier_clustering_radius = 1.0;  // m
+    bool use_centroid_clustering = false;
+    double centroid_clustering_radius = 1.0;  // m
     bool use_path_verification = true;  // Check traversability in temporal map.
     double path_verification_min_distance = 1.0;  // m
+    int goal_search_steps = 5;  // number of grid elements per side of cube.
+    double goal_search_step_size = 1.0;  // m, grid element length.
 
     // Frontier evaluator.
     SubmapFrontierEvaluator::Config submap_frontier_config;
@@ -55,8 +57,6 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   const std::vector<WayPoint>& getWayPoints() const { return way_points_; }
 
  private:
-  const Config config_;
-
   // Frontier search data collection.
   struct FrontierSearchData {
     Point centroid;
@@ -65,9 +65,6 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
     int num_points = 0;
     std::vector<WayPoint> way_points;
   };
-
-  // Skeleton planner.
-  std::unique_ptr<mav_planning::CbloxSkeletonGlobalPlanner> skeleton_planner_;
 
   // Planning iteration methods.
   void resetPlanner();
@@ -78,9 +75,15 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   // Helper methods.
   bool computePath(const Point& goal, std::vector<WayPoint>* way_points);
   bool findValidGoalPoint(Point* goal);  // Changes goal to the new point.
-  void clusterFrontiers(std::vector<FrontierSearchData>* frontiers);
+  void clusterFrontiers(std::vector<FrontierSearchData>* frontiers) const;
   bool lineIsIntraversableInSlidingWindowAt(Point* goal_point);
-  void verifyNextWayPoints();
+  bool verifyNextWayPoints();
+
+ private:
+  const Config config_;
+
+  // Skeleton planner.
+  std::unique_ptr<mav_planning::CbloxSkeletonGlobalPlanner> skeleton_planner_;
 
   // Variables.
   std::vector<WayPoint> way_points_;  // in mission frame
@@ -93,43 +96,9 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   // Visualization
   VisualizationInfo visualization_info_;
 
-  // Cached data for feasible goal point lookup. Cube of side lenth 4 ordered by
-  // distance to center.
-  const double kNeighborStepSize_ = 1.0;  // m
-  const std::vector<Point> kNeighborOffsets_{
-      Point(0, 0, 0),   Point(-1, 0, 0),   Point(0, -1, 0),  Point(0, 0, -1),
-      Point(0, 0, 1),   Point(0, 1, 0),    Point(1, 0, 0),   Point(-1, -1, 0),
-      Point(-1, 0, -1), Point(-1, 0, 1),   Point(-1, 1, 0),  Point(0, -1, -1),
-      Point(0, -1, 1),  Point(0, 1, -1),   Point(0, 1, 1),   Point(1, -1, 0),
-      Point(1, 0, -1),  Point(1, 0, 1),    Point(1, 1, 0),   Point(-1, -1, -1),
-      Point(-1, -1, 1), Point(-1, 1, -1),  Point(-1, 1, 1),  Point(1, -1, -1),
-      Point(1, -1, 1),  Point(1, 1, -1),   Point(1, 1, 1),   Point(-2, 0, 0),
-      Point(0, -2, 0),  Point(0, 0, -2),   Point(0, 0, 2),   Point(0, 2, 0),
-      Point(2, 0, 0),   Point(-2, -1, 0),  Point(-2, 0, -1), Point(-2, 0, 1),
-      Point(-2, 1, 0),  Point(-1, -2, 0),  Point(-1, 0, -2), Point(-1, 0, 2),
-      Point(-1, 2, 0),  Point(0, -2, -1),  Point(0, -2, 1),  Point(0, -1, -2),
-      Point(0, -1, 2),  Point(0, 1, -2),   Point(0, 1, 2),   Point(0, 2, -1),
-      Point(0, 2, 1),   Point(1, -2, 0),   Point(1, 0, -2),  Point(1, 0, 2),
-      Point(1, 2, 0),   Point(2, -1, 0),   Point(2, 0, -1),  Point(2, 0, 1),
-      Point(2, 1, 0),   Point(-2, -1, -1), Point(-2, -1, 1), Point(-2, 1, -1),
-      Point(-2, 1, 1),  Point(-1, -2, -1), Point(-1, -2, 1), Point(-1, -1, -2),
-      Point(-1, -1, 2), Point(-1, 1, -2),  Point(-1, 1, 2),  Point(-1, 2, -1),
-      Point(-1, 2, 1),  Point(1, -2, -1),  Point(1, -2, 1),  Point(1, -1, -2),
-      Point(1, -1, 2),  Point(1, 1, -2),   Point(1, 1, 2),   Point(1, 2, -1),
-      Point(1, 2, 1),   Point(2, -1, -1),  Point(2, -1, 1),  Point(2, 1, -1),
-      Point(2, 1, 1),   Point(-2, -2, 0),  Point(-2, 0, -2), Point(-2, 0, 2),
-      Point(-2, 2, 0),  Point(0, -2, -2),  Point(0, -2, 2),  Point(0, 2, -2),
-      Point(0, 2, 2),   Point(2, -2, 0),   Point(2, 0, -2),  Point(2, 0, 2),
-      Point(2, 2, 0),   Point(-2, -2, -1), Point(-2, -2, 1), Point(-2, -1, -2),
-      Point(-2, -1, 2), Point(-2, 1, -2),  Point(-2, 1, 2),  Point(-2, 2, -1),
-      Point(-2, 2, 1),  Point(-1, -2, -2), Point(-1, -2, 2), Point(-1, 2, -2),
-      Point(-1, 2, 2),  Point(1, -2, -2),  Point(1, -2, 2),  Point(1, 2, -2),
-      Point(1, 2, 2),   Point(2, -2, -1),  Point(2, -2, 1),  Point(2, -1, -2),
-      Point(2, -1, 2),  Point(2, 1, -2),   Point(2, 1, 2),   Point(2, 2, -1),
-      Point(2, 2, 1),   Point(-2, -2, -2), Point(-2, -2, 2), Point(-2, 2, -2),
-      Point(-2, 2, 2),  Point(2, -2, -2),  Point(2, -2, 2),  Point(2, 2, -2),
-      Point(2, 2, 2),
-  };
+  // Cached data for feasible goal point lookup. Cube of side length
+  // goal_search_step_size * goal_search_steps ordered by distance to center.
+  std::vector<Point> goal_search_offsets_;
 };
 
 }  // namespace glocal_exploration

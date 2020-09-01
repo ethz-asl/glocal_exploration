@@ -375,7 +375,7 @@ Visualization Manager:
               Use Fixed Frame: true
               Use rainbow: true
               Value: false
-          Enabled: false
+          Enabled: true
           Name: Local
         - Class: rviz/Group
           Displays:
@@ -518,10 +518,18 @@ Visualization Manager:
       Name: Local planner
     - Class: rviz/Group
       Displays:
-        - Class: rviz/Marker
+        - Class: rviz/MarkerArray
           Enabled: true
           Marker Topic: /glocal/glocal_system/global_planner/frontiers
           Name: Frontiers
+          Namespaces:
+            "": true
+          Queue Size: 100
+          Value: true
+        - Class: rviz/Marker
+          Enabled: true
+          Marker Topic: /glocal/glocal_system/global_planner/frontier_centroids
+          Name: Frontier centroids
           Namespaces:
             "": true
           Queue Size: 100
@@ -539,7 +547,7 @@ Visualization Manager:
           Marker Topic: /glocal/glocal_system/global_planner/planned_path
           Name: Planned path
           Namespaces:
-            "": true
+            {}
           Queue Size: 100
           Value: true
         - Class: rviz/MarkerArray
@@ -602,7 +610,7 @@ Visualization Manager:
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
-      Near Clip Distance: 41
+      Near Clip Distance: 40.5
       Pitch: 1.5697963237762451
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)

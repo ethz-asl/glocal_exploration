@@ -53,6 +53,6 @@
   <!-- Visualization -->
   <group if="$(arg show_rviz)">
     <arg name="rviz_file" default="$(find glocal_exploration_ros)/config/maze_visualization.rviz" />
-    <node type="rviz" name="rviz" pkg="rviz" args="-d $(arg rviz_file)"/>
+   <node type="rviz" name="rviz" pkg="rviz" args="-d $(arg rviz_file)"/>
   </group>
 </launch>

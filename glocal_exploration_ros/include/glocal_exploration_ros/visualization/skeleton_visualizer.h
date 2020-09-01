@@ -25,7 +25,6 @@ class SkeletonVisualizer : public GlobalPlannerVisualizerBase {
     bool visualize_executed_path = true;
     bool visualize_candidate_goals = true;
     bool visualize_planned_path = true;
-    int n_frontier_colors = 20;
 
     Config();
     void checkParams() const override;
@@ -45,7 +44,8 @@ class SkeletonVisualizer : public GlobalPlannerVisualizerBase {
   void visualizeGoalPoints();
 
  private:
-  void visualizeFrontier(const Frontier& frontier, unsigned int* id);
+  void visualizeFrontier(const Frontier& frontier, bool show_inactive_points,
+                         int color_id);
 
  private:
   const Config config_;
@@ -61,7 +61,6 @@ class SkeletonVisualizer : public GlobalPlannerVisualizerBase {
   int executed_path_id_ = 0;
 
   // Settings.
-  std::vector<voxblox::Color> color_list_;
   const std::string frame_id_ = "mission";
 };
 

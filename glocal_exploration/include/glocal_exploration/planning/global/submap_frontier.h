@@ -15,8 +15,8 @@ namespace glocal_exploration {
  */
 struct FrontierCandidate {
   FrontierCandidate() = default;
-  explicit FrontierCandidate(Point _position)
-      : position(std::move(_position)) {}
+  explicit FrontierCandidate(Point _position, bool _is_active = false)
+      : position(std::move(_position)), is_active(_is_active) {}
   bool is_active = false;  // true: this candidate is a frontier point.
   Point position;
 };
@@ -46,9 +46,9 @@ class Frontier {
   bool isActive() const { return is_active_; }
 
   // interaction
-  void addPoint(const Point& point);
-  void setPoints(const std::vector<Point>& points);
-  void computeCentroid(bool only_active_frontiers = false);
+  void addPoint(const FrontierCandidate& point);
+  void setPoints(const std::vector<FrontierCandidate>& points);
+  void computeCentroid(bool count_inactive_points = false);
   void applyTransformation(const Transformation& transformation);
   void setIsActive(bool is_active) { is_active_ = is_active; }
 
@@ -78,6 +78,7 @@ class FrontierCollection {
 
   // accessors
   int getID() const { return id_; }
+  std::vector<Frontier const*> getActiveFrontiers() const;
 
   // interaction
   Frontier& addFrontier();

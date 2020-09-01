@@ -26,7 +26,7 @@ region_of_interest:
 mapping:
   type: voxgraph
 
-  clearing_radius: 1.0
+  clearing_radius: 1.1
   traversability_radius: *collision_radius
   verbosity: 0
 
@@ -57,7 +57,7 @@ mapping:
   publish_tsdf_map: true
   # Visualization
   verbose: false
-  color_mode: "normals"
+  color_mode: "lambert" #normals
   slice_level: -0.5
   publish_pointclouds: false
   publish_traversable: false
@@ -150,18 +150,22 @@ global_planner:
   verbosity: 4
   
   # Skeleton Planner
-  use_frontier_clustering: true
-  frontier_clustering_radius: 1.0
+  use_centroid_clustering: true
+  centroid_clustering_radius: 1.0
   use_path_verification: true
   path_verification_min_distance: 1.0
+  goal_search_steps: 5.0
+  goal_search_step_size: 1.0
   
   # Submap Frontiers Evaluator
   min_frontier_size: 10
   submaps_are_frozen: true
+  update_frontier_splits: true
   
   # Visualization
   visualize_frontiers: true
-  visualize_inactive_frontiers: false
+  visualize_inactive_frontiers: false  # This almost crashes RVIZ due to sheer number of points.
+  visualize_frontier_centroids: true
   visualize_executed_path: true
   visualize_candidate_goals: true
   visualize_planned_path: true

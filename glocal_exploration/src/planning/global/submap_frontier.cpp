@@ -4,28 +4,26 @@
 
 namespace glocal_exploration {
 
-void Frontier::addPoint(const Point& point) {
-  points_.emplace_back(FrontierCandidate(point));
+void Frontier::addPoint(const FrontierCandidate& point) {
+  points_.emplace_back(point);
 }
 
-void Frontier::setPoints(const std::vector<Point>& points) {
-  points_.clear();
-  points_.reserve(points.size());
-  for (const auto& point : points) {
-    points_.emplace_back(FrontierCandidate(point));
-  }
+void Frontier::setPoints(const std::vector<FrontierCandidate>& points) {
+  points_ = points;
 }
 
-void Frontier::computeCentroid(bool only_active_frontiers) {
-  FloatingPoint count = 0;
-  centroid_ = Point(0, 0, 0);
-  for (const auto& pt : points_) {
-    if (!only_active_frontiers || pt.is_active) {
-      centroid_ += pt.position;
-      count += 1;
+void Frontier::computeCentroid(bool count_inactive_points) {
+  FloatingPoint count = 0.0;
+  centroid_ = Point(0.0, 0.0, 0.0);
+  for (const auto& point : points_) {
+    if (count_inactive_points || point.is_active) {
+      centroid_ += point.position;
+      count += 1.0;
     }
   }
-  centroid_ /= count;
+  if (count > 0.0) {
+    centroid_ /= count;
+  }
 }
 
 void Frontier::applyTransformation(const Transformation& transformation) {
@@ -52,6 +50,16 @@ void FrontierCollection::updateFrontierFrame(const Transformation& T_M_S) {
     frontier.applyTransformation(T_new_prev);
   }
   T_M_S_prev_ = T_M_S;
+}
+
+std::vector<Frontier const*> FrontierCollection::getActiveFrontiers() const {
+  std::vector<Frontier const*> result;
+  for (const Frontier& frontier : frontiers_) {
+    if (frontier.isActive()) {
+      result.push_back(&frontier);
+    }
+  }
+  return result;
 }
 
 }  // namespace glocal_exploration

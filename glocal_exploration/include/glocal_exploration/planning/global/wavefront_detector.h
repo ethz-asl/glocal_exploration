@@ -14,8 +14,8 @@
 namespace glocal_exploration {
 
 /**
- * Implements the wavefront frontier detection algorithm as described in this
- * paper: https://journals.sagepub.com/doi/full/10.1177/0278364913494911 /
+ * Implements the wavefront frontier detection algorithm as described in these
+ * papers: https://journals.sagepub.com/doi/full/10.1177/0278364913494911 /
  * https://arxiv.org/pdf/1806.03581.pdf.
  */
 class WaveFrontDetector {
@@ -26,11 +26,10 @@ class WaveFrontDetector {
   WaveFrontDetector() = default;
   ~WaveFrontDetector() = default;
 
-  void resetDetectorToLayer(
-      std::shared_ptr<const voxblox::Layer<voxblox::TsdfVoxel>> layer);
-
   // The result contains vectors of points that belong to the same frontier.
-  std::vector<std::vector<Point>> computeFrontiers(const Point& initial_point);
+  std::vector<std::vector<Point>> computeFrontiers(
+      const voxblox::Layer<voxblox::TsdfVoxel>& layer,
+      const Point& initial_point);
 
  private:
   std::vector<std::vector<Point>> mapBFS();
@@ -49,6 +48,22 @@ class WaveFrontDetector {
   MapBase::VoxelState voxelState(const Index& index) const;
 
  private:
+  friend class SubmapFrontierEvaluator;
+  // Cached data.
+  voxblox::Layer<voxblox::TsdfVoxel> const* layer_;
+  double voxel_size_;
+  double voxel_size_inv_;
+  int voxels_per_side_;
+
+  // Frontier detection tracking.
+  std::queue<Index> map_queue_;
+  std::queue<Index> frontier_queue_;
+  IndexSet map_open_list_;
+  IndexSet map_closed_list_;
+  IndexSet frontier_open_list_;
+  IndexSet frontier_closed_list_;
+
+  // Neighbor lookup.
   const Index kNeighborOffsets[26] = {
       Index(1, 0, 0),   Index(1, 1, 0),   Index(1, -1, 0),  Index(1, 0, 1),
       Index(1, 1, 1),   Index(1, -1, 1),  Index(1, 0, -1),  Index(1, 1, -1),
@@ -57,20 +72,6 @@ class WaveFrontDetector {
       Index(0, -1, -1), Index(-1, 0, 0),  Index(-1, 1, 0),  Index(-1, -1, 0),
       Index(-1, 0, 1),  Index(-1, 1, 1),  Index(-1, -1, 1), Index(-1, 0, -1),
       Index(-1, 1, -1), Index(-1, -1, -1)};
-
-  // cached data
-  std::shared_ptr<const voxblox::Layer<voxblox::TsdfVoxel>> layer_;
-  double voxel_size_;
-  double voxel_size_inv_;
-  int voxels_per_side_;
-
-  // frontier detection tracking
-  std::queue<Index> map_queue_;
-  std::queue<Index> frontier_queue_;
-  IndexSet map_open_list_;
-  IndexSet map_closed_list_;
-  IndexSet frontier_open_list_;
-  IndexSet frontier_closed_list_;
 };
 
 }  // namespace glocal_exploration

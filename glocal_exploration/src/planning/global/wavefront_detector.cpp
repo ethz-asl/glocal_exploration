@@ -7,16 +7,14 @@
 
 namespace glocal_exploration {
 
-void WaveFrontDetector::resetDetectorToLayer(
-    std::shared_ptr<const voxblox::Layer<voxblox::TsdfVoxel>> layer) {
-  layer_ = std::move(layer);
+std::vector<std::vector<Point>> WaveFrontDetector::computeFrontiers(
+    const voxblox::Layer<voxblox::TsdfVoxel>& layer,
+    const Point& initial_point) {
+  // Cache layer data.
+  layer_ = &layer;  // layer_ is only used while layer is in scope of this fn.
   voxel_size_ = layer_->voxel_size();
   voxel_size_inv_ = 1.0 / voxel_size_;
   voxels_per_side_ = layer_->voxels_per_side();
-}
-
-std::vector<std::vector<Point>> WaveFrontDetector::computeFrontiers(
-    const Point& initial_point) {
   // Reset map queue and lists.
   map_queue_ = std::queue<Index>();
   map_open_list_.clear();

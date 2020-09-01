@@ -18,10 +18,12 @@ namespace glocal_exploration {
 class SubmapFrontierEvaluator : public GlobalPlannerBase {
  public:
   struct Config : public config_utilities::Config<Config> {
-    int verbosity = 2;
+    int verbosity = 1;
     int min_frontier_size = 1;
     bool submaps_are_frozen = true;  // false: submap frontiers will be
                                      // recomputed and overwritten.
+    bool update_frontier_splits = true;  // Recompute the frontier split based
+    // on the active points, re-applies min size.
 
     Config();
     void checkParams() const override;
@@ -40,16 +42,31 @@ class SubmapFrontierEvaluator : public GlobalPlannerBase {
       const std::unordered_map<int, Transformation>& T_M_S) override;
 
   // access
-  const std::unordered_map<int, FrontierCollection>& getFrontiers() const {
+  const std::unordered_map<int, FrontierCollection>& getCandidateCollections()
+      const {
     return submap_frontier_collections_;
   }
-  std::vector<const Frontier*> getActiveFrontiers() const;
+  const std::unordered_map<int, FrontierCollection>& getUpdatedCollections()
+      const {
+    if (config_.update_frontier_splits) {
+      return active_frontier_collections_;
+    } else {
+      return submap_frontier_collections_;
+    }
+  }
+
+ private:
+  void updateFrontierSplits();
 
  private:
   const Config config_;
   WaveFrontDetector wave_front_detector_;
 
+  // Contains the maximal frontier set of each submap, i.e. all candidates.
   std::unordered_map<int, FrontierCollection> submap_frontier_collections_;
+
+  // Contains the active frontiers, only used if update_frontier_splits=true.
+  std::unordered_map<int, FrontierCollection> active_frontier_collections_;
 };
 
 }  // namespace glocal_exploration
