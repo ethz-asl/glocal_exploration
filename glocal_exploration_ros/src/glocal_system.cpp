@@ -208,6 +208,10 @@ void GlocalSystem::odomCallback(const nav_msgs::Odometry& msg) {
 bool GlocalSystem::startExploration() {
   if (comm_->stateMachine()->currentState() != StateMachine::State::kReady) {
     // Can not start from another state than ready.
+    LOG(WARNING) << "Can only start exploration from state Ready (is '"
+                 << StateMachine::stateToString(
+                        comm_->stateMachine()->currentState())
+                 << "').";
     return false;
   }
 

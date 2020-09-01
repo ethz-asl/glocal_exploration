@@ -72,7 +72,8 @@ void SkeletonVisualizer::visualize() {
   for (const auto& frontier : planner_->getFrontierSearchData()) {
     points += frontier.num_points;
   }
-  frontiers_have_changed = goals != num_prev_goals || points != num_prev_points;
+  frontiers_have_changed =
+      !(goals == num_prev_goals && points == num_prev_points);
   num_prev_goals = goals;
   num_prev_points = points;
 
@@ -112,9 +113,9 @@ void SkeletonVisualizer::visualizePlannedPath() {
     msg.type = visualization_msgs::Marker::LINE_STRIP;
     msg.scale.x = 0.08;
     msg.color.a = 1;
-    msg.color.r = 0.0;
-    msg.color.g = 1.0;
-    msg.color.b = 0.0;
+    msg.color.r = 1.0;
+    msg.color.g = 0.0;
+    msg.color.b = 1.0;
     msg.action = visualization_msgs::Marker::ADD;
 
     // Publish segments.
@@ -172,20 +173,16 @@ void SkeletonVisualizer::visualizeExecutedPath() {
 }
 
 void SkeletonVisualizer::visualizeGoalPoints() {
-  if (frontiers_have_changed || comm_->stateMachine()->currentState() !=
-                                    StateMachine::State::kGlobalPlanning) {
+  if (frontiers_have_changed) {
     // Clear previous messages.
     auto msg = visualization_msgs::Marker();
     msg.action = visualization_msgs::Marker::DELETEALL;
     msg.header.frame_id = frame_id_;
     msg.header.stamp = ros::Time::now();
     goals_pub_.publish(msg);
-  }
 
-  if (frontiers_have_changed && comm_->stateMachine()->currentState() ==
-                                    StateMachine::State::kGlobalPlanning) {
     // Common data.
-    auto msg = visualization_msgs::Marker();
+    msg = visualization_msgs::Marker();
     msg.header.frame_id = frame_id_;
     msg.header.stamp = ros::Time::now();
     msg.type = visualization_msgs::Marker::SPHERE;
@@ -236,21 +233,15 @@ void SkeletonVisualizer::visualizeGoalPoints() {
 }
 
 void SkeletonVisualizer::visualizeFrontierText() {
-  if (frontiers_have_changed || comm_->stateMachine()->currentState() !=
-                                    StateMachine::State::kGlobalPlanning) {
+  if (frontiers_have_changed) {
     // Clear previous messages.
     auto msg = visualization_msgs::Marker();
     msg.action = visualization_msgs::Marker::DELETEALL;
     msg.header.frame_id = frame_id_;
     msg.header.stamp = ros::Time::now();
     frontier_text_pub_.publish(msg);
-  }
 
-  if (frontiers_have_changed && comm_->stateMachine()->currentState() ==
-                                    StateMachine::State::kGlobalPlanning) {
     // Common data.
-    auto msg = visualization_msgs::Marker();
-    msg.header.frame_id = frame_id_;
     msg.header.stamp = ros::Time::now();
     msg.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
     msg.action = visualization_msgs::Marker::ADD;
@@ -307,8 +298,7 @@ std::string SkeletonVisualizer::frontierTextFormat(double value) const {
 }
 
 void SkeletonVisualizer::visualizeFrontiers() {
-  if (frontiers_have_changed || comm_->stateMachine()->currentState() !=
-                                    StateMachine::State::kGlobalPlanning) {
+  if (frontiers_have_changed) {
     // Erase previous visualizations
     auto msg = visualization_msgs::Marker();
     msg.header.frame_id = frame_id_;
@@ -317,10 +307,7 @@ void SkeletonVisualizer::visualizeFrontiers() {
     auto array_msg = visualization_msgs::MarkerArray();
     array_msg.markers.push_back(msg);
     frontier_pub_.publish(array_msg);
-  }
 
-  if (frontiers_have_changed && comm_->stateMachine()->currentState() ==
-                                    StateMachine::State::kGlobalPlanning) {
     frontier_msg_id_ = 0;
     // Visualize all active frontiers.
     int color_id = 0;

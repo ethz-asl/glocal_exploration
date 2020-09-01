@@ -354,22 +354,38 @@ bool SkeletonPlanner::verifyNextWayPoints() {
   }
 
   // If less than one segment is connected check for minimum distance.
-  std::cout << "Idx: " << waypoint_index << ", len till infeasible: "
-            << (comm_->currentPose().position() - goal).norm() << std::endl;
   if (waypoint_index == 0) {
-    if ((comm_->currentPose().position() - goal).norm() >=
-        config_.path_verification_min_distance) {
+    Point current_position = comm_->currentPose().position();
+    // TODO(schmluk): make this a param if we keep it.
+    const double safety = 0.3;
+
+    if ((current_position - goal).norm() >
+        config_.path_verification_min_distance + safety) {
       // Insert intermediate goal s.t. path can be observed.
       WayPoint way_point;
-      way_point.position() = goal;
+      Point direction = goal - current_position;
+      Point new_gaol =
+          current_position + direction * (1.0 - safety / direction.norm());
+      way_point.x = new_gaol.x();
+      way_point.y = new_gaol.y();
+      way_point.z = new_gaol.z();
       way_points_.insert(way_points_.begin(), way_point);
-      std::cout << "Crop too long 1st segment, len: "
-                << (comm_->currentPose().position() - goal).norm()
-                << ", goal: " << goal.transpose() << std::endl;
     } else {
       // The global path is no longer feasible, try to recompute it.
       goal = way_points_.back().position();
+      bool found_a_new_path = false;
       if (computePath(goal, &way_points_)) {
+        // Check the next step is now feasible.
+        goal = way_points_[0].position();
+        if (lineIsIntraversableInSlidingWindowAt(&goal)) {
+          found_a_new_path = (current_position - goal).norm() >
+                             config_.path_verification_min_distance + safety;
+        } else {
+          found_a_new_path = true;
+        }
+      }
+
+      if (found_a_new_path) {
         LOG_IF(INFO, config_.verbosity >= 2)
             << "Global path became infeasible, was successfully recomputed.";
         return false;
@@ -382,8 +398,6 @@ bool SkeletonPlanner::verifyNextWayPoints() {
     }
   } else {
     // The ith path was intraversible, remove previous way points.
-    std::cout << "Removed " << waypoint_index - 1 << " redundant waypoints"
-              << std::endl;
     auto it = way_points_.begin();
     for (int i = 0; i < waypoint_index - 1; ++i) {
       it = way_points_.erase(it);
