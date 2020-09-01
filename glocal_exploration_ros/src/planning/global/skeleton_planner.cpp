@@ -1,7 +1,7 @@
 #include "glocal_exploration_ros/planning/global/skeleton_planner.h"
 
 #include <algorithm>
-#include <list>
+#include <limits>
 #include <memory>
 #include <unordered_map>
 #include <utility>
@@ -124,7 +124,6 @@ bool SkeletonPlanner::computeFrontiers() {
   // Guarantee tha all frontiers are computed and update them to the current
   // state. If they are already pre-computed and frozen the computation step
   // will do nothing.
-  visualization_info_.frontiers_changed = true;
   std::vector<MapBase::SubmapData> data = comm_->map()->getAllSubmapData();
 
   // Check there are enough submaps already.
@@ -166,84 +165,94 @@ bool SkeletonPlanner::computeFrontiers() {
 
 bool SkeletonPlanner::computeGoalPoint() {
   // Compute the frontier with the shortest path to it.
-  visualization_info_.goals_changed = true;
-  visualization_info_.goal_points.clear();
+  auto t_start = std::chrono::high_resolution_clock::now();
 
   // Get all frontiers.
-  auto frontiers = std::vector<FrontierSearchData>();
+  frontier_data_.clear();
   for (const auto& frontier_collection : getUpdatedCollections()) {
     for (const auto& frontier :
          frontier_collection.second.getActiveFrontiers()) {
-      // Compute active centroid.
-      FrontierSearchData& data = frontiers.emplace_back();
+      FrontierSearchData& data = frontier_data_.emplace_back();
       data.centroid = frontier->getCentroid();
-      data.euclidean_distance =
-          (comm_->currentPose().position() - data.centroid).norm();
+      data.num_points = frontier->getNumberOfActivePoints();
     }
   }
-  if (frontiers.empty()) {
+  if (frontier_data_.empty()) {
+    LOG(WARNING) << "No active frontiers found to compute goal points from.";
     return false;
   }
 
   // Frontier clustering.
   if (config_.use_centroid_clustering) {
-    clusterFrontiers(&frontiers);
+    clusterFrontiers();
+  }
+
+  // Try to find feasible goal near centroid and remove infeasible frontiers.
+  int unreachable_goal_counter = 0;
+  const int total_frontiers = frontier_data_.size();
+  const Point current_position = comm_->currentPose().position();
+  for (auto& frontier : frontier_data_) {
+    if (!findValidGoalPoint(&(frontier.centroid))) {
+      unreachable_goal_counter++;
+      frontier.reachability = FrontierSearchData::kInvalidGoal;
+      frontier.euclidean_distance = std::numeric_limits<double>::max();
+    } else {
+      frontier.euclidean_distance =
+          (current_position - frontier.centroid).norm();
+    }
   }
 
   // Compute paths to frontiers to determine the closest reachable one. Start
   // with closest and use euclidean distance as lower bound to prune candidates.
-  std::sort(frontiers.begin(), frontiers.end(),
+  std::sort(frontier_data_.begin(), frontier_data_.end(),
             [](const FrontierSearchData& lhs, const FrontierSearchData& rhs) {
               return lhs.euclidean_distance < rhs.euclidean_distance;
             });
-  auto t_start = std::chrono::high_resolution_clock::now();
   int path_counter = 0;
-  int unreachable_goal_counter = 0;
-  const int total_frontiers = frontiers.size();
-  std::vector<WayPoint> way_points;
-  for (auto it = frontiers.begin(); it != frontiers.end();) {
-    // Find feasible goal near frontier centroid.
-    Point goal = it->centroid;
-    if (!findValidGoalPoint(&goal)) {
-      unreachable_goal_counter++;
-      visualization_info_.goal_points.emplace_back(
-          std::make_pair(VisualizationInfo::kInvalidGoal, goal));
-      it = frontiers.erase(it);
-      continue;
-    }
-
-    // Try to find a path via linked skeleton planning.
-    path_counter++;
-    if (computePath(goal, &way_points)) {
-      it->way_points = way_points;
-      it->path_distance =
-          (way_points[0].position() - comm_->currentPose().position()).norm();
-      for (size_t i = 1; i < way_points.size(); ++i) {
-        it->path_distance +=
-            (way_points[i].position() - way_points[i - 1].position()).norm();
-      }
-      visualization_info_.goal_points.emplace_back(
-          std::make_pair(VisualizationInfo::kReachable, goal));
-
-      // Prune paths that can not be shorter than this one.
-      double dist = it->path_distance;
-      auto it2 = ++it;
-      while (it2 != frontiers.end()) {
-        if (it2->euclidean_distance >= dist) {
-          visualization_info_.goal_points.emplace_back(
-              std::make_pair(VisualizationInfo::kUnchecked, goal));
-          it2 = frontiers.erase(it2);
-        } else {
-          it2++;
-        }
-      }
+  double shortest_path = std::numeric_limits<double>::max();
+  bool found_a_valid_path = false;
+  for (auto& candidate : frontier_data_) {
+    if (candidate.euclidean_distance >= shortest_path) {
+      // These points can never be closer than what we already have.
+      candidate.path_distance = candidate.euclidean_distance;
+      candidate.reachability = FrontierSearchData::kUnchecked;
     } else {
-      // Remove inaccessible frontiers.
-      visualization_info_.goal_points.emplace_back(
-          std::make_pair(VisualizationInfo::kUnreachable, goal));
-      it = frontiers.erase(it);
+      // Try to find a path via linked skeleton planning.
+      path_counter++;
+      std::vector<WayPoint> way_points;
+      if (computePath(candidate.centroid, &way_points)) {
+        // Frontier is reachable, save path and compute path length.
+        candidate.way_points = way_points;
+        candidate.path_distance =
+            (way_points[0].position() - current_position).norm();
+        for (size_t i = 1; i < way_points.size(); ++i) {
+          candidate.path_distance +=
+              (way_points[i].position() - way_points[i - 1].position()).norm();
+        }
+        shortest_path = std::min(shortest_path, candidate.path_distance);
+        candidate.reachability = FrontierSearchData::kReachable;
+        found_a_valid_path = true;
+      } else {
+        // Inaccessible frontier.
+        candidate.path_distance = std::numeric_limits<double>::max();
+        candidate.reachability = FrontierSearchData::kUnreachable;
+      }
     }
   }
+
+  // Select result.
+  if (!found_a_valid_path) {
+    LOG_IF(INFO, config_.verbosity >= 2)
+        << "No reachable frontier found, returning to local planning.";
+    comm_->stateMachine()->signalLocalPlanning();
+    return false;
+  }
+  auto best_path_it = std::min_element(
+      frontier_data_.begin(), frontier_data_.end(),
+      [](const FrontierSearchData& lhs, const FrontierSearchData& rhs) {
+        return lhs.path_distance < rhs.path_distance;
+      });
+  way_points_ = best_path_it->way_points;
 
   // Logging.
   auto t_end = std::chrono::high_resolution_clock::now();
@@ -259,41 +268,29 @@ bool SkeletonPlanner::computeGoalPoint() {
   }
   LOG_IF(INFO, config_.verbosity >= 3) << ss.str();
 
-  // Select result.
-  if (frontiers.empty()) {
-    LOG_IF(INFO, config_.verbosity >= 2)
-        << "No reachable frontier found, returning to local planning.";
-    comm_->stateMachine()->signalLocalPlanning();
-    return false;
-  }
-  auto it = std::min_element(
-      frontiers.begin(), frontiers.end(),
-      [](const FrontierSearchData& lhs, const FrontierSearchData& rhs) {
-        return lhs.path_distance < rhs.path_distance;
-      });
-  way_points_ = it->way_points;
   ss = std::stringstream();
   ss << "Found a path of " << way_points_.size()
-     << " waypoints to closest frontier.";
+     << " waypoints to closest reachable frontier";
   if (config_.verbosity >= 3) {
-    ss << " (" << std::fixed << std::setprecision(2) << it->path_distance
-       << "m path, " << std::fixed << std::setprecision(2)
-       << it->euclidean_distance << "m euclidean distance).";
+    ss << " (" << std::fixed << std::setprecision(2)
+       << best_path_it->path_distance << "m path, " << std::fixed
+       << std::setprecision(2) << best_path_it->euclidean_distance
+       << "m euclidean distance).";
+  } else {
+    ss << ".";
   }
   LOG_IF(INFO, config_.verbosity >= 2) << ss.str();
   return true;
 }
 
-void SkeletonPlanner::clusterFrontiers(
-    std::vector<FrontierSearchData>* frontiers) const {
-  CHECK_NOTNULL(frontiers);
+void SkeletonPlanner::clusterFrontiers() {
   // Search all frontiers for nearby centroids and merge incrementally until all
   // centroids are further than 'centroid_clustering_radius' apart.
-  const int num_frontiers = frontiers->size();
-  for (auto it = frontiers->begin(); it != frontiers->end(); ++it) {
+  const int num_frontiers = frontier_data_.size();
+  for (auto it = frontier_data_.begin(); it != frontier_data_.end(); ++it) {
     auto it2 = it;
     it2++;
-    while (it2 != frontiers->end()) {
+    while (it2 != frontier_data_.end()) {
       if ((it2->centroid - it->centroid).norm() <=
           config_.centroid_clustering_radius) {
         // Nearby frontier centroids are merged by weight.
@@ -302,7 +299,8 @@ void SkeletonPlanner::clusterFrontiers(
             it2->centroid * static_cast<FloatingPoint>(it2->num_points);
         it->num_points += it2->num_points;
         it->centroid /= static_cast<FloatingPoint>(it->num_points);
-        it2 = frontiers->erase(it2);
+        it->clusters++;
+        it2 = frontier_data_.erase(it2);
       } else {
         it2++;
       }
@@ -310,9 +308,9 @@ void SkeletonPlanner::clusterFrontiers(
   }
   // Logging.
   LOG_IF(INFO, config_.verbosity >= 3)
-      << "Clustered " << num_frontiers - frontiers->size()
-      << " frontier centroids (" << num_frontiers << "->" << frontiers->size()
-      << ").";
+      << "Clustered " << num_frontiers - frontier_data_.size()
+      << " frontier centroids (" << num_frontiers << "->"
+      << frontier_data_.size() << ").";
 }
 
 void SkeletonPlanner::executeWayPoint() {
@@ -320,11 +318,15 @@ void SkeletonPlanner::executeWayPoint() {
     if (way_points_.empty()) {
       // Finished execution.
       comm_->stateMachine()->signalLocalPlanning();
-      LOG_IF(INFO, config_.verbosity >= 2) << "Finished global path execution.";
+      LOG_IF(INFO, config_.verbosity >= 2)
+          << "Finished global path execution, switching to local planning.";
     } else {
       // Request next way point.
       if (config_.use_path_verification) {
-        verifyNextWayPoints();
+        if (!verifyNextWayPoints()) {
+          // Might recompute the path, so execute it in the next iteration.
+          return;
+        }
       }
 
       // Send the next waypoint in the list.
@@ -352,6 +354,8 @@ bool SkeletonPlanner::verifyNextWayPoints() {
   }
 
   // If less than one segment is connected check for minimum distance.
+  std::cout << "Idx: " << waypoint_index << ", len till infeasible: "
+            << (comm_->currentPose().position() - goal).norm() << std::endl;
   if (waypoint_index == 0) {
     if ((comm_->currentPose().position() - goal).norm() >=
         config_.path_verification_min_distance) {
@@ -359,12 +363,16 @@ bool SkeletonPlanner::verifyNextWayPoints() {
       WayPoint way_point;
       way_point.position() = goal;
       way_points_.insert(way_points_.begin(), way_point);
+      std::cout << "Crop too long 1st segment, len: "
+                << (comm_->currentPose().position() - goal).norm()
+                << ", goal: " << goal.transpose() << std::endl;
     } else {
       // The global path is no longer feasible, try to recompute it.
       goal = way_points_.back().position();
       if (computePath(goal, &way_points_)) {
         LOG_IF(INFO, config_.verbosity >= 2)
             << "Global path became infeasible, was successfully recomputed.";
+        return false;
       } else {
         // The goal is inaccessible, return to local planning.
         comm_->stateMachine()->signalLocalPlanning();
@@ -381,6 +389,7 @@ bool SkeletonPlanner::verifyNextWayPoints() {
       it = way_points_.erase(it);
     }
   }
+  return true;
 }
 
 bool SkeletonPlanner::lineIsIntraversableInSlidingWindowAt(Point* goal) {

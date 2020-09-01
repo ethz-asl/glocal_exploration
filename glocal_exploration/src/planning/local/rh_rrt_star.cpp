@@ -117,7 +117,7 @@ void RHRRTStar::executePlanningIteration() {
   }
 
   // TEST
-  if (executed_segments_ >= 3) {
+  if (executed_segments_ >= 2) {
     comm_->stateMachine()->signalGlobalPlanning();
   }
 }

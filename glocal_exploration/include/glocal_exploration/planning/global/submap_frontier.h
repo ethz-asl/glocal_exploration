@@ -43,19 +43,21 @@ class Frontier {
 
   // accessors
   const Point& getCentroid() const { return centroid_; }
+  int getNumberOfActivePoints() const { return num_active_points_; }
   bool isActive() const { return is_active_; }
 
   // interaction
   void addPoint(const FrontierCandidate& point);
   void setPoints(const std::vector<FrontierCandidate>& points);
-  void computeCentroid(bool count_inactive_points = false);
+  void computeCentroid();
   void applyTransformation(const Transformation& transformation);
   void setIsActive(bool is_active) { is_active_ = is_active; }
 
  private:
   std::vector<FrontierCandidate> points_;
   Point centroid_;
-  bool is_active_;
+  int num_active_points_ = 0;  // Computed together with centroid.
+  bool is_active_ = false;
 };
 
 /**

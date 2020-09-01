@@ -12,17 +12,17 @@ void Frontier::setPoints(const std::vector<FrontierCandidate>& points) {
   points_ = points;
 }
 
-void Frontier::computeCentroid(bool count_inactive_points) {
-  FloatingPoint count = 0.0;
+void Frontier::computeCentroid() {
+  num_active_points_ = 0;
   centroid_ = Point(0.0, 0.0, 0.0);
   for (const auto& point : points_) {
-    if (count_inactive_points || point.is_active) {
+    if (point.is_active) {
       centroid_ += point.position;
-      count += 1.0;
+      num_active_points_++;
     }
   }
-  if (count > 0.0) {
-    centroid_ /= count;
+  if (num_active_points_ > 0) {
+    centroid_ /= num_active_points_;
   }
 }
 

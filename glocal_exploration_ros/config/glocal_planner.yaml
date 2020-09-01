@@ -165,7 +165,7 @@ global_planner:
   # Visualization
   visualize_frontiers: true
   visualize_inactive_frontiers: false  # This almost crashes RVIZ due to sheer number of points.
-  visualize_frontier_centroids: true
+  visualize_frontier_text: true
   visualize_executed_path: true
   visualize_candidate_goals: true
   visualize_planned_path: true

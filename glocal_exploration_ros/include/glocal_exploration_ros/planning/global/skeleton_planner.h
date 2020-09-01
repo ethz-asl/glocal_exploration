@@ -39,11 +39,20 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
     void printFields() const override;
   };
 
-  struct VisualizationInfo {
-    bool frontiers_changed = false;
-    enum Reachability { kReachable, kUnreachable, kUnchecked, kInvalidGoal };
-    std::vector<std::pair<Reachability, Point>> goal_points;
-    bool goals_changed = false;
+  // Frontier search data collection.
+  struct FrontierSearchData {
+    Point centroid;
+    double euclidean_distance = 0;
+    double path_distance = 0;
+    int num_points = 0;
+    int clusters = 1;
+    std::vector<WayPoint> way_points;
+    enum Reachability {
+      kReachable,
+      kUnreachable,
+      kUnchecked,
+      kInvalidGoal
+    } reachability;
   };
 
   SkeletonPlanner(const Config& config,
@@ -53,19 +62,12 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   void executePlanningIteration() override;
 
   // Visualization access.
-  VisualizationInfo& visualizationInfo() { return visualization_info_; }
+  const std::vector<FrontierSearchData>& getFrontierSearchData() {
+    return frontier_data_;
+  }
   const std::vector<WayPoint>& getWayPoints() const { return way_points_; }
 
  private:
-  // Frontier search data collection.
-  struct FrontierSearchData {
-    Point centroid;
-    double euclidean_distance = 0;
-    double path_distance = 0;
-    int num_points = 0;
-    std::vector<WayPoint> way_points;
-  };
-
   // Planning iteration methods.
   void resetPlanner();
   bool computeFrontiers();
@@ -75,7 +77,7 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   // Helper methods.
   bool computePath(const Point& goal, std::vector<WayPoint>* way_points);
   bool findValidGoalPoint(Point* goal);  // Changes goal to the new point.
-  void clusterFrontiers(std::vector<FrontierSearchData>* frontiers) const;
+  void clusterFrontiers();
   bool lineIsIntraversableInSlidingWindowAt(Point* goal_point);
   bool verifyNextWayPoints();
 
@@ -86,15 +88,12 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   std::unique_ptr<mav_planning::CbloxSkeletonGlobalPlanner> skeleton_planner_;
 
   // Variables.
-  std::vector<WayPoint> way_points_;  // in mission frame
-  Eigen::Vector3d goal_point_;
+  std::vector<WayPoint> way_points_;  // in mission frame.
+  std::vector<FrontierSearchData> frontier_data_;
 
   // Stages of global planning.
   enum class Stage { k1ComputeFrontiers, k2ComputeGoalAndPath, k3ExecutePath };
   Stage stage_;
-
-  // Visualization
-  VisualizationInfo visualization_info_;
 
   // Cached data for feasible goal point lookup. Cube of side length
   // goal_search_step_size * goal_search_steps ordered by distance to center.

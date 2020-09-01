@@ -425,7 +425,7 @@ Visualization Manager:
                   Marker Topic: /glocal/glocal_system/mapping/combined_mesh
                   Name: Merged submaps
                   Namespaces:
-                    mesh: true
+                    {}
                   Queue Size: 100
                   Value: true
                 - Class: rviz/Marker
@@ -470,7 +470,7 @@ Visualization Manager:
           Use Fixed Frame: true
           Use rainbow: false
           Value: false
-      Enabled: true
+      Enabled: false
       Name: Voxgraph
     - Class: rviz/Group
       Displays:
@@ -528,14 +528,6 @@ Visualization Manager:
           Value: true
         - Class: rviz/Marker
           Enabled: true
-          Marker Topic: /glocal/glocal_system/global_planner/frontier_centroids
-          Name: Frontier centroids
-          Namespaces:
-            "": true
-          Queue Size: 100
-          Value: true
-        - Class: rviz/Marker
-          Enabled: true
           Marker Topic: /glocal/glocal_system/global_planner/goal_points
           Name: Goal points
           Namespaces:
@@ -547,13 +539,21 @@ Visualization Manager:
           Marker Topic: /glocal/glocal_system/global_planner/planned_path
           Name: Planned path
           Namespaces:
-            {}
+            "": true
           Queue Size: 100
           Value: true
         - Class: rviz/MarkerArray
           Enabled: false
           Marker Topic: /glocal/glocal_system/global_planner/skeleton/local_graphs
           Name: Skeleton
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/Marker
+          Enabled: false
+          Marker Topic: /glocal/glocal_system/global_planner/frontier_text
+          Name: Text
           Namespaces:
             {}
           Queue Size: 100
@@ -596,7 +596,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 55.44791793823242
+      Distance: 53.086891174316406
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -610,11 +610,11 @@ Visualization Manager:
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
-      Near Clip Distance: 40.5
-      Pitch: 1.5697963237762451
+      Near Clip Distance: 0.5
+      Pitch: 1.2297964096069336
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 2.305000066757202
+      Yaw: 2.3949997425079346
     Saved: ~
 Window Geometry:
   Displays:
