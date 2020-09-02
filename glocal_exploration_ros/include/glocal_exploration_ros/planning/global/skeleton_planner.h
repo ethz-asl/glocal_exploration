@@ -41,7 +41,7 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
 
   // Frontier search data collection.
   struct FrontierSearchData {
-    Point centroid;
+    Point centroid = Point(0.0, 0.0, 0.0);
     double euclidean_distance = 0;
     double path_distance = 0;
     int num_points = 0;

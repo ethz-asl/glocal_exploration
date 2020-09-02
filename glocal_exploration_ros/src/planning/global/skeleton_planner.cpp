@@ -152,17 +152,11 @@ bool SkeletonPlanner::computeFrontiers() {
   updateFrontiers(update_list);
 
   // Check there are still frontiers left.
-  bool active_frontier_left = false;
-  for (const auto& frontier_collection : getUpdatedCollections()) {
-    if (!frontier_collection.second.getActiveFrontiers().empty()) {
-      active_frontier_left = true;
-      break;
-    }
-  }
-  if (!active_frontier_left) {
+  if (getActiveFrontiers().empty()) {
     // No more open frontiers, exploration is done.
     LOG_IF(INFO, config_.verbosity >= 1)
-        << "No active frontiers remaining, exploration terminated succesfully.";
+        << "No active frontiers remaining, exploration terminated "
+           "successfully.";
     comm_->stateMachine()->signalFinished();
     return false;
   }
@@ -175,13 +169,14 @@ bool SkeletonPlanner::computeGoalPoint() {
 
   // Get all frontiers.
   frontier_data_.clear();
-  for (const auto& frontier_collection : getUpdatedCollections()) {
-    for (const auto& frontier :
-         frontier_collection.second.getActiveFrontiers()) {
-      FrontierSearchData& data = frontier_data_.emplace_back();
-      data.centroid = frontier->getCentroid();
-      data.num_points = frontier->getNumberOfActivePoints();
+  for (const auto& frontier : getActiveFrontiers()) {
+    FrontierSearchData& data = frontier_data_.emplace_back();
+    // Compute centroids and number of points.
+    for (const Point& point : frontier) {
+      data.centroid += point;
+      data.num_points++;
     }
+    data.centroid /= data.num_points;
   }
   if (frontier_data_.empty()) {
     LOG(WARNING) << "No active frontiers found to compute goal points from.";

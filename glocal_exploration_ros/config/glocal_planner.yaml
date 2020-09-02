@@ -158,13 +158,11 @@ global_planner:
   goal_search_step_size: 1.0
   
   # Submap Frontiers Evaluator
-  min_frontier_size: 10
+  min_frontier_size: 20
   submaps_are_frozen: true
-  update_frontier_splits: true
   
   # Visualization
   visualize_frontiers: true
-  visualize_inactive_frontiers: false  # This almost crashes RVIZ due to sheer number of points.
   visualize_frontier_text: true
   visualize_executed_path: true
   visualize_candidate_goals: true

@@ -17,7 +17,6 @@ void SkeletonVisualizer::Config::checkParams() const {}
 
 void SkeletonVisualizer::Config::fromRosParam() {
   rosParam("visualize_frontiers", &visualize_frontiers);
-  rosParam("visualize_inactive_frontiers", &visualize_inactive_frontiers);
   rosParam("visualize_executed_path", &visualize_executed_path);
   rosParam("visualize_candidate_goals", &visualize_candidate_goals);
   rosParam("visualize_planned_path", &visualize_planned_path);
@@ -304,7 +303,7 @@ std::string SkeletonVisualizer::frontierTextFormat(double value) const {
 void SkeletonVisualizer::visualizeFrontiers() {
   if (planner_->visualizationData().frontiers_have_changed ||
       planner_->visualizationData().execution_finished) {
-    // Erase previous visualizations
+    // Erase previous visualizations.
     auto msg = visualization_msgs::Marker();
     msg.header.frame_id = frame_id_;
     msg.header.stamp = ros::Time::now();
@@ -314,75 +313,42 @@ void SkeletonVisualizer::visualizeFrontiers() {
     frontier_pub_.publish(array_msg);
 
     if (!planner_->visualizationData().finished_successfully) {
-      frontier_msg_id_ = 0;
       // Visualize all active frontiers.
       int color_id = 0;
-      for (const auto& frontier_collection :
-           planner_->getUpdatedCollections()) {
-        for (const auto& frontier :
-             frontier_collection.second.getActiveFrontiers()) {
-          visualizeFrontier(*frontier, false, color_id);
-          color_id++;
+      int frontier_msg_id = 0;
+      voxblox::ExponentialOffsetIdColorMap color_map;
+      for (const auto& frontier : planner_->getActiveFrontiers()) {
+        // Common data.
+        voxblox::Color color = color_map.colorLookup(color_id++);
+        array_msg = visualization_msgs::MarkerArray();
+        msg = visualization_msgs::Marker();
+        msg.header.frame_id = frame_id_;
+        msg.header.stamp = ros::Time::now();
+        msg.action = visualization_msgs::Marker::ADD;
+        msg.pose.orientation.w = 1.0;
+        msg.type = visualization_msgs::Marker::CUBE;
+        double scale = comm_->map()->getVoxelSize();
+        msg.scale.x = scale;
+        msg.scale.y = scale;
+        msg.scale.z = scale;
+        msg.color.r = color.r / 255.0;
+        msg.color.g = color.g / 255.0;
+        msg.color.b = color.b / 255.0;
+        msg.color.a = 1.0;
+        if (planner_->visualizationData().execution_finished) {
+          msg.lifetime = failed_timeout_;
         }
-      }
-
-      // Visualize all inactive frontiers.
-      if (config_.visualize_inactive_frontiers) {
-        for (const auto& frontier_collection :
-             planner_->getCandidateCollections()) {
-          for (const auto& frontier :
-               frontier_collection.second.getActiveFrontiers()) {
-            // Color ids are the submap ids.
-            visualizeFrontier(*frontier, true, frontier_collection.first);
-          }
+        for (const Point& point : frontier) {
+          msg.id = frontier_msg_id++;
+          msg.pose.position.x = point.x();
+          msg.pose.position.y = point.y();
+          msg.pose.position.z = point.z();
+          array_msg.markers.push_back(msg);
         }
+        frontier_pub_.publish(array_msg);
       }
     }
   }
-}
-
-void SkeletonVisualizer::visualizeFrontier(const Frontier& frontier,
-                                           bool show_inactive_points,
-                                           int color_id) {
-  auto result = visualization_msgs::MarkerArray();
-  if (!frontier.isActive() && !show_inactive_points) {
-    return;
-  }
-
-  voxblox::ExponentialOffsetIdColorMap color_map;
-  voxblox::Color color = color_map.colorLookup(color_id);
-  for (const FrontierCandidate& point : frontier) {
-    if (point.is_active == show_inactive_points) {
-      continue;
-    }
-    auto msg = visualization_msgs::Marker();
-    msg.header.frame_id = frame_id_;
-    msg.header.stamp = ros::Time::now();
-    msg.action = visualization_msgs::Marker::ADD;
-    msg.pose.orientation.w = 1.0;
-    msg.type = visualization_msgs::Marker::CUBE;
-    msg.id = frontier_msg_id_++;
-    double scale = comm_->map()->getVoxelSize();
-    msg.scale.x = scale;
-    msg.scale.y = scale;
-    msg.scale.z = scale;
-    msg.pose.position.x = point.position.x();
-    msg.pose.position.y = point.position.y();
-    msg.pose.position.z = point.position.z();
-    msg.color.r = color.r / 255.0;
-    msg.color.g = color.g / 255.0;
-    msg.color.b = color.b / 255.0;
-    if (point.is_active) {
-      msg.color.a = 1.0;
-    } else {
-      msg.color.a = 0.2;
-    }
-    if (planner_->visualizationData().execution_finished) {
-      msg.lifetime = failed_timeout_;
-    }
-    result.markers.push_back(msg);
-  }
-  frontier_pub_.publish(result);
 }
 
 }  // namespace glocal_exploration
