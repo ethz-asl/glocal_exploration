@@ -1,9 +1,9 @@
 #include "glocal_exploration/planning/global/submap_frontier_evaluator.h"
 
 #include <chrono>
-#include <stack>
 #include <memory>
 #include <sstream>
+#include <stack>
 #include <unordered_map>
 #include <utility>
 #include <vector>

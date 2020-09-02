@@ -44,7 +44,8 @@ class SubmapFrontierEvaluator : public GlobalPlannerBase {
       const std::unordered_map<int, Transformation>& T_M_S) override;
 
   // Access.
-  const std::unrodered_map<int, std::vector<Point>>& getFrontierCandidates() const {
+  const std::unrodered_map<int, std::vector<Point>>& getFrontierCandidates()
+      const {
     return frontier_candidates_;
   }
   const std::vector<std::vector<Point>>& getActiveFrontiers() const {
