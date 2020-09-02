@@ -71,8 +71,7 @@ mapping:
   publisher_queue_length: 10
   input_odom_frame: "odom"
   input_base_link_frame: "imu"
-  output_mission_frame: "odom"
-  output_odom_frame: "odom_corrected"
+  output_odom_frame: "odom"
   output_base_link_frame: "drone_corrected"
   output_sensor_frame: "lidar_corrected"
   tsdf_integrator:
@@ -172,10 +171,10 @@ global_planner:
     num_seconds_to_plan: 3.0
     grow_time: 3
     edge_density: 1.5
-    frame_id: mission
-    world_frame: mission
-    mission_frame: mission
-    odom_frame: mission # TODO is this correct?
+    frame_id: odom
+    world_frame: odom
+    mission_frame: odom
+    odom_frame: odom
     robot_radius: *collision_radius
     tsdf_voxel_size: *voxel_size
     tsdf_voxels_per_side: *voxels_per_side
