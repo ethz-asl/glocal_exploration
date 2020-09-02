@@ -99,7 +99,6 @@ void RHRRTStar::executePlanningIteration() {
     if (selectNextBestWayPoint(&next_waypoint)) {
       comm_->requestWayPoint(next_waypoint);
       gain_update_needed_ = true;
-      test_++;
     }
   }
 
