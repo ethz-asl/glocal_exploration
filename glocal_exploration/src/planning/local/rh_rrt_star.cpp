@@ -103,12 +103,6 @@ void RHRRTStar::executePlanningIteration() {
     }
   }
 
-  // TEST
-  if (test_ >= 1) {
-    comm_->stateMachine()->signalGlobalPlanning();
-    return;
-  }
-
   // Check whether a local minimum is reached and change to global planning.
   if (tree_data_.points.size() >= config_.terminaton_min_tree_size) {
     for (const auto& point : tree_data_.points) {
@@ -121,8 +115,6 @@ void RHRRTStar::executePlanningIteration() {
 }
 
 void RHRRTStar::resetPlanner(const WayPoint& origin) {
-  test_ = 0;
-
   // clear the tree and initialize with a point at the current pose
   tree_data_.points.clear();
   auto point = std::make_unique<ViewPoint>();
