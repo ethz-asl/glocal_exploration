@@ -118,12 +118,18 @@ void SkeletonPlanner::executePlanningIteration() {
   }
 }
 
-void SkeletonPlanner::resetPlanner() { stage_ = Stage::k1ComputeFrontiers; }
+void SkeletonPlanner::resetPlanner() {
+  stage_ = Stage::k1ComputeFrontiers;
+  vis_data_.frontiers_have_changed = false;
+  vis_data_.execution_finished = false;
+  vis_data_.finished_successfully = false;
+}
 
 bool SkeletonPlanner::computeFrontiers() {
   // Guarantee tha all frontiers are computed and update them to the current
   // state. If they are already pre-computed and frozen the computation step
   // will do nothing.
+  vis_data_.frontiers_have_changed = true;
   std::vector<MapBase::SubmapData> data = comm_->map()->getAllSubmapData();
 
   // Check there are enough submaps already.
@@ -245,6 +251,7 @@ bool SkeletonPlanner::computeGoalPoint() {
     LOG_IF(INFO, config_.verbosity >= 2)
         << "No reachable frontier found, returning to local planning.";
     comm_->stateMachine()->signalLocalPlanning();
+    vis_data_.execution_finished = true;
     return false;
   }
   auto best_path_it = std::min_element(
@@ -320,6 +327,8 @@ void SkeletonPlanner::executeWayPoint() {
       comm_->stateMachine()->signalLocalPlanning();
       LOG_IF(INFO, config_.verbosity >= 2)
           << "Finished global path execution, switching to local planning.";
+      vis_data_.execution_finished = true;
+      vis_data_.finished_successfully = true;
     } else {
       // Request next way point.
       if (config_.use_path_verification) {
@@ -373,34 +382,45 @@ bool SkeletonPlanner::verifyNextWayPoints() {
     } else {
       // The global path is no longer feasible, try to recompute it.
       goal = way_points_.back().position();
-      bool found_a_new_path = false;
+      bool found_a_new_path = true;
       if (computePath(goal, &way_points_)) {
         // Check the next step is now feasible.
         goal = way_points_[0].position();
-        if (lineIsIntraversableInSlidingWindowAt(&goal)) {
-          found_a_new_path = (current_position - goal).norm() >
-                             config_.path_verification_min_distance + safety;
-        } else {
-          found_a_new_path = true;
+        if ((current_position - goal).norm() <= 0.5) {
+          // Since drone moves on the skeleton it's likely we sit on a waypoint.
+          if (way_points_.size() > 1) {
+            way_points_.erase(way_points_.begin());
+            goal = way_points_[0].position();
+          } else {
+            found_a_new_path = false;
+          }
         }
+        if (lineIsIntraversableInSlidingWindowAt(&goal)) {
+          if ((current_position - goal).norm() <
+              config_.path_verification_min_distance + safety) {
+            found_a_new_path = false;
+          }
+        }
+      } else {
+        found_a_new_path = false;
       }
 
       if (found_a_new_path) {
         LOG_IF(INFO, config_.verbosity >= 2)
             << "Global path became infeasible, was successfully recomputed.";
-        return false;
       } else {
         // The goal is inaccessible, return to local planning.
         comm_->stateMachine()->signalLocalPlanning();
         LOG_IF(INFO, config_.verbosity >= 2)
             << "Global path became infeasible, returning to local planning.";
+        vis_data_.execution_finished = true;
       }
+      return false;
     }
   } else {
     // The ith path was intraversible, remove previous way points.
-    auto it = way_points_.begin();
     for (int i = 0; i < waypoint_index - 1; ++i) {
-      it = way_points_.erase(it);
+      way_points_.erase(way_points_.begin());
     }
   }
   return true;

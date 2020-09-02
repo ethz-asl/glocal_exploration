@@ -141,7 +141,9 @@ bool VoxgraphMap::isTraversableInGlobalMap(const Point& position) {
   for (const auto& submap :
        voxgraph_server_->getSubmapCollection().getSubmapPtrs()) {
     double distance = 0.0;
-    if (submap->getEsdfMap().getDistanceAtPosition(position, &distance)) {
+    Point local_position =
+        submap->getPose().inverse().cast<FloatingPoint>() * position;
+    if (submap->getEsdfMap().getDistanceAtPosition(local_position, &distance)) {
       // This means the voxel is observed.
       if (distance <= config_.traversability_radius) {
         return false;

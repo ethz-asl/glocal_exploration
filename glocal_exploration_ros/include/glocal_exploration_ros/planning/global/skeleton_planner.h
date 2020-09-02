@@ -55,6 +55,13 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
     } reachability;
   };
 
+  // Visualization communication interface
+  struct VisualizationData {
+    bool frontiers_have_changed = false;
+    bool execution_finished = false;
+    bool finished_successfully = false;
+  };
+
   SkeletonPlanner(const Config& config,
                   std::shared_ptr<Communicator> communicator);
   ~SkeletonPlanner() override = default;
@@ -62,10 +69,11 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   void executePlanningIteration() override;
 
   // Visualization access.
-  const std::vector<FrontierSearchData>& getFrontierSearchData() {
+  const std::vector<FrontierSearchData>& getFrontierSearchData() const {
     return frontier_data_;
   }
   const std::vector<WayPoint>& getWayPoints() const { return way_points_; }
+  VisualizationData& visualizationData() { return vis_data_; }  // mutable
 
  private:
   // Planning iteration methods.
@@ -90,6 +98,7 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   // Variables.
   std::vector<WayPoint> way_points_;  // in mission frame.
   std::vector<FrontierSearchData> frontier_data_;
+  VisualizationData vis_data_;
 
   // Stages of global planning.
   enum class Stage { k1ComputeFrontiers, k2ComputeGoalAndPath, k3ExecutePath };

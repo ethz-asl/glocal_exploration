@@ -65,11 +65,11 @@ class SkeletonVisualizer : public GlobalPlannerVisualizerBase {
   int executed_path_id_ = 0;
   int num_prev_goals = 0;
   int num_prev_points = 0;
-  bool frontiers_have_changed = false;
 
   // Settings.
   const std::string frame_id_ = "mission";
   const int queue_size_ = 100;
+  const ros::Duration failed_timeout_ = ros::Duration(10.0);  // s
 };
 
 }  // namespace glocal_exploration

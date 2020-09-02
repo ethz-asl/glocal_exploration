@@ -99,31 +99,29 @@ void RHRRTStar::executePlanningIteration() {
     if (selectNextBestWayPoint(&next_waypoint)) {
       comm_->requestWayPoint(next_waypoint);
       gain_update_needed_ = true;
-      executed_segments_++;
-    }
-  }
-
-  // Check whether a local minimum is reached and change to global planning.
-  if (tree_data_.points.size() >= config_.terminaton_min_tree_size) {
-    double max_gain = std::numeric_limits<double>::min();
-    for (const auto& point : tree_data_.points) {
-      if (point->gain > max_gain) {
-        max_gain = point->gain;
-      }
-    }
-    if (max_gain < config_.termination_max_gain) {
-      comm_->stateMachine()->signalGlobalPlanning();
+      test_++;
     }
   }
 
   // TEST
-  if (executed_segments_ >= 2) {
+  if (test_ >= 1) {
+    comm_->stateMachine()->signalGlobalPlanning();
+    return;
+  }
+
+  // Check whether a local minimum is reached and change to global planning.
+  if (tree_data_.points.size() >= config_.terminaton_min_tree_size) {
+    for (const auto& point : tree_data_.points) {
+      if (point->gain > config_.termination_max_gain) {
+        return;
+      }
+    }
     comm_->stateMachine()->signalGlobalPlanning();
   }
 }
 
 void RHRRTStar::resetPlanner(const WayPoint& origin) {
-  executed_segments_ = 0;
+  test_ = 0;
 
   // clear the tree and initialize with a point at the current pose
   tree_data_.points.clear();
