@@ -35,7 +35,7 @@ void VoxgraphLocalArea::update(
       continue;
     }
     if (local_map_aabb.overlapsWith(
-            submap_in_global_map->getMissionFrameSubmapAabb())) {
+            submap_in_global_map->getOdomFrameSubmapAabb())) {
       current_neighboring_submaps.emplace(submap_id);
     }
   }
