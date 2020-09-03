@@ -24,12 +24,13 @@ class ThreadsafeVoxgraphServer : public voxgraph::VoxgraphMapper {
     spinner_.start();
   }
 
-  void submapCallback(
+  bool submapCallback(
       const voxblox_msgs::LayerWithTrajectory& submap_msg) override {
-    voxgraph::VoxgraphMapper::submapCallback(submap_msg);
+    const bool submap_added_successfully =
+        voxgraph::VoxgraphMapper::submapCallback(submap_msg);
 
     // Call the external callback, if it has been set
-    if (external_new_submap_callback_) {
+    if (submap_added_successfully && external_new_submap_callback_) {
       external_new_submap_callback_();
     }
   }
