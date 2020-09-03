@@ -55,6 +55,16 @@ VoxgraphMap::VoxgraphMap(const Config& config,
       ros::Duration(local_area_pruning_period_s_),
       std::bind(&VoxgraphLocalArea::prune, local_area_.get()));
 
+  // Setup the new voxgraph submap callback
+  voxgraph_server_->setExternalNewSubmapCallback([&] {
+    // TODO(schmluk): You can add the callback here
+    //                e.g. comm_->yourNewSubmapReadyMethod();
+    ROS_INFO_STREAM(
+        "Guten Tag Lukas. Die neue submap "
+        << voxgraph_server_->getSubmapCollection().getActiveSubmapID()
+        << " ist fertig.");
+  });
+
   // Cached params
   c_voxel_size_ = voxblox_server_->getEsdfMapPtr()->voxel_size();
   c_block_size_ = voxblox_server_->getEsdfMapPtr()->block_size();

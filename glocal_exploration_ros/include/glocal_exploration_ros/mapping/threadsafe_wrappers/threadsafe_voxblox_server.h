@@ -41,11 +41,14 @@ class ThreadsafeVoxbloxServer : public voxblox::EsdfServer {
     *safe_esdf_map_->getEsdfLayerPtr() = esdf_map_->getEsdfLayer();
     voxblox::EsdfServer::newPoseCallback(T_G_C);
 
-    external_new_pose_callback_();
+    // Call the external callback, if it has been set
+    if (external_new_pose_callback_) {
+      external_new_pose_callback_();
+    }
   }
 
   void setExternalNewPoseCallback(Function callback) {
-    external_new_pose_callback_ = callback;
+    external_new_pose_callback_ = std::move(callback);
   }
 
  protected:
