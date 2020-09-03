@@ -422,19 +422,19 @@ Visualization Manager:
             - Class: rviz/Group
               Displays:
                 - Class: voxblox_rviz_plugin/VoxbloxMesh
-                  Enabled: true
+                  Enabled: false
                   Name: Merged submaps
                   Reset Mesh: false
                   Topic: /glocal/glocal_system/mapping/combined_mesh
                   Unreliable: false
-                  Value: true
+                  Value: false
                 - Class: voxblox_rviz_plugin/VoxbloxMultiMesh
-                  Enabled: false
+                  Enabled: true
                   Name: Separate submaps
                   Reset Mesh: false
                   Topic: /glocal/glocal_system/mapping/separated_mesh
                   Unreliable: false
-                  Value: false
+                  Value: true
               Enabled: true
               Name: Mesh
           Enabled: true
@@ -478,7 +478,7 @@ Visualization Manager:
           Marker Topic: /glocal/glocal_system/local_planner/tree
           Name: Tree
           Namespaces:
-            {}
+            "": true
           Queue Size: 100
           Value: true
         - Class: rviz/MarkerArray
@@ -517,13 +517,35 @@ Visualization Manager:
       Name: Local planner
     - Class: rviz/Group
       Displays:
-        - Class: rviz/MarkerArray
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 10
+            Min Value: -10
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/PointCloud2
+          Color: 255; 255; 255
+          Color Transformer: RGB8
+          Decay Time: 0
           Enabled: true
-          Marker Topic: /glocal/glocal_system/global_planner/frontiers
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 4096
+          Min Color: 0; 0; 0
+          Min Intensity: 0
           Name: Frontiers
-          Namespaces:
-            {}
-          Queue Size: 100
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.20000000298023224
+          Style: Boxes
+          Topic: /glocal/glocal_system/global_planner/frontiers
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
           Value: true
         - Class: rviz/Marker
           Enabled: true
@@ -595,25 +617,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 47.96144485473633
+      Distance: 55.95408248901367
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -1.6066187620162964
-        Y: 6.56712532043457
-        Z: -14.351975440979004
+        X: -4.251057147979736
+        Y: 0.07146511971950531
+        Z: -8.465544700622559
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 5
-      Pitch: 1.1797969341278076
+      Pitch: 0.9547969102859497
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.6200149059295654
+      Yaw: 5.3550286293029785
     Saved: ~
 Window Geometry:
   Displays:

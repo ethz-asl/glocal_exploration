@@ -41,7 +41,7 @@ SkeletonVisualizer::SkeletonVisualizer(
   planned_path_pub_ =
       nh_.advertise<visualization_msgs::Marker>("planned_path", queue_size_);
   frontier_pub_ =
-      nh_.advertise<visualization_msgs::MarkerArray>("frontiers", queue_size_);
+      nh_.advertise<sensor_msgs::PointCloud2>("frontiers", queue_size_);
   goals_pub_ =
       nh_.advertise<visualization_msgs::Marker>("goal_points", queue_size_);
   frontier_text_pub_ =
@@ -60,16 +60,14 @@ void SkeletonVisualizer::visualize() {
   }
 
   // Frontiers.
-  if (config_.visualize_frontiers &&
-      frontier_pub_.getNumSubscribers() > 0) {
+  if (config_.visualize_frontiers && frontier_pub_.getNumSubscribers() > 0) {
     visualizeFrontiers();
   }
   if (config_.visualize_frontier_text &&
       frontier_pub_.getNumSubscribers() > 0) {
     visualizeFrontierText();
   }
-  if (config_.visualize_candidate_goals &&
-      goals_pub_.getNumSubscribers() > 0) {
+  if (config_.visualize_candidate_goals && goals_pub_.getNumSubscribers() > 0) {
     visualizeGoalPoints();
   }
 
@@ -303,50 +301,36 @@ std::string SkeletonVisualizer::frontierTextFormat(double value) const {
 void SkeletonVisualizer::visualizeFrontiers() {
   if (planner_->visualizationData().frontiers_have_changed ||
       planner_->visualizationData().execution_finished) {
-    // Erase previous visualizations.
-    auto msg = visualization_msgs::Marker();
-    msg.header.frame_id = frame_id_;
-    msg.header.stamp = ros::Time::now();
-    msg.action = visualization_msgs::Marker::DELETEALL;
-    auto array_msg = visualization_msgs::MarkerArray();
-    array_msg.markers.push_back(msg);
-    frontier_pub_.publish(array_msg);
-
+    pcl::PointCloud<pcl::PointXYZRGB> frontier_points;
     if (!planner_->visualizationData().finished_successfully) {
       // Visualize all active frontiers.
       int color_id = 0;
-      int frontier_msg_id = 0;
       voxblox::ExponentialOffsetIdColorMap color_map;
       for (const auto& frontier : planner_->getActiveFrontiers()) {
-        // Common data.
-        voxblox::Color color = color_map.colorLookup(color_id++);
-        array_msg = visualization_msgs::MarkerArray();
-        msg = visualization_msgs::Marker();
-        msg.header.frame_id = frame_id_;
-        msg.header.stamp = ros::Time::now();
-        msg.action = visualization_msgs::Marker::ADD;
-        msg.pose.orientation.w = 1.0;
-        msg.type = visualization_msgs::Marker::CUBE;
-        double scale = comm_->map()->getVoxelSize();
-        msg.scale.x = scale;
-        msg.scale.y = scale;
-        msg.scale.z = scale;
-        msg.color.r = color.r / 255.0;
-        msg.color.g = color.g / 255.0;
-        msg.color.b = color.b / 255.0;
-        msg.color.a = 1.0;
-        if (planner_->visualizationData().execution_finished) {
-          msg.lifetime = failed_timeout_;
-        }
+        // All points on one frontier share the same color
+        voxblox::Color frontier_color = color_map.colorLookup(color_id++);
         for (const Point& point : frontier) {
-          msg.id = frontier_msg_id++;
-          msg.pose.position.x = point.x();
-          msg.pose.position.y = point.y();
-          msg.pose.position.z = point.z();
-          array_msg.markers.push_back(msg);
+          pcl::PointXYZRGB frontier_point_msg;
+
+          frontier_point_msg.x = static_cast<float>(point.x());
+          frontier_point_msg.y = static_cast<float>(point.y());
+          frontier_point_msg.z = static_cast<float>(point.z());
+          frontier_point_msg.r = frontier_color.r;
+          frontier_point_msg.g = frontier_color.g;
+          frontier_point_msg.b = frontier_color.b;
+
+          frontier_points.push_back(frontier_point_msg);
         }
-        frontier_pub_.publish(array_msg);
       }
+      // NOTE: In case the planner did not finish successfully, an empty
+      //       pointcloud will still be published to overwrite the previous one
+
+      sensor_msgs::PointCloud2 frontier_points_msg;
+      pcl::toROSMsg(frontier_points, frontier_points_msg);
+      frontier_points_msg.header.frame_id = frame_id_;
+      frontier_points_msg.header.stamp = ros::Time::now();
+
+      frontier_pub_.publish(frontier_points_msg);
     }
   }
 }
