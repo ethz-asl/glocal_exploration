@@ -9,6 +9,7 @@
 #include <voxblox_ros/ptcloud_vis.h>
 
 #include <glocal_exploration/state/communicator.h>
+#include <glocal_exploration/planning/global/submap_frontier_evaluator.h>
 
 namespace glocal_exploration {
 
@@ -57,12 +58,17 @@ VoxgraphMap::VoxgraphMap(const Config& config,
 
   // Setup the new voxgraph submap callback
   voxgraph_server_->setExternalNewSubmapCallback([&] {
-    // TODO(schmluk): You can add the callback here
-    //                e.g. comm_->yourNewSubmapReadyMethod();
-    ROS_INFO_STREAM(
-        "Guten Tag Lukas. Die neue submap "
-        << voxgraph_server_->getSubmapCollection().getActiveSubmapID()
-        << " ist fertig.");
+    // If the global planner is a frontier based planner we compute the frontier
+    // candidates every time a submap is finished to reduce overhead when
+    // switching to global planning.
+    auto frontier_evaluator = dynamic_cast<SubmapFrontierEvaluator*>(comm_->globalPlanner().get());
+    if (frontier_evaluator) {
+      SubmapData datum;
+      datum.id = voxgraph_server_->getSubmapCollection().getLastSubmapId();
+      datum.tsdf_layer.reset(voxgraph_server_->getSubmapCollection().getSubmap(datum.id).getTsdfMap().getTsdfLayerConstPtr());
+      Point initial_point(0.0, 0.0, 0.0);  // The origin is always free space.
+      frontier_evaluator->computeFrontiersForSubmap(datum, initial_point);
+    }
   });
 
   // Cached params
@@ -183,26 +189,16 @@ bool VoxgraphMap::isTraversableInGlobalMap(const Point& position) {
 }
 
 std::vector<MapBase::SubmapData> VoxgraphMap::getAllSubmapData() {
-  // TODO(@victorr): This is a first implementation for global frontier
-  //  tracking. The global planner has a function computeFrontiers (or similar)
-  //  that can be called upon submap completion to store frontiers.
-  //  This function is solely needed to guarantee all maps get frontiers, the
-  //  evaluator has a param sumaps_are_fronzen that prevents it from recomputing
-  //  frontiers for a given ID. Btw I don't know this includes the active
-  //  submap, but it should not be included here.
-
+  // Add all submap pointers and poses data for global frontier computation.
+  // Since the submaps are frozen after insertion to the collection we can
+  // directly use them by returning a pointer.
   std::vector<SubmapData> data;
   auto submaps = voxgraph_server_->getSubmapCollection().getSubmapConstPtrs();
   for (const auto& submap : submaps) {
     SubmapData datum;
     datum.id = submap->getID();
     datum.T_M_S = submap->getPose().cast<FloatingPoint>();
-    // NOTE(schmluk): This is a layer t copy initialization s.t. it does not
-    // interfere with the other things voxgraph is doing (the server can
-    // segfault otherwise).
-    datum.tsdf_layer =
-        std::make_shared<const voxblox::Layer<voxblox::TsdfVoxel>>(
-            submap->getTsdfMap().getTsdfLayer());
+    datum.tsdf_layer.reset(submap->getTsdfMap().getTsdfLayerConstPtr());
     data.push_back(datum);
   }
   return data;

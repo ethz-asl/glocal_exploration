@@ -64,52 +64,59 @@ void SubmapFrontierEvaluator::computeFrontiersForSubmap(
       << "ms.";
 }
 
-void SubmapFrontierEvaluator::updateFrontiers(
-    const std::unordered_map<int, Transformation>& T_M_S) {
+void SubmapFrontierEvaluator::updateFrontiers(const std::vector<MapBase::SubmapData>& data){
+  // Verify all frontiers are built. If they are frozen nothing happens.
+  int num_candidate_points = 0;
+  // NOTE: The submap origin is in free space since it corresponds
+  //       to a robot pose by construction.
+  Point initial_point(0.0, 0.0, 0.0);
+  for (const auto& datum : data) {
+    computeFrontiersForSubmap(datum, initial_point);
+    num_candidate_points += frontier_candidates_.find(datum.id)->second.size();
+  }
+
   // Transform and condense all submap frontier candidates to global frame and
   // check whether they are active. Then extract connected frontiers.
   auto t_start = std::chrono::high_resolution_clock::now();
-  int num_candidate_points = 0;
 
   // Combine all candidates to a global set.
-  // NOTE(schmluk): Depending on query rate potentially want to cache
-  // transformed points.
+  // NOTE(schmluk): Reserving the maximum amount of points might waste a bit of
+  //                memory but  prevents costly reallocation of bins and
+  //                rehashing the index. This occurs multiple times downstream.
   IndexSet global_frontier_points;
+  global_frontier_points.reserve(num_candidate_points);
   FloatingPoint voxel_size = comm_->map()->getVoxelSize();
   CHECK_GT(voxel_size, 0.0);
   FloatingPoint voxel_size_inv = 1.0 / voxel_size;
-  for (const auto& id_tf_pair : T_M_S) {
-    auto it = frontier_candidates_.find(id_tf_pair.first);
-    if (it == frontier_candidates_.end()) {
-      LOG(WARNING) << "Tried to update non-existing frontiers for submap id "
-                   << id_tf_pair.first << ".";
-      continue;
-    }
+  for (const auto& datum : data) {
+    auto it = frontier_candidates_.find(datum.id);
     for (const Point& candidate_S : it->second) {
-      Point candidate_M = id_tf_pair.second * candidate_S;
+      Point candidate_M = datum.T_M_S * candidate_S;
       if (comm_->regionOfInterest()->contains(candidate_M)) {
         global_frontier_points.insert(
             indexFromPoint(candidate_M, voxel_size_inv));
-        num_candidate_points++;
       }
     }
   }
 
   // Verify the right number of transformations were supplied.
   for (const auto& id_submap_pair : frontier_candidates_) {
-    if (T_M_S.find(id_submap_pair.first) == T_M_S.end()) {
-      LOG(WARNING) << "No transformation for submap id " << id_submap_pair.first
-                   << " was supplied, frontier candidates will be ignored.";
+    if (std::find_if(data.begin(), data.end(), [id_submap_pair](const MapBase::SubmapData& d) {return d.id == id_submap_pair.first;}) == data.end()) {
+      LOG(WARNING) << "No update data for submap id " << id_submap_pair.first
+                   << " was supplied, its frontier candidates will be ignored.";
     }
   }
 
   // Remove all inactive candidates.
   const int num_global_candidates = global_frontier_points.size();
+  inactive_frontiers_.clear();
+  inactive_frontiers_.reserve(num_global_candidates);
   auto it = global_frontier_points.begin();
   while (it != global_frontier_points.end()) {
-    if (comm_->map()->isObservedInGlobalMap(
-            centerPointFromIndex(*it, voxel_size))) {
+    Point candidate = centerPointFromIndex(*it, voxel_size);
+    if (comm_->map()->isObservedInGlobalMap(candidate)) {
       it = global_frontier_points.erase(it);
+      inactive_frontiers_.push_back(candidate);
     } else {
       it++;
     }
@@ -124,6 +131,8 @@ void SubmapFrontierEvaluator::updateFrontiers(
     // Setup search with first point left in candidates.
     IndexSet open_set;
     IndexSet result_set;
+    open_set.reserve(num_active_points);
+    result_set.reserve(num_active_points);
     open_set.insert(*global_frontier_points.begin());
     result_set.insert(*global_frontier_points.begin());
     global_frontier_points.erase(global_frontier_points.begin());
@@ -153,13 +162,17 @@ void SubmapFrontierEvaluator::updateFrontiers(
       }
       num_final_points += result_set.size();
       num_frontiers++;
+    } else {
+      for (const Index& idx : result_set) {
+        inactive_frontiers_.emplace_back(centerPointFromIndex(idx, voxel_size));
+      }
     }
   }
 
   // Logging.
   auto t_end = std::chrono::high_resolution_clock::now();
   std::stringstream info;
-  info << "Updated global frontiers based on " << T_M_S.size() << " submaps in "
+  info << "Updated global frontiers based on " << data.size() << " submaps in "
        << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start)
               .count()
        << "ms.";

@@ -21,6 +21,7 @@ void SkeletonVisualizer::Config::fromRosParam() {
   rosParam("visualize_candidate_goals", &visualize_candidate_goals);
   rosParam("visualize_planned_path", &visualize_planned_path);
   rosParam("visualize_frontier_text", &visualize_frontier_text);
+  rosParam("visualize_inactive_frontiers", &visualize_inactive_frontiers);
   nh_namespace = rosParamNameSpace();
 }
 
@@ -46,6 +47,7 @@ SkeletonVisualizer::SkeletonVisualizer(
       nh_.advertise<visualization_msgs::Marker>("goal_points", queue_size_);
   frontier_text_pub_ =
       nh_.advertise<visualization_msgs::Marker>("frontier_text", queue_size_);
+  inactive_frontiers_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("inactive_frontiers", queue_size_);
 }
 
 void SkeletonVisualizer::visualize() {
@@ -69,6 +71,9 @@ void SkeletonVisualizer::visualize() {
   }
   if (config_.visualize_candidate_goals && goals_pub_.getNumSubscribers() > 0) {
     visualizeGoalPoints();
+  }
+  if (config_.visualize_inactive_frontiers && inactive_frontiers_pub_.getNumSubscribers() > 0) {
+    visualizeInactiveFrontiers();
   }
 
   // Visualization stat tracking.
@@ -289,15 +294,6 @@ void SkeletonVisualizer::visualizeFrontierText() {
   }
 }
 
-std::string SkeletonVisualizer::frontierTextFormat(double value) const {
-  if (value == std::numeric_limits<double>::max()) {
-    return "-";
-  }
-  std::stringstream ss;
-  ss << std::fixed << std::setprecision(2) << value;
-  return ss.str();
-}
-
 void SkeletonVisualizer::visualizeFrontiers() {
   if (planner_->visualizationData().frontiers_have_changed ||
       planner_->visualizationData().execution_finished) {
@@ -334,5 +330,46 @@ void SkeletonVisualizer::visualizeFrontiers() {
     }
   }
 }
+
+void SkeletonVisualizer::visualizeInactiveFrontiers() {
+  if (planner_->visualizationData().frontiers_have_changed ||
+      planner_->visualizationData().execution_finished) {
+    pcl::PointCloud<pcl::PointXYZRGB> frontier_points;
+    if (!planner_->visualizationData().finished_successfully) {
+      // Visualize all inactive frontiers.
+      const voxblox::Color inactive_color(50, 50, 50);
+
+        for (const Point& point : planner_->getInactiveFrontiers()) {
+          pcl::PointXYZRGB frontier_point_msg;
+          frontier_point_msg.x = static_cast<float>(point.x());
+          frontier_point_msg.y = static_cast<float>(point.y());
+          frontier_point_msg.z = static_cast<float>(point.z());
+          frontier_point_msg.r = inactive_color.r;
+          frontier_point_msg.g = inactive_color.g;
+          frontier_point_msg.b = inactive_color.b;
+          frontier_points.push_back(frontier_point_msg);
+        }
+
+      // NOTE: In case the planner did not finish successfully, an empty
+      //       pointcloud will still be published to overwrite the previous one.
+      sensor_msgs::PointCloud2 frontier_points_msg;
+      pcl::toROSMsg(frontier_points, frontier_points_msg);
+      frontier_points_msg.header.frame_id = frame_id_;
+      frontier_points_msg.header.stamp = ros::Time::now();
+
+      inactive_frontiers_pub_.publish(frontier_points_msg);
+    }
+  }
+}
+
+std::string SkeletonVisualizer::frontierTextFormat(double value) const {
+  if (value == std::numeric_limits<double>::max()) {
+    return "-";
+  }
+  std::stringstream ss;
+  ss << std::fixed << std::setprecision(2) << value;
+  return ss.str();
+}
+
 
 }  // namespace glocal_exploration

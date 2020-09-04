@@ -24,14 +24,6 @@ class GlobalPlannerBase {
 
   virtual void executePlanningIteration() = 0;
 
-  // NOTE(schmluk): these are curently exposed in the base class for simplicity.
-  virtual void computeFrontiersForSubmap(const MapBase::SubmapData& data,
-                                         const Point& initial_point) = 0;
-
-  // transformations mission to submap for each id.
-  virtual void updateFrontiers(
-      const std::unordered_map<int, Transformation>& T_M_S) = 0;
-
  protected:
   const std::shared_ptr<Communicator> comm_;
 };

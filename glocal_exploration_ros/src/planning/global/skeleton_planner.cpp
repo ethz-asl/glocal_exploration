@@ -140,16 +140,8 @@ bool SkeletonPlanner::computeFrontiers() {
     return false;
   }
 
-  // Compute and update frontiers.
-  std::unordered_map<int, Transformation> update_list;
-  for (const auto& datum : data) {
-    // NOTE: The submap origin is in free space since it corresponds
-    //       to a robot pose by construction.
-    const Point submap_origin(0.0, 0.0, 0.0);
-    computeFrontiersForSubmap(datum, /* initial_point= */ submap_origin);
-    update_list[datum.id] = datum.T_M_S;
-  }
-  updateFrontiers(update_list);
+  // Update all frontiers.
+  updateFrontiers(data);
 
   // Check there are still frontiers left.
   if (getActiveFrontiers().empty()) {

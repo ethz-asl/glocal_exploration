@@ -170,6 +170,13 @@ void GlocalSystem::odomCallback(const nav_msgs::Odometry& msg) {
   current_point.yaw = yaw;
   comm_->setCurrentPose(current_point);
 
+  const StateMachine::State& state = comm_->stateMachine()->currentState();
+  if (state == StateMachine::State::kReady ||
+      state == StateMachine::State::kSettingUp ||
+      state == StateMachine::State::kFinished) {
+    return;
+  }
+
   // Check whether the goal pose is reached
   if (!comm_->targetIsReached()) {
     // check proximity.

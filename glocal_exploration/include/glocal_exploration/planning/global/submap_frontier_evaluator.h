@@ -38,10 +38,9 @@ class SubmapFrontierEvaluator : public GlobalPlannerBase {
 
   // Methods.
   void computeFrontiersForSubmap(const MapBase::SubmapData& data,
-                                 const Point& initial_point) override;
+                                 const Point& initial_point);
 
-  void updateFrontiers(
-      const std::unordered_map<int, Transformation>& T_M_S) override;
+  void updateFrontiers(const std::vector<MapBase::SubmapData>& data);
 
   // Access.
   const std::unordered_map<int, std::vector<Point>>& getFrontierCandidates()
@@ -50,6 +49,9 @@ class SubmapFrontierEvaluator : public GlobalPlannerBase {
   }
   const std::vector<std::vector<Point>>& getActiveFrontiers() const {
     return active_frontiers_;
+  }
+  const std::vector<Point>& getInactiveFrontiers() const {
+    return inactive_frontiers_;
   }
 
  private:
@@ -71,6 +73,7 @@ class SubmapFrontierEvaluator : public GlobalPlannerBase {
 
   // Active frontiers (set of connected active candidates) in mission frame.
   std::vector<std::vector<Point>> active_frontiers_;
+  std::vector<Point> inactive_frontiers_;
 
   // Neighbor lookup.
   const Index kNeighborOffsets[26] = {

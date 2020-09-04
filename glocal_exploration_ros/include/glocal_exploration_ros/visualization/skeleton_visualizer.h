@@ -25,6 +25,7 @@ class SkeletonVisualizer : public GlobalPlannerVisualizerBase {
     bool visualize_executed_path = true;
     bool visualize_candidate_goals = true;
     bool visualize_planned_path = true;
+    bool visualize_inactive_frontiers = true;
 
     Config();
     void checkParams() const override;
@@ -40,6 +41,7 @@ class SkeletonVisualizer : public GlobalPlannerVisualizerBase {
   // Visualization tasks.
   void visualizeExecutedPath();
   void visualizeFrontiers();
+  void visualizeInactiveFrontiers();
   void visualizeFrontierText();
   void visualizePlannedPath();
   void visualizeGoalPoints();
@@ -56,6 +58,7 @@ class SkeletonVisualizer : public GlobalPlannerVisualizerBase {
   ros::Publisher planned_path_pub_;
   ros::Publisher goals_pub_;
   ros::Publisher frontier_text_pub_;
+  ros::Publisher inactive_frontiers_pub_;
 
   // Tracking.
   int executed_path_id_ = 0;
