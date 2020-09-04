@@ -28,6 +28,7 @@ class VoxgraphLocalArea {
   void prune();
 
   VoxelState getVoxelStateAtPosition(const Eigen::Vector3d& position);
+  bool isObserved(const Eigen::Vector3d& position);
 
   void publishLocalArea(ros::Publisher local_area_pub);
 

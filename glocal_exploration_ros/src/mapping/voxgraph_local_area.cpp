@@ -5,6 +5,7 @@
 #include <pcl/conversions.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <voxblox/utils/evaluation_utils.h>
 #include <voxblox_ros/ptcloud_vis.h>
 
 namespace glocal_exploration {
@@ -126,6 +127,12 @@ VoxgraphLocalArea::VoxelState VoxgraphLocalArea::getVoxelStateAtPosition(
     }
   }
   return VoxelState::kUnknown;
+}
+
+bool VoxgraphLocalArea::isObserved(const Eigen::Vector3d& position) {
+  TsdfVoxel* voxel_ptr = local_area_layer_.getVoxelPtrByCoordinates(
+      position.cast<voxblox::FloatingPoint>());
+  return voxel_ptr && voxblox::utils::isObservedVoxel(*voxel_ptr);
 }
 
 void VoxgraphLocalArea::publishLocalArea(ros::Publisher local_area_pub) {

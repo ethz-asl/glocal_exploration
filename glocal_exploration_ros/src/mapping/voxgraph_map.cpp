@@ -130,20 +130,35 @@ void VoxgraphMap::updateLocalArea() {
 }
 
 bool VoxgraphMap::isObservedInGlobalMap(const Point& position) {
-  // TODO(@victorr): Don't know if you know of a nicer way to check this :)
+  // Start by checking the state in active submap
   if (voxblox_server_->getEsdfMapPtr()->isObserved(position)) {
     return true;
   }
+
+  // Then fall back to local area
+  if (local_area_needs_update_) {
+    updateLocalArea();
+  }
+  if (local_area_->isObserved(position)) {
+    return true;
+  }
+
+  // As a last resort, search the global map
+  // TODO(victorr): Speed this up using a spatial hash to narrow down
+  //                relevant global submaps
   auto submaps = voxgraph_server_->getSubmapCollection().getSubmapConstPtrs();
   return std::any_of(submaps.begin(), submaps.end(),
                      [position](const voxgraph::VoxgraphSubmap::ConstPtr& s) {
-                       return s->getEsdfMap().isObserved(position);
+                       Point local_position =
+                           s->getPose().inverse().cast<FloatingPoint>() *
+                           position;
+                       return s->getEsdfMap().isObserved(local_position);
                      });
 }
 
 bool VoxgraphMap::isTraversableInGlobalMap(const Point& position) {
-  // TODO(@victorr): There should definitively be a better way to do this I
-  //  think, also this function is currently not performance critical.
+  // TODO(victorr): Speed this up by checking locally first, and using a spatial
+  //                hash to narrow down relevant global submaps
   if (!comm_->regionOfInterest()->contains(position)) {
     return false;
   }
