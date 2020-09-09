@@ -66,7 +66,11 @@ VoxgraphMap::VoxgraphMap(const Config& config,
     if (frontier_evaluator) {
       SubmapData datum;
       datum.id = voxgraph_server_->getSubmapCollection().getLastSubmapId();
-      datum.tsdf_layer.reset(voxgraph_server_->getSubmapCollection().getSubmap(datum.id).getTsdfMap().getTsdfLayerConstPtr());
+      datum.tsdf_layer = std::make_shared<voxblox::Layer<voxblox::TsdfVoxel>>(
+          voxgraph_server_->getSubmapCollection()
+              .getSubmap(datum.id)
+              .getTsdfMap()
+              .getTsdfLayer());
       Point initial_point(0.0, 0.0, 0.0);  // The origin is always free space.
       frontier_evaluator->computeFrontiersForSubmap(datum, initial_point);
     }
@@ -199,7 +203,8 @@ std::vector<MapBase::SubmapData> VoxgraphMap::getAllSubmapData() {
     SubmapData datum;
     datum.id = submap->getID();
     datum.T_M_S = submap->getPose().cast<FloatingPoint>();
-    datum.tsdf_layer.reset(submap->getTsdfMap().getTsdfLayerConstPtr());
+    datum.tsdf_layer = std::make_shared<voxblox::Layer<voxblox::TsdfVoxel>>(
+        submap->getTsdfMap().getTsdfLayer());
     data.push_back(datum);
   }
   return data;
