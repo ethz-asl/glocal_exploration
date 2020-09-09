@@ -118,9 +118,7 @@ MapBase::VoxelState VoxgraphMap::getVoxelStateInLocalArea(
     return VoxelState::kOccupied;
   }
 
-  if (local_area_needs_update_) {
-    updateLocalArea();
-  }
+  updateLocalAreaIfNeeded();
   return local_area_->getVoxelStateAtPosition(position);
 }
 
@@ -128,15 +126,17 @@ Point VoxgraphMap::getVoxelCenterInLocalArea(const Point& position) {
   return (position / c_voxel_size_).array().round() * c_voxel_size_;
 }
 
-void VoxgraphMap::updateLocalArea() {
-  CHECK_NOTNULL(local_area_);
+void VoxgraphMap::updateLocalAreaIfNeeded() {
+  if (local_area_needs_update_) {
+    CHECK_NOTNULL(local_area_);
 
-  local_area_->update(voxgraph_server_->getSubmapCollection(),
-                      *voxblox_server_->getEsdfMapPtr());
-  local_area_needs_update_ = false;
+    local_area_->update(voxgraph_server_->getSubmapCollection(),
+                        *voxblox_server_->getEsdfMapPtr());
+    local_area_needs_update_ = false;
 
-  if (local_area_pub_.getNumSubscribers() > 0) {
-    local_area_->publishLocalArea(local_area_pub_);
+    if (local_area_pub_.getNumSubscribers() > 0) {
+      local_area_->publishLocalArea(local_area_pub_);
+    }
   }
 }
 
@@ -147,9 +147,7 @@ bool VoxgraphMap::isObservedInGlobalMap(const Point& position) {
   }
 
   // Then fall back to local area
-  if (local_area_needs_update_) {
-    updateLocalArea();
-  }
+  updateLocalAreaIfNeeded();
   if (local_area_->isObserved(position)) {
     return true;
   }
@@ -168,8 +166,19 @@ bool VoxgraphMap::isObservedInGlobalMap(const Point& position) {
 }
 
 bool VoxgraphMap::isTraversableInGlobalMap(const Point& position) {
-  // TODO(victorr): Speed this up by checking locally first, and using a spatial
-  //                hash to narrow down relevant global submaps
+  // Discard early if the point isn't traversable in the local area
+  updateLocalAreaIfNeeded();
+  // NOTE: We can only check whether the local area is not occupied and not
+  //       unknown, since the local area only consists of a TSDF (no ESDF) and
+  //       the traversability radius generally exceeds the TSDF truncation
+  //       distance.
+  if (local_area_->isValidAtPosition(position) &&
+      local_area_->getVoxelStateAtPosition(position) != VoxelState::kFree) {
+    return false;
+  }
+
+  // TODO(victorr): Speed this up by using a spatial hash to narrow down
+  //  relevant global submaps
   if (!comm_->regionOfInterest()->contains(position)) {
     return false;
   }

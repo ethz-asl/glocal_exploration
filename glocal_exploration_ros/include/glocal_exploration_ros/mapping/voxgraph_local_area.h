@@ -29,6 +29,7 @@ class VoxgraphLocalArea {
 
   VoxelState getVoxelStateAtPosition(const Eigen::Vector3d& position);
   bool isObserved(const Eigen::Vector3d& position);
+  bool isValidAtPosition(const Eigen::Vector3d& position);
 
   void publishLocalArea(ros::Publisher local_area_pub);
 
@@ -36,6 +37,9 @@ class VoxgraphLocalArea {
   static constexpr voxblox::FloatingPoint kTsdfObservedWeight = 1e-3;
   std::unordered_map<SubmapId, Transformation> submaps_in_local_area_;
   voxblox::Layer<TsdfVoxel> local_area_layer_;
+
+  voxgraph::BoundingBox local_map_aabb_;
+  void updateLocalMapAabb(const voxblox::EsdfMap& local_map);
 
   void deintegrateSubmap(const SubmapId submap_id,
                          const voxblox::Layer<TsdfVoxel>& submap_tsdf);

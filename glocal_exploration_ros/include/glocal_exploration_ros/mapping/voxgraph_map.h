@@ -52,7 +52,7 @@ class VoxgraphMap : public MapBase {
 
   std::unique_ptr<VoxgraphLocalArea> local_area_;
   bool local_area_needs_update_;
-  void updateLocalArea();
+  void updateLocalAreaIfNeeded();
   static constexpr double local_area_pruning_period_s_ = 10.0;
   ros::Timer local_area_pruning_timer_;
   ros::Publisher local_area_pub_;
