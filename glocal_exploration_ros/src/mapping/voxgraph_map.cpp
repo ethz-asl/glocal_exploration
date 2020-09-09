@@ -8,8 +8,8 @@
 #include <pcl/point_types.h>
 #include <voxblox_ros/ptcloud_vis.h>
 
-#include <glocal_exploration/state/communicator.h>
 #include <glocal_exploration/planning/global/submap_frontier_evaluator.h>
+#include <glocal_exploration/state/communicator.h>
 
 namespace glocal_exploration {
 
@@ -61,7 +61,8 @@ VoxgraphMap::VoxgraphMap(const Config& config,
     // If the global planner is a frontier based planner we compute the frontier
     // candidates every time a submap is finished to reduce overhead when
     // switching to global planning.
-    auto frontier_evaluator = dynamic_cast<SubmapFrontierEvaluator*>(comm_->globalPlanner().get());
+    auto frontier_evaluator =
+        dynamic_cast<SubmapFrontierEvaluator*>(comm_->globalPlanner().get());
     if (frontier_evaluator) {
       SubmapData datum;
       datum.id = voxgraph_server_->getSubmapCollection().getLastSubmapId();

@@ -64,7 +64,8 @@ void SubmapFrontierEvaluator::computeFrontiersForSubmap(
       << "ms.";
 }
 
-void SubmapFrontierEvaluator::updateFrontiers(const std::vector<MapBase::SubmapData>& data){
+void SubmapFrontierEvaluator::updateFrontiers(
+    const std::vector<MapBase::SubmapData>& data) {
   // Verify all frontiers are built. If they are frozen nothing happens.
   int num_candidate_points = 0;
   // NOTE: The submap origin is in free space since it corresponds
@@ -101,7 +102,10 @@ void SubmapFrontierEvaluator::updateFrontiers(const std::vector<MapBase::SubmapD
 
   // Verify the right number of transformations were supplied.
   for (const auto& id_submap_pair : frontier_candidates_) {
-    if (std::find_if(data.begin(), data.end(), [id_submap_pair](const MapBase::SubmapData& d) {return d.id == id_submap_pair.first;}) == data.end()) {
+    if (std::find_if(data.begin(), data.end(),
+                     [id_submap_pair](const MapBase::SubmapData& d) {
+                       return d.id == id_submap_pair.first;
+                     }) == data.end()) {
       LOG(WARNING) << "No update data for submap id " << id_submap_pair.first
                    << " was supplied, its frontier candidates will be ignored.";
     }

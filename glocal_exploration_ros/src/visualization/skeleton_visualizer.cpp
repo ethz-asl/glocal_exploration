@@ -47,7 +47,8 @@ SkeletonVisualizer::SkeletonVisualizer(
       nh_.advertise<visualization_msgs::Marker>("goal_points", queue_size_);
   frontier_text_pub_ =
       nh_.advertise<visualization_msgs::Marker>("frontier_text", queue_size_);
-  inactive_frontiers_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("inactive_frontiers", queue_size_);
+  inactive_frontiers_pub_ = nh_.advertise<sensor_msgs::PointCloud2>(
+      "inactive_frontiers", queue_size_);
 }
 
 void SkeletonVisualizer::visualize() {
@@ -72,7 +73,8 @@ void SkeletonVisualizer::visualize() {
   if (config_.visualize_candidate_goals && goals_pub_.getNumSubscribers() > 0) {
     visualizeGoalPoints();
   }
-  if (config_.visualize_inactive_frontiers && inactive_frontiers_pub_.getNumSubscribers() > 0) {
+  if (config_.visualize_inactive_frontiers &&
+      inactive_frontiers_pub_.getNumSubscribers() > 0) {
     visualizeInactiveFrontiers();
   }
 
@@ -339,16 +341,16 @@ void SkeletonVisualizer::visualizeInactiveFrontiers() {
       // Visualize all inactive frontiers.
       const voxblox::Color inactive_color(50, 50, 50);
 
-        for (const Point& point : planner_->getInactiveFrontiers()) {
-          pcl::PointXYZRGB frontier_point_msg;
-          frontier_point_msg.x = static_cast<float>(point.x());
-          frontier_point_msg.y = static_cast<float>(point.y());
-          frontier_point_msg.z = static_cast<float>(point.z());
-          frontier_point_msg.r = inactive_color.r;
-          frontier_point_msg.g = inactive_color.g;
-          frontier_point_msg.b = inactive_color.b;
-          frontier_points.push_back(frontier_point_msg);
-        }
+      for (const Point& point : planner_->getInactiveFrontiers()) {
+        pcl::PointXYZRGB frontier_point_msg;
+        frontier_point_msg.x = static_cast<float>(point.x());
+        frontier_point_msg.y = static_cast<float>(point.y());
+        frontier_point_msg.z = static_cast<float>(point.z());
+        frontier_point_msg.r = inactive_color.r;
+        frontier_point_msg.g = inactive_color.g;
+        frontier_point_msg.b = inactive_color.b;
+        frontier_points.push_back(frontier_point_msg);
+      }
 
       // NOTE: In case the planner did not finish successfully, an empty
       //       pointcloud will still be published to overwrite the previous one.
@@ -370,6 +372,5 @@ std::string SkeletonVisualizer::frontierTextFormat(double value) const {
   ss << std::fixed << std::setprecision(2) << value;
   return ss.str();
 }
-
 
 }  // namespace glocal_exploration
