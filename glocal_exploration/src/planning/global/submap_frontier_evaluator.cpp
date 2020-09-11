@@ -50,22 +50,19 @@ void SubmapFrontierEvaluator::computeFrontiersForSubmap(
   }
   // NOTE: If not frozen the frontiers will be recomputed and overwritten.
 
-  // Compute all frontiers.
-  auto t_start = std::chrono::high_resolution_clock::now();
-  it->second = computeFrontierCandidates(*(data.tsdf_layer), initial_point);
-  auto t_end = std::chrono::high_resolution_clock::now();
-
-  // Logging
-  LOG_IF(INFO, config_.verbosity >= 2)
-      << "Found " << it->second.size() << " frontier candidates in submap "
-      << data.id << " in "
-      << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start)
-             .count()
-      << "ms.";
+  // Compute all frontiers. Only one thread allowed at a time to run in background.
+  if(frontier_computation_thread_) {
+    frontier_computation_thread_->join();
+  }
+  frontier_computation_thread_ = std::make_unique<std::thread>([this, data, initial_point, it] {computeFrontierCandidates(*(data.tsdf_layer), initial_point, &(*it));});
 }
 
 void SubmapFrontierEvaluator::updateFrontiers(
     const std::vector<MapBase::SubmapData>& data) {
+  // Make sure frontier computation finished.
+  if(frontier_computation_thread_) {
+    frontier_computation_thread_->join();
+  }
   // Verify all frontiers are built. If they are frozen nothing happens.
   int num_candidate_points = 0;
   // NOTE: The submap origin is in free space since it corresponds
@@ -189,13 +186,16 @@ void SubmapFrontierEvaluator::updateFrontiers(
   LOG_IF(INFO, config_.verbosity >= 2) << info.str();
 }
 
-std::vector<Point> SubmapFrontierEvaluator::computeFrontierCandidates(
+void SubmapFrontierEvaluator::computeFrontierCandidates(
     const voxblox::Layer<voxblox::TsdfVoxel>& layer,
-    const Point& initial_point) {
+    const Point& initial_point, std::pair<const int, std::vector<Point>>* output) {
   // Perform a full sweep over the submap's free space to identify frontier
   // candidates. Frontiers are unknown points that border observed free space
   // and are attributed to the submap that contains the free space. Use
   // depth-first search for better cache coherence.
+  CHECK_NOTNULL(output);
+  auto t_start = std::chrono::high_resolution_clock::now();
+
   // Cache submap data.
   FloatingPoint voxel_size = layer.voxel_size();
   CHECK_GT(voxel_size, 0.0);
@@ -235,7 +235,16 @@ std::vector<Point> SubmapFrontierEvaluator::computeFrontierCandidates(
       }
     }
   }
-  return result;
+  output->second = result;
+  auto t_end = std::chrono::high_resolution_clock::now();
+
+  // Logging
+  LOG_IF(INFO, config_.verbosity >= 2)
+  << "Found " << result.size() << " frontier candidates in submap "
+  << output->first << " in "
+  << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start)
+      .count()
+  << "ms.";
 }
 
 SubmapFrontierEvaluator::Index SubmapFrontierEvaluator::indexFromPoint(

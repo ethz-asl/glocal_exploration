@@ -9,10 +9,10 @@ max_ray_length: &max_ray_length 10
 
 # General params
 verbosity: 4
-replan_position_threshold: 0.3  # m
+replan_position_threshold: 0.3  # m, use higher values to compensate drift
 replan_yaw_threshold: 5   # deg
-replan_timeout_constant: 2
-replan_timeout_velocity: 0.7
+replan_timeout_constant: 0.1  # turned down to compensate drift
+replan_timeout_velocity: 1.0
 
 
 region_of_interest:

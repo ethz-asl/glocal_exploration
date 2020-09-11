@@ -4,6 +4,7 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include <thread>
 
 #include "glocal_exploration/3rd_party/config_utilities.hpp"
 #include "glocal_exploration/planning/global/global_planner_base.h"
@@ -55,9 +56,9 @@ class SubmapFrontierEvaluator : public GlobalPlannerBase {
   }
 
  private:
-  std::vector<Point> computeFrontierCandidates(
+  void computeFrontierCandidates(
       const voxblox::Layer<voxblox::TsdfVoxel>& layer,
-      const Point& initial_point);
+      const Point& initial_point, std::pair<const int, std::vector<Point>>* output);
 
   Index indexFromPoint(const Point& point, double voxel_size_inv) const;
   Point centerPointFromIndex(const Index& index, double voxel_size) const;
@@ -67,6 +68,9 @@ class SubmapFrontierEvaluator : public GlobalPlannerBase {
 
  private:
   const Config config_;
+
+  // Aloow frontier computation in the background, although not in parallel.
+  std::unique_ptr<std::thread> frontier_computation_thread_;
 
   // Store for each submap id (first) all candidates (second) in submap frame.
   std::unordered_map<int, std::vector<Point>> frontier_candidates_;
