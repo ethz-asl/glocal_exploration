@@ -15,6 +15,9 @@
   <arg name="use_airsim_time" default="true"/>
   <arg name="mav_name" default="airsim_drone"/>
   
+  <!-- Experiment arguments -->
+  <arg name="record_data" default="true"/>
+  <arg name="data_path" default="/home/lukas/Documents/Glocal/Data"/>
   
   <!-- Automatically generated arguments -->
   <arg unless="$(arg debug_mode)" name="launch_prefix" value="" />
@@ -26,7 +29,6 @@
   
   <!-- Setup the experiment -->
   <param name="/use_sim_time" value="true" if="$(arg use_airsim_time)"/>
-  <node name="experiment_manager" pkg="glocal_exploration_ros" type="experiment_manager.py" output="screen"/>
   
   <!-- tf -->
   <node pkg="tf" type="static_transform_publisher" name="static_tf_odom_world" args="0 0 0 0 0 0 1 /odom /world 100"/>
@@ -37,8 +39,8 @@
      <rosparam file="$(find glocal_exploration_ros)/config/$(arg airsim_config)"/>
   </node>
 
+  <!-- Planner -->
   <group ns="glocal">
-    <!-- Planner -->
     <node name="glocal_system" pkg="glocal_exploration_ros" type="glocal_system_node"
           output="screen" launch-prefix="$(arg launch_prefix)">
       <rosparam command="load" file="$(find glocal_exploration_ros)/config/$(arg planner_config)"/>
@@ -49,7 +51,18 @@
       <remap from="~/global_planner/submap_pose_in" to="~/mapping/submap_poses" />
     </node>  
   </group>
-
+  
+  <!-- Experiment startup and Evaluation -->
+  <group ns="evaluation">
+    <node name="experiment_manager" pkg="glocal_exploration_ros" type="experiment_manager.py" output="screen">
+  
+    </node>
+    <node name="voxblox_gt" pkg="voxblox_ros" type="esdf_server" if="$(arg record_data)">
+      <rosparam command="load" file="$(find glocal_exploration_ros)/config/voxblox_ground_truth.yaml"/>
+      <remap from="pointcloud" to="/$(arg mav_name)/Lidar"/>
+    </node>
+  </group>
+  
   <!-- Visualization -->
   <group if="$(arg show_rviz)">
     <arg name="rviz_file" default="$(find glocal_exploration_ros)/config/maze_visualization.rviz" />
