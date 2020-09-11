@@ -8,11 +8,11 @@ collision_radius: &collision_radius 1.0
 max_ray_length: &max_ray_length 10
 
 # General params
-verbosity: 1
-replan_position_threshold: 0.3  # m
+verbosity: 4
+replan_position_threshold: 0.3  # m, use higher values to compensate drift
 replan_yaw_threshold: 5   # deg
-replan_timeout_constant: 2
-replan_timeout_velocity: 0.7
+replan_timeout_constant: 0.1  # turned down to compensate drift
+replan_timeout_velocity: 1.0
 
 
 region_of_interest:
@@ -29,7 +29,7 @@ mapping:
 
   clearing_radius: 1.1
   traversability_radius: *collision_radius
-  verbosity: 0
+  verbosity: 4
 
   # VOXBLOX sliding window
   # Grid settings
@@ -111,7 +111,7 @@ mapping:
 
 local_planner:
   type: rh_rrt_star
-  verbosity: 0
+  verbosity: 4
   # RH-RRT-Star params
   local_sampling_radius: 3.0  # m
   global_sampling_radius: 40 # m
