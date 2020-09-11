@@ -17,8 +17,10 @@
   
   <!-- Experiment arguments -->
   <arg name="record_data" default="true"/>
+  <arg name="record_visualization" default="true"/>
   <arg name="data_path" default="/home/lukas/Documents/Glocal/Data"/>
-  
+  <arg name="time_limit" default="30"/>
+
   <!-- Automatically generated arguments -->
   <arg unless="$(arg debug_mode)" name="launch_prefix" value="" />
   <arg if="$(arg debug_mode)" name="launch_prefix" value="gdb -ex run --args" />
@@ -52,16 +54,33 @@
     </node>  
   </group>
   
+  
   <!-- Experiment startup and Evaluation -->
   <group ns="evaluation">
-    <node name="experiment_manager" pkg="glocal_exploration_ros" type="experiment_manager.py" output="screen">
-  
+    <!-- Manager -->
+    <node name="experiment_manager" pkg="glocal_exploration_ros" type="experiment_manager.py" output="screen" required="true">                
+      <remap from="collision" to="/$(arg mav_name)/collision" />
+      <param name="ns_planner" value="/glocal/glocal_system/toggle_running" />
+      <param name="ns_voxblox" value="voxblox_gt" />
+      <param name="evaluate" value="$(arg record_data)" />
+      <param name="eval_directory" value="$(arg data_path)" />
+      <param name="time_limit" value="$(arg time_limit)" />
+      
+      <param name="startup_timeout" value="30.0" />
+      <param name="eval_frequency" value="30" />
     </node>
+    
+    <!-- Ground truth reconstruction -->
     <node name="voxblox_gt" pkg="voxblox_ros" type="esdf_server" if="$(arg record_data)">
       <rosparam command="load" file="$(find glocal_exploration_ros)/config/voxblox_ground_truth.yaml"/>
       <remap from="pointcloud" to="/$(arg mav_name)/Lidar"/>
     </node>
+    
+    <!-- Record visualization topics -->
+    <node pkg="rosbag" type="record" name="rosbag_vis_recorder"
+       args="record -o $(arg data_path)/tmp_bags/tmp_bag /rosout /clock /tf" if="$(eval arg('record_data') and arg('record_visualization'))"/>
   </group>
+  
   
   <!-- Visualization -->
   <group if="$(arg show_rviz)">
