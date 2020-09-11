@@ -5,9 +5,10 @@ voxel_size: &voxel_size 0.2
 voxels_per_side: &voxels_per_side 16
 truncation_distance: &truncation_distance 0.6
 collision_radius: &collision_radius 1.0
+max_ray_length: &max_ray_length 10
 
 # General params
-verbosity: 4
+verbosity: 1
 replan_position_threshold: 0.3  # m
 replan_yaw_threshold: 5   # deg
 replan_timeout_constant: 2
@@ -28,7 +29,7 @@ mapping:
 
   clearing_radius: 1.1
   traversability_radius: *collision_radius
-  verbosity: 4
+  verbosity: 0
 
   # VOXBLOX sliding window
   # Grid settings
@@ -38,7 +39,7 @@ mapping:
   method: "projective"
   truncation_distance: *truncation_distance
   min_ray_length_m: 1.0
-  max_ray_length_m: 10
+  max_ray_length_m: *max_ray_length
   max_weight: 1000
   use_const_weight: true
   use_weight_dropoff: false
@@ -51,8 +52,8 @@ mapping:
   integrator_threads: 4
   use_missing_points_for_clearing: true
   # Integrator settings temporal window (for compatibility with voxgraph)
-  pointcloud_deintegration_queue_length: 40
-  publish_map_every_n_sec: 5 #20.0
+  pointcloud_deintegration_queue_length: 140
+  publish_map_every_n_sec: 10 #20.0
   publish_map_with_trajectory: true
   publish_tsdf_map: true
   # Visualization
@@ -97,19 +98,20 @@ mapping:
     odometry:
       enabled: true
       information_matrix:
-        x_x:     1000.0
-        y_y:     1000.0
-        z_z:     2500.0
-        yaw_yaw: 2500.0
+        x_x:     50.0
+        y_y:     50.0
+        z_z:     100.0
+        yaw_yaw: 100.0
     height:
       enabled: false
       information_zz: 2500.0
   mesh_min_weight: 2.0
-  mesh_use_color: false
+  submap_mesh_color_mode: lambert_color
+  combined_mesh_color_mode: normals
 
 local_planner:
   type: rh_rrt_star
-  verbosity: 4
+  verbosity: 0
   # RH-RRT-Star params
   local_sampling_radius: 3.0  # m
   global_sampling_radius: 40 # m
@@ -124,7 +126,7 @@ local_planner:
   termination_max_gain: 100
   
   # Lidar Model
-  ray_length: 10  # m
+  ray_length: *max_ray_length  # m
   vertical_fov: 45  # deg
   horizontal_fov: 360 # deg
   vertical_resolution: 1000 # 64 / 32

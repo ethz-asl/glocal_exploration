@@ -14,17 +14,7 @@ void VoxgraphLocalArea::update(
     const voxgraph::VoxgraphSubmapCollection& submap_collection,
     const voxblox::EsdfMap& local_map) {
   // Get bounding box of local map
-  voxgraph::BoundingBox local_map_aabb;
-  voxblox::BlockIndexList local_map_blocks;
-  local_map.getEsdfLayer().getAllAllocatedBlocks(&local_map_blocks);
-  for (const voxblox::BlockIndex& block_index : local_map_blocks) {
-    local_map_aabb.min =
-        local_map_aabb.min.cwiseMin(local_area_layer_.block_size() *
-                                    block_index.cast<voxblox::FloatingPoint>());
-    local_map_aabb.max = local_map_aabb.max.cwiseMax(
-        local_area_layer_.block_size() *
-        (block_index.cast<voxblox::FloatingPoint>() + Point::Ones()));
-  }
+  updateLocalMapAabb(local_map);
 
   // Find the submaps that currently overlap with the local map
   SubmapIdSet current_neighboring_submaps;
@@ -35,8 +25,8 @@ void VoxgraphLocalArea::update(
       // Exclude the active submap since its TSDF might not yet be finished
       continue;
     }
-    if (local_map_aabb.overlapsWith(
-            submap_in_global_map->getOdomFrameSubmapAabb())) {
+    if (local_map_aabb_.overlapsWith(
+            submap_in_global_map->getOdomFrameSurfaceAabb())) {
       current_neighboring_submaps.emplace(submap_id);
     }
   }
@@ -135,6 +125,15 @@ bool VoxgraphLocalArea::isObserved(const Eigen::Vector3d& position) {
   return voxel_ptr && voxblox::utils::isObservedVoxel(*voxel_ptr);
 }
 
+bool VoxgraphLocalArea::isValidAtPosition(const Eigen::Vector3d& position) {
+  return ((local_map_aabb_.min.array() <
+           position.cast<voxblox::FloatingPoint>().array())
+              .all() &&
+          (position.cast<voxblox::FloatingPoint>().array() <
+           local_map_aabb_.max.array())
+              .all());
+}
+
 void VoxgraphLocalArea::publishLocalArea(ros::Publisher local_area_pub) {
   pcl::PointCloud<pcl::PointXYZI> local_area_pointcloud_msg;
   local_area_pointcloud_msg.header.stamp = ros::Time::now().toNSec() / 1000ull;
@@ -162,6 +161,20 @@ void VoxgraphLocalArea::publishLocalArea(ros::Publisher local_area_pub) {
   }
 
   local_area_pub.publish(local_area_pointcloud_msg);
+}
+
+void VoxgraphLocalArea::updateLocalMapAabb(const voxblox::EsdfMap& local_map) {
+  local_map_aabb_.reset();
+  voxblox::BlockIndexList local_map_blocks;
+  local_map.getEsdfLayer().getAllAllocatedBlocks(&local_map_blocks);
+  for (const voxblox::BlockIndex& block_index : local_map_blocks) {
+    local_map_aabb_.min = local_map_aabb_.min.cwiseMin(
+        local_area_layer_.block_size() *
+        block_index.cast<voxblox::FloatingPoint>());
+    local_map_aabb_.max = local_map_aabb_.max.cwiseMax(
+        local_area_layer_.block_size() *
+        (block_index.cast<voxblox::FloatingPoint>() + Point::Ones()));
+  }
 }
 
 void VoxgraphLocalArea::deintegrateSubmap(
