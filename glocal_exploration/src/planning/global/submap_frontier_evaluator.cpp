@@ -37,6 +37,10 @@ SubmapFrontierEvaluator::SubmapFrontierEvaluator(
 
 void SubmapFrontierEvaluator::computeFrontiersForSubmap(
     const MapBase::SubmapData& data, const Point& initial_point) {
+  // Only one thread allowed at a time to run in background.
+  if(frontier_computation_thread_) {
+    frontier_computation_thread_->join();
+  }
   // Initialize all frontier candidates for the given layer and id.
   auto it = frontier_candidates_.find(data.id);
   if (it == frontier_candidates_.end()) {
@@ -50,10 +54,7 @@ void SubmapFrontierEvaluator::computeFrontiersForSubmap(
   }
   // NOTE: If not frozen the frontiers will be recomputed and overwritten.
 
-  // Compute all frontiers. Only one thread allowed at a time to run in background.
-  if(frontier_computation_thread_) {
-    frontier_computation_thread_->join();
-  }
+  // Compute all frontiers.
   frontier_computation_thread_ = std::make_unique<std::thread>([this, data, initial_point, it] {computeFrontierCandidates(*(data.tsdf_layer), initial_point, &(*it));});
 }
 
