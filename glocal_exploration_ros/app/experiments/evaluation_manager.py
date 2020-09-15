@@ -224,6 +224,7 @@ class EvaluationManager(object):
         std_devs = {}
         keys = voxblox_data[0].keys()
         keys.remove('RosTime')
+        keys.remove('MapName')
         keys = ['RosTime'] + keys  # RosTime is expected as the first argument.
         for key in keys:
             means[key] = np.array([])
@@ -264,38 +265,65 @@ class EvaluationManager(object):
         unit = "s"
         if x[-1] >= 300:
             unit = "min"
-            np.divide(x, 60)
+            x = x / 60
 
         # Plot ends of data series for unequal lengths
         early_stops = []
-        x_early = []
         for i in range(len(voxblox_data)):
             dataset = voxblox_data[i]
             length = len(dataset['RosTime']) - 1
             if length < max_data_length - 1:
                 early_stops.append(length)
-                x_early.append(float(dataset['RosTime'][length]))
                 self.writelog("Early stop detected for '%s' at %.2fs." %
                               (names[i], float(dataset['RosTime'][length])))
 
         # create all plots.
-        fig, axes = plt.subplots(1, 1)
-        axes[0, 0].plot(x, means['ObservedVolume'], 'b-')
-        axes[0, 0].fill_between(
-            x,
-            means['ObservedVolume'] - std_devs['ObservedVolume'],
-            means['ObservedVolume'] + std_devs['ObservedVolume'],
-            facecolor='b',
-            alpha=.2)
-        axes[0, 0].plot([x[i] for i in early_stops],
-                        [means['ObservedVolume'][i] for i in early_stops],
-                        'kx',
-                        markersize=9,
-                        markeredgewidth=2)
-        axes[0, 0].set_ylabel('Observed Volume [m]')
-        axes[0, 0].set_ylim(bottom=0)
-        axes[0, 0].set_xlim(left=0, right=x[-1])
-        axes[0, 0].set_xlabel('Simulated Time [%s]' % unit)
+        fig, axes = plt.subplots(2, 2)
+        ax = axes[0, 0]
+        y = np.array(means['ObservedVolume'], dtype=float)
+        y = y / (40 * 40 * 3)  # Compensate for total volume
+        y_std = np.array(std_devs['ObservedVolume'], dtype=float)
+        y_std = y_std / (40 * 40 * 3)  # Compensate for total volume
+        ax.plot(x, y, 'b-')
+        ax.fill_between(x, y - y_std, y + y_std, facecolor='b', alpha=.2)
+        ax.plot([x[i] for i in early_stops], [y[i] for i in early_stops],
+                'kx',
+                markersize=9,
+                markeredgewidth=2)
+        ax.set_ylabel('Observed Volume [%]')
+        ax.set_ylim(bottom=0)
+        ax.set_xlim(left=0, right=x[-1])
+        ax.set_xlabel('Simulated Time [%s]' % unit)
+
+        ax = axes[0, 1]
+        y = np.array(means['PositionDrift'], dtype=float)
+        y_std = np.array(std_devs['PositionDrift'], dtype=float)
+        ax.plot(x, y, 'k-')
+        ax.fill_between(x, y - y_std, y + y_std, facecolor='k', alpha=.2)
+        y = np.array(means['PositionDriftEstimated'], dtype=float)
+        y_std = np.array(std_devs['PositionDriftEstimated'], dtype=float)
+        ax.plot(x, y, 'r-')
+        ax.fill_between(x, y - y_std, y + y_std, facecolor='r', alpha=.2)
+        ax.set_ylabel('Position Drift [m]')
+        ax.set_ylim(bottom=0)
+        ax.set_xlim(left=0, right=x[-1])
+        ax.set_xlabel("Simulated Time [%s]" % unit)
+        ax.legend(['Simulated', 'Estimated'])
+
+        ax = axes[1, 1]
+        y = np.array(means['RotationDrift'], dtype=float)
+        y_std = np.array(std_devs['RotationDrift'], dtype=float)
+        ax.plot(x, y, 'k-')
+        ax.fill_between(x, y - y_std, y + y_std, facecolor='k', alpha=.2)
+        y = np.array(means['RotationDriftEstimated'], dtype=float)
+        y_std = np.array(std_devs['RotationDriftEstimated'], dtype=float)
+        ax.plot(x, y, 'r-')
+        ax.fill_between(x, y - y_std, y + y_std, facecolor='r', alpha=.2)
+        ax.set_ylabel('Rotation Drift [m]')
+        ax.set_ylim(bottom=0)
+        ax.set_xlim(left=0, right=x[-1])
+        ax.set_xlabel("Simulated Time [%s]" % unit)
+        ax.legend(['Simulated', 'Estimated'])
 
         # Finish.
         plt.suptitle("Experiment Series Overview (" + str(len(voxblox_data)) +
@@ -335,21 +363,46 @@ class EvaluationManager(object):
         x = np.array(data['RosTime'], dtype=float)
         if x[-1] >= 300:
             unit = "min"
-            np.divide(x, 60)
-
-        mean = np.array(data['ObservedVolume'])
+            x = x / 60
 
         # Create all plots.
-        _, axes = plt.subplots(1, 1)
-        axes[0, 0].plot(x, mean, 'b-')
-        axes[0, 0].set_ylabel('Observed Volume [m]')
-        axes[0, 0].set_ylim(bottom=0)
-        axes[0, 0].set_xlim(left=0, right=x[-1])
-        axes[0, 0].set_xlabel("Simulated Time [%s]" % unit)
+        fig, axes = plt.subplots(2, 2)
+
+        ax = axes[0, 0]
+        mean = np.array(data['ObservedVolume'], dtype=float)
+        mean = mean / (40 * 40 * 3)  # Compensate for total volume
+        ax.plot(x, mean, 'b-')
+        ax.set_ylabel('Observed Volume [%]')
+        ax.set_ylim(bottom=0)
+        ax.set_xlim(left=0, right=x[-1])
+        ax.set_xlabel("Simulated Time [%s]" % unit)
+
+        ax = axes[0, 1]
+        y = np.array(data['PositionDrift'], dtype=float)
+        ax.plot(x, y, 'k-')
+        y = np.array(data['PositionDriftEstimated'], dtype=float)
+        ax.plot(x, y, 'r-')
+        ax.set_ylabel('Position Drift [m]')
+        ax.set_ylim(bottom=0)
+        ax.set_xlim(left=0, right=x[-1])
+        ax.set_xlabel("Simulated Time [%s]" % unit)
+        ax.legend(['Simulated', 'Estimated'])
+
+        ax = axes[1, 1]
+        y = np.array(data['RotationDrift'], dtype=float)
+        ax.plot(x, y, 'k-')
+        y = np.array(data['RotationDriftEstimated'], dtype=float)
+        ax.plot(x, y, 'r-')
+        ax.set_ylabel('Rotation Drift [deg]')
+        ax.set_ylim(bottom=0)
+        ax.set_xlim(left=0, right=x[-1])
+        ax.set_xlabel("Simulated Time [%s]" % unit)
+        ax.legend(['Simulated', 'Estimated'])
 
         # Finish.
         save_name = os.path.join(target_dir, "graphs",
                                  "SimulationOverview.png")
+        fig.set_size_inches(15, 10, forward=True)
         plt.savefig(save_name, dpi=300, format='png', bbox_inches='tight')
         self.writelog("Created graph 'SimulationOverview'.")
 

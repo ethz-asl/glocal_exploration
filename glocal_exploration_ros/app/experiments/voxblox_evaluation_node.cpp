@@ -128,8 +128,7 @@ bool EvaluationNode::evaluate(std_srvs::Empty::Request& req,
 
   // Finish
   writeLog("Evaluated " + std::to_string(n_maps) +
-           " voxblox maps. Fields: 'MeanError', 'StdDevError', 'RMSE', "
-           "'UnknownVoxels', 'OutsideTruncation', 'Volume'.");
+           " voxblox maps. Fields: 'ObservedVolume'.");
   log_file_ << "[FLAG] Evaluated\n";
   log_file_.close();
   ROS_INFO("Voxblox evaluation finished succesfully.");
@@ -150,13 +149,14 @@ std::string EvaluationNode::evaluateSingle(const std::string& map_name) {
 
   // Evaluate volume.
   const double min_weight = 0.01;
+  const size_t vps = tsdf_layer->voxels_per_side();
+  const size_t num_voxels_per_block = vps * vps * vps;
+  const double dv = std::pow(tsdf_layer->voxel_size(), 3);
+
   double volume = 0.0;
 
   voxblox::BlockIndexList blocks;
   tsdf_layer->getAllAllocatedBlocks(&blocks);
-  const size_t vps = tsdf_layer->voxels_per_side();
-  const size_t num_voxels_per_block = vps * vps * vps;
-  const double dv = std::pow(tsdf_layer->voxel_size(), 3);
   for (voxblox::BlockIndex& index : blocks) {
     // Iterate over all voxels in said blocks.
     voxblox::Block<voxblox::TsdfVoxel>& block =
@@ -167,12 +167,10 @@ std::string EvaluationNode::evaluateSingle(const std::string& map_name) {
       // Voxel parsing.
       voxblox::Point voxel_center =
           block.computeCoordinatesFromLinearIndex(linear_index);
-      if (voxel.weight < min_weight) {
-        continue;
-      } else if (!roi_->contains(voxel_center.cast<double>())) {
-        continue;
+      if (voxel.weight > min_weight &&
+          roi_->contains(voxel_center.cast<double>())) {
+        volume += dv;
       }
-      volume += dv;
     }
   }
 
