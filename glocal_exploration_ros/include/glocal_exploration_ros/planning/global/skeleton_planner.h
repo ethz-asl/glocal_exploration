@@ -6,13 +6,15 @@
 #include <utility>
 #include <vector>
 
-#include <cblox_planning_global/linked_planning/skeleton/linked_skeleton_planner_ros.h>
+#include <geometry_msgs/PoseArray.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <ros/ros.h>
 
+#include <glocal_exploration/planning/global/submap_frontier_evaluator.h>
 #include <glocal_exploration/state/communicator.h>
 #include <glocal_exploration/3rd_party/config_utilities.hpp>
 
-#include "glocal_exploration/planning/global/submap_frontier_evaluator.h"
+#include "glocal_exploration_ros/planning/global/skeleton_submap_collection.h"
 
 namespace glocal_exploration {
 /**
@@ -75,6 +77,15 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   const std::vector<WayPoint>& getWayPoints() const { return way_points_; }
   VisualizationData& visualizationData() { return vis_data_; }  // mutable
 
+  void addSubmap(voxgraph::VoxgraphSubmap::ConstPtr submap_ptr,
+                 const float traversability_radius) {
+    skeleton_submap_collection_.addSubmap(std::move(submap_ptr),
+                                          traversability_radius);
+  }
+  const SkeletonSubmapCollection& getSkeletonSubmapCollection() {
+    return skeleton_submap_collection_;
+  }
+
  private:
   // Planning iteration methods.
   void resetPlanner();
@@ -93,7 +104,9 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   const Config config_;
 
   // Skeleton planner.
-  std::unique_ptr<mav_planning::CbloxSkeletonGlobalPlanner> skeleton_planner_;
+  //  std::unique_ptr<mav_planning::CbloxSkeletonGlobalPlanner>
+  //  skeleton_planner_;
+  SkeletonSubmapCollection skeleton_submap_collection_;
 
   // Variables.
   std::vector<WayPoint> way_points_;  // in mission frame.

@@ -55,10 +55,11 @@ SkeletonPlanner::SkeletonPlanner(const Config& config,
   // Setup the skeleton planner.
   ros::NodeHandle nh_private(config_.nh_private_namespace);
   ros::NodeHandle nh(ros::names::parentNamespace(config_.nh_private_namespace));
-  skeleton_planner_ =
-      std::make_unique<mav_planning::CbloxSkeletonGlobalPlanner>(nh,
-                                                                 nh_private);
-  skeleton_planner_->setupPlannerAndSmoother();
+  // TODO(victorr): Replace with new native planner once ready
+  //  skeleton_planner_ =
+  //      std::make_unique<mav_planning::CbloxSkeletonGlobalPlanner>(nh,
+  //                                                                 nh_private);
+  //  skeleton_planner_->setupPlannerAndSmoother();
 
   // Precompute goal search offsets (points on cube ordered by distance).
   goal_search_offsets_.reserve(std::pow(config_.goal_search_steps, 3));
@@ -458,10 +459,13 @@ bool SkeletonPlanner::computePath(const Point& goal,
   goal_pose.pose.position.z = goal.z();
   goal_pose.pose.orientation.w = 1.0;
 
+  // TODO(victorr): Compute path along skeletons
+  return false;
+
   // Compute path.
-  if (!skeleton_planner_->planPath(start_pose, goal_pose, &path)) {
-    return false;
-  }
+  //  if (!skeleton_planner_->planPath(start_pose, goal_pose, &path)) {
+  //    return false;
+  //  }
   if (path.poses.empty()) {
     return false;
   }

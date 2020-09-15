@@ -50,11 +50,6 @@ class VoxgraphLocalArea {
 
   bool submapPoseChanged(const SubmapId submap_id,
                          const Transformation& new_submap_pose);
-
-  static SubmapIdSet setDifference(const SubmapIdSet& positive_set,
-                                   const SubmapIdSet& negative_set);
-  static SubmapIdSet setIntersection(const SubmapIdSet& first_set,
-                                     const SubmapIdSet& second_set);
 };
 }  // namespace glocal_exploration
 

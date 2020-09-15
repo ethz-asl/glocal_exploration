@@ -1,12 +1,12 @@
 #include "glocal_exploration_ros/mapping/voxgraph_local_area.h"
 
-#include <algorithm>
-
 #include <pcl/conversions.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <voxblox/utils/evaluation_utils.h>
 #include <voxblox_ros/ptcloud_vis.h>
+
+#include "glocal_exploration_ros/mapping/set_utils.h"
 
 namespace glocal_exploration {
 
@@ -38,18 +38,18 @@ void VoxgraphLocalArea::update(
   }
 
   // Flag submaps that just started overlapping for integration
-  SubmapIdSet submaps_to_integrate =
-      setDifference(current_neighboring_submaps, old_neighboring_submaps);
+  SubmapIdSet submaps_to_integrate = set_utils::setDifference(
+      current_neighboring_submaps, old_neighboring_submaps);
 
   // Flag submaps that no longer overlap for deintegration
-  SubmapIdSet submaps_to_deintegrate =
-      setDifference(old_neighboring_submaps, current_neighboring_submaps);
+  SubmapIdSet submaps_to_deintegrate = set_utils::setDifference(
+      old_neighboring_submaps, current_neighboring_submaps);
 
   // Flag submaps that still overlap for reintegration if they moved
   {
-    SubmapIdSet potential_submaps_to_reintegrate =
-        setIntersection(old_neighboring_submaps, current_neighboring_submaps);
-    for (const SubmapId& submap_id : potential_submaps_to_reintegrate) {
+    SubmapIdSet potential_submaps_to_reintegrate = set_utils::setIntersection(
+        old_neighboring_submaps, current_neighboring_submaps);
+    for (const SubmapId submap_id : potential_submaps_to_reintegrate) {
       Transformation new_submap_pose;
       CHECK(submap_collection.getSubmapPose(submap_id, &new_submap_pose));
       if (submapPoseChanged(submap_id, new_submap_pose)) {
@@ -260,26 +260,6 @@ bool VoxgraphLocalArea::submapPoseChanged(
 
   return (translation_threshold < translation_delta ||
           kAngleThresholdRad < angle_delta);
-}
-
-VoxgraphLocalArea::SubmapIdSet VoxgraphLocalArea::setDifference(
-    const VoxgraphLocalArea::SubmapIdSet& positive_set,
-    const VoxgraphLocalArea::SubmapIdSet& negative_set) {
-  SubmapIdSet result_set;
-  std::set_difference(positive_set.begin(), positive_set.end(),
-                      negative_set.begin(), negative_set.end(),
-                      std::inserter(result_set, result_set.end()));
-  return result_set;
-}
-
-VoxgraphLocalArea::SubmapIdSet VoxgraphLocalArea::setIntersection(
-    const VoxgraphLocalArea::SubmapIdSet& first_set,
-    const VoxgraphLocalArea::SubmapIdSet& second_set) {
-  SubmapIdSet result_set;
-  std::set_intersection(first_set.begin(), first_set.end(), second_set.begin(),
-                        second_set.end(),
-                        std::inserter(result_set, result_set.end()));
-  return result_set;
 }
 
 }  // namespace glocal_exploration

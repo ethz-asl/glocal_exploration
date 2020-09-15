@@ -15,6 +15,7 @@ cs_add_library(${PROJECT_NAME}
         src/mapping/voxblox_map.cpp
         src/mapping/voxgraph_map.cpp
         src/mapping/voxgraph_local_area.cpp
+        src/mapping/voxgraph_spatial_hash.cpp
         src/planning/global/skeleton_planner.cpp
         src/conversions/ros_component_factory.cpp
         src/visualization/rh_rrt_star_visualizer.cpp

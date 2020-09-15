@@ -11,6 +11,7 @@
 #include "glocal_exploration_ros/mapping/threadsafe_wrappers/threadsafe_voxblox_server.h"
 #include "glocal_exploration_ros/mapping/threadsafe_wrappers/threadsafe_voxgraph_server.h"
 #include "glocal_exploration_ros/mapping/voxgraph_local_area.h"
+#include "glocal_exploration_ros/mapping/voxgraph_spatial_hash.h"
 
 namespace glocal_exploration {
 /**
@@ -56,6 +57,9 @@ class VoxgraphMap : public MapBase {
   static constexpr double local_area_pruning_period_s_ = 10.0;
   ros::Timer local_area_pruning_timer_;
   ros::Publisher local_area_pub_;
+
+  VoxgraphSpatialHash voxgraph_spatial_hash_;
+  ros::Publisher voxgraph_spatial_hash_pub_;
 
   // cached constants
   double c_block_size_;
