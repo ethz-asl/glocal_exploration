@@ -17,9 +17,10 @@
   
   <!-- Experiment arguments -->
   <arg name="record_data" default="true"/>
-  <arg name="record_visualization" default="true"/>
+  <arg name="record_visualization" default="false"/>
   <arg name="data_path" default="/home/lukas/Documents/Glocal/Data"/>
-  <arg name="time_limit" default="30"/>
+  <arg name="time_limit" default="3"/> <!-- min -->
+  <arg name="data_interval" default="2"/>  <!-- sec -->
 
   <!-- Automatically generated arguments -->
   <arg unless="$(arg debug_mode)" name="launch_prefix" value="" />
@@ -33,8 +34,8 @@
   <param name="/use_sim_time" value="true" if="$(arg use_airsim_time)"/>
   
   <!-- tf -->
-  <node pkg="tf" type="static_transform_publisher" name="static_tf_odom_world" args="0 0 0 0 0 0 1 /odom /world 100"/>
-  <node pkg="tf" type="static_transform_publisher" name="static_tf_mission_world" args="0 0 0 0 0 0 1 /world /mission 100"/>
+  <node pkg="tf" type="static_transform_publisher" name="static_tf_mission_odom" args="0 0 0 0 0 0 1 /odom /mission 100"/>
+  <node pkg="tf" type="static_transform_publisher" name="static_tf_mission_world" args="0 0 0 0 0 0 1 /mission /world 100"/>
   
   <!-- airsim client -->
   <node name="airsim_simulator" pkg="unreal_airsim" type="airsim_simulator_node" required="true" output="screen" args="-alsologtostderr">
@@ -65,9 +66,9 @@
       <param name="evaluate" value="$(arg record_data)" />
       <param name="eval_directory" value="$(arg data_path)" />
       <param name="time_limit" value="$(arg time_limit)" />
+      <param name="eval_frequency" value="$(arg data_interval)" />
       
       <param name="startup_timeout" value="30.0" />
-      <param name="eval_frequency" value="30" />
     </node>
     
     <!-- Ground truth reconstruction -->

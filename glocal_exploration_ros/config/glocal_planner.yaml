@@ -11,7 +11,7 @@ max_ray_length: &max_ray_length 10
 verbosity: 4
 replan_position_threshold: 0.3  # m, use higher values to compensate drift
 replan_yaw_threshold: 5   # deg
-replan_timeout_constant: 0.1  # turned down to compensate drift
+replan_timeout_constant: 2.0  # turn down to compensate drift more quickly
 replan_timeout_velocity: 1.0
 
 
@@ -53,7 +53,7 @@ mapping:
   use_missing_points_for_clearing: true
   # Integrator settings temporal window (for compatibility with voxgraph)
   pointcloud_deintegration_queue_length: 140
-  publish_map_every_n_sec: 10 #20.0
+  publish_map_every_n_sec: 6 #10 #20.0
   publish_map_with_trajectory: true
   publish_tsdf_map: true
   # Visualization
@@ -78,7 +78,7 @@ mapping:
   output_base_link_frame: "drone_corrected"
   output_sensor_frame: "lidar_corrected"
   tsdf_integrator:
-    truncation_distance: 0.60
+    truncation_distance: *truncation_distance
     max_ray_length_m: 12.0
     use_const_weight: true
     use_weight_dropoff: true

@@ -2,8 +2,9 @@ vehicle_name: airsim_drone
 state_refresh_rate: 100
 ViewMode: Manual
 ClockSpeed: 1.0
-publish_sensor_ground_truth_transforms: true # this uses gt transform
+publish_sensor_transforms: true 
 velocity: 1.0
+simulator_frame_name: "odom"
  
 sensors:   
   Lidar:
