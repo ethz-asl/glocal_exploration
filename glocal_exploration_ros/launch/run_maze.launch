@@ -19,8 +19,8 @@
   <arg name="record_data" default="false"/>
   <arg name="record_visualization" default="false"/>
   <arg name="data_path" default="/home/lukas/Documents/Glocal/Data"/>
-  <arg name="time_limit" default="3"/> <!-- min -->
-  <arg name="data_interval" default="2"/>  <!-- sec -->
+  <arg name="time_limit" default="30"/> <!-- min -->
+  <arg name="data_interval" default="30"/>  <!-- sec -->
 
   <!-- Automatically generated arguments -->
   <arg unless="$(arg debug_mode)" name="launch_prefix" value="" />
