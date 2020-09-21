@@ -1,6 +1,7 @@
 #Config for 3D Reconstruction Planner
 replan_pos_threshold: 0.2
 replan_yaw_threshold: 7 # doesnt matter
+replan_timeout: 3 # seconds
 
 max_new_segments: 0
 min_new_segments: 0

@@ -27,7 +27,7 @@ region_of_interest:
 mapping:
   type: voxgraph
 
-  clearing_radius: 1.1
+  clearing_radius: 1.0
   traversability_radius: *collision_radius
   verbosity: 4
 

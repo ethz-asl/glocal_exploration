@@ -23,15 +23,18 @@ echo "Experiment series '$launch_file' of ${n_experiments} runs at '${target_dir
 
 # ========== Args (need to be set) ==========
 n_experiments=1
-target_dir="/home/lukas/Documents/Glocal/Data/glocal/test"		# Can reuse same dir to add experiments
+target_dir="/home/lukas/Documents/Glocal/Data/glocal/nodrift"		# Can reuse same dir to add experiments
 clear_voxblox_maps=true		# Irreversibly remove maps after evaluation to save disk space
 launch_file="run_maze"  # run_maze active_3d_run_maze
 drift="maze/airsim_nodrift"  # airsim_nodrift airsim_drift1
-duration=3
+duration=15
 frequency=15
 
 # ========== Run experiments ==========
+#run_experiments
+
+target_dir="/home/lukas/Documents/Glocal/Data/active_3d/drift1"
+launch_file="active_3d_run_maze"
+drift="maze/airsim_drift1"  
+
 run_experiments
-
-
-

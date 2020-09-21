@@ -329,7 +329,7 @@ class EvaluationManager(object):
         y_std = np.array(std_devs['RotationDriftEstimated'], dtype=float)
         ax.plot(x, y, 'r-')
         ax.fill_between(x, y - y_std, y + y_std, facecolor='r', alpha=.2)
-        ax.set_ylabel('Rotation Drift [m]')
+        ax.set_ylabel('Rotation Drift [deg]')
         ax.set_ylim(bottom=0)
         ax.set_xlim(left=0, right=x[-1])
         ax.set_xlabel("Simulated Time [%s]" % unit)
