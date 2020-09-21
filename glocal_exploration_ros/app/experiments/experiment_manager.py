@@ -103,6 +103,8 @@ class EvalData(object):
             self.eval_voxblox_service = rospy.ServiceProxy(
                 self.ns_voxblox + "/save_map", FilePath)
             rospy.on_shutdown(self.eval_finish)
+            self.eval_timer = None
+            self.dist_timer = None
 
         self.launch_simulation()
 
@@ -191,9 +193,10 @@ class EvalData(object):
 
             # Periodic evaluation (call once for initial measurement)
             self.eval_callback(None)
-            rospy.Timer(rospy.Duration(self.eval_frequency),
-                        self.eval_callback)
-            rospy.Timer(rospy.Duration(0.1), self.distance_callback)
+            self.eval_timer = rospy.Timer(rospy.Duration(self.eval_frequency),
+                                          self.eval_callback)
+            self.dist_timer = rospy.Timer(rospy.Duration(0.1),
+                                          self.distance_callback)
 
         # Finish
         rospy.loginfo("\n" + "*" * 40 +
@@ -201,71 +204,69 @@ class EvalData(object):
                       "*" * 40)
 
     def eval_callback(self, _):
-        if self.evaluate:
-            # Check whether the planner is still alive
-            try:
-                # If planner is running calling this service again does nothing
-                self.run_planner_srv(True)
-            except:
-                # Usually this means the planner died
-                self.stop_experiment("Planner Node died.")
-                return
+        # Check whether the planner is still alive
+        try:
+            # If planner is running calling this service again does nothing
+            self.run_planner_srv(True)
+        except:
+            # Usually this means the planner died
+            self.stop_experiment("Planner Node died.")
+            return
 
-            # Produce a data point
-            time_real = time.time() - self.eval_walltime_0
-            time_ros = rospy.get_time() - self.eval_rostime_0
-            map_name = "{0:05d}".format(self.eval_n_maps)
+        # Produce a data point
+        time_real = time.time() - self.eval_walltime_0
+        time_ros = rospy.get_time() - self.eval_rostime_0
+        map_name = "{0:05d}".format(self.eval_n_maps)
 
-            # Compute transform errors
-            drift_pos = None
-            drift_rot = 0
-            try:
-                (t, r) = self.tf_listener.lookupTransform(
-                    'airsim_drone/Lidar', 'airsim_drone/Lidar_ground_truth',
-                    rospy.Time(0))
-            except (tf.LookupException, tf.ConnectivityException,
-                    tf.ExtrapolationException):
-                drift_pos = 0
-            if drift_pos is None:
-                r = np.array(r)
-                r = r / np.linalg.norm(r)
-                drift_pos = (t[0]**2 + t[1]**2 + t[2]**2)**0.5
-                drift_rot = 2 * math.acos(r[3]) * 180.0 / math.pi
+        # Compute transform errors
+        drift_pos = None
+        drift_rot = 0
+        try:
+            (t, r) = self.tf_listener.lookupTransform(
+                'airsim_drone/Lidar', 'airsim_drone/Lidar_ground_truth',
+                rospy.Time(0))
+        except (tf.LookupException, tf.ConnectivityException,
+                tf.ExtrapolationException):
+            drift_pos = 0
+        if drift_pos is None:
+            r = np.array(r)
+            r = r / np.linalg.norm(r)
+            drift_pos = (t[0]**2 + t[1]**2 + t[2]**2)**0.5
+            drift_rot = 2 * math.acos(r[3]) * 180.0 / math.pi
 
-            drift_estimated_pos = None
-            drift_estimated_rot = 0
-            try:
-                (t,
-                 r) = self.tf_listener.lookupTransform('odom', 'initial_pose',
-                                                       rospy.Time(0))
-                (t2, r2) = self.tf_listener.lookupTransform(
-                    'airsim_drone/Lidar_ground_truth',
-                    'airsim_drone_ground_truth', rospy.Time(0))
-            except (tf.LookupException, tf.ConnectivityException,
-                    tf.ExtrapolationException):
-                drift_estimated_pos = 0
-            if drift_estimated_pos is None:
-                trans1 = np.dot(tf.transformations.translation_matrix(t),
-                                tf.transformations.quaternion_matrix(r))
-                trans2 = np.dot(tf.transformations.translation_matrix(t2),
-                                tf.transformations.quaternion_matrix(r2))
+        drift_estimated_pos = None
+        drift_estimated_rot = 0
+        try:
+            (t, r) = self.tf_listener.lookupTransform('odom', 'initial_pose',
+                                                      rospy.Time(0))
+            (t2, r2) = self.tf_listener.lookupTransform(
+                'airsim_drone/Lidar_ground_truth', 'airsim_drone_ground_truth',
+                rospy.Time(0))
+        except (tf.LookupException, tf.ConnectivityException,
+                tf.ExtrapolationException):
+            drift_estimated_pos = 0
+        if drift_estimated_pos is None:
+            trans1 = np.dot(tf.transformations.translation_matrix(t),
+                            tf.transformations.quaternion_matrix(r))
+            trans2 = np.dot(tf.transformations.translation_matrix(t2),
+                            tf.transformations.quaternion_matrix(r2))
 
-                trans = tf.transformations.concatenate_matrices(trans1, trans2)
-                t = tf.transformations.translation_from_matrix(trans)
-                r = tf.transformations.quaternion_from_matrix(trans)
-                drift_estimated_pos = (t[0]**2 + t[1]**2 + t[2]**2)**0.5
-                r.normalize()
-                drift_estimated_rot = 2 * math.acos(r[3]) * 180.0 / math.pi
+            trans = tf.transformations.concatenate_matrices(trans1, trans2)
+            t = tf.transformations.translation_from_matrix(trans)
+            r = tf.transformations.quaternion_from_matrix(trans)
+            drift_estimated_pos = (t[0]**2 + t[1]**2 + t[2]**2)**0.5
+            r = np.array(r)
+            r = r / np.linalg.norm(r)
+            drift_estimated_rot = 2 * math.acos(r[3]) * 180.0 / math.pi
 
-            self.eval_writer.writerow([
-                map_name, time_ros, time_real, drift_pos, drift_rot,
-                drift_estimated_pos, drift_estimated_rot,
-                self.distance_traveled
-            ])
-            self.eval_voxblox_service(
-                os.path.join(self.eval_directory, "voxblox_maps",
-                             map_name + ".vxblx"))
-            self.eval_n_maps += 1
+        self.eval_writer.writerow([
+            map_name, time_ros, time_real, drift_pos, drift_rot,
+            drift_estimated_pos, drift_estimated_rot, self.distance_traveled
+        ])
+        self.eval_voxblox_service(
+            os.path.join(self.eval_directory, "voxblox_maps",
+                         map_name + ".vxblx"))
+        self.eval_n_maps += 1
 
         # If the time limit is reached stop the simulation
         if self.time_limit > 0.0:
