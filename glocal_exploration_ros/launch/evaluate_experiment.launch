@@ -1,7 +1,7 @@
 <launch>
   <!-- Source Data -->
   <arg name="target_directory" default="/home/lukas/Documents/Glocal/Data" />
-  <arg name="evaluation_config" default="maze_evaluation.yaml"/>
+  <arg name="evaluation_config" default="maze/maze_evaluation.yaml"/>
   <arg name="method" default="recent"/>
   
   <!-- What to evaluate -->

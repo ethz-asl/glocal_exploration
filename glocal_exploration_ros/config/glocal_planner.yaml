@@ -118,7 +118,7 @@ local_planner:
   min_local_points: 5
   min_path_length: 1.0  # m
   min_sampling_distance: 0.5 # m
-  max_path_length: 2.0  # m
+  max_path_length: 3.0  # m
   path_cropping_length: 0.5 # m
   max_number_of_neighbors: 20
   maximum_rewiring_iterations: 100

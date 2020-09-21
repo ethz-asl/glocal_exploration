@@ -58,6 +58,8 @@ class EvalData(object):
 
             # Statistics
             self.eval_n_maps = 0
+            self.distance_traveled = 0
+            self.previous_position = None
             self.collided = False
             self.run_planner_srv = None
 
@@ -80,10 +82,10 @@ class EvalData(object):
             self.eval_writer.writerow([
                 'MapName', 'RosTime', 'WallTime', 'PositionDrift',
                 'RotationDrift', 'PositionDriftEstimated',
-                'RotationDriftEstimated'
+                'RotationDriftEstimated', 'DistanceTraveled'
             ])
             self.eval_writer.writerow(
-                ['Unit', 's', 's', 'm', 'deg', 'm', 'deg'])
+                ['Unit', 's', 's', 'm', 'deg', 'm', 'deg', 'm'])
             self.eval_log_file = open(
                 os.path.join(self.eval_directory, "data_log.txt"), 'a')
 
@@ -187,9 +189,11 @@ class EvalData(object):
                 )
                 self.writelog("No rosbag found to register.")
 
-        # Periodic evaluation (call once for initial measurement)
-        self.eval_callback(None)
-        rospy.Timer(rospy.Duration(self.eval_frequency), self.eval_callback)
+            # Periodic evaluation (call once for initial measurement)
+            self.eval_callback(None)
+            rospy.Timer(rospy.Duration(self.eval_frequency),
+                        self.eval_callback)
+            rospy.Timer(rospy.Duration(0.1), self.distance_callback)
 
         # Finish
         rospy.loginfo("\n" + "*" * 40 +
@@ -223,6 +227,8 @@ class EvalData(object):
                     tf.ExtrapolationException):
                 drift_pos = 0
             if drift_pos is None:
+                r = np.array(r)
+                r = r / np.linalg.norm(r)
                 drift_pos = (t[0]**2 + t[1]**2 + t[2]**2)**0.5
                 drift_rot = 2 * math.acos(r[3]) * 180.0 / math.pi
 
@@ -248,11 +254,13 @@ class EvalData(object):
                 t = tf.transformations.translation_from_matrix(trans)
                 r = tf.transformations.quaternion_from_matrix(trans)
                 drift_estimated_pos = (t[0]**2 + t[1]**2 + t[2]**2)**0.5
+                r.normalize()
                 drift_estimated_rot = 2 * math.acos(r[3]) * 180.0 / math.pi
 
             self.eval_writer.writerow([
                 map_name, time_ros, time_real, drift_pos, drift_rot,
-                drift_estimated_pos, drift_estimated_rot
+                drift_estimated_pos, drift_estimated_rot,
+                self.distance_traveled
             ])
             self.eval_voxblox_service(
                 os.path.join(self.eval_directory, "voxblox_maps",
@@ -264,6 +272,20 @@ class EvalData(object):
             if rospy.get_time(
             ) - self.eval_rostime_0 >= self.time_limit * 60.0:
                 self.stop_experiment("Time limit reached.")
+
+    def distance_callback(self, _):
+        """ Periodically query tf to see how much distance was covered """
+        t, _ = self.tf_listener.lookupTransform('odom',
+                                                'airsim_drone_ground_truth',
+                                                rospy.Time(0))
+        t = np.array(t)
+        if self.previous_position is None:
+            self.previous_position = t
+            return
+
+        self.distance_traveled = self.distance_traveled + np.linalg.norm(
+            self.previous_position - t)
+        self.previous_position = t
 
     def writelog(self, text):
         # In case of simulation data being stored, maintain a log file

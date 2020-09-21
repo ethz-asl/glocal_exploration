@@ -281,9 +281,9 @@ class EvaluationManager(object):
         fig, axes = plt.subplots(2, 2)
         ax = axes[0, 0]
         y = np.array(means['ObservedVolume'], dtype=float)
-        y = y / (40 * 40 * 3)  # Compensate for total volume
+        y = y / (40 * 40 * 3) * 100  # Compensate for total volume
         y_std = np.array(std_devs['ObservedVolume'], dtype=float)
-        y_std = y_std / (40 * 40 * 3)  # Compensate for total volume
+        y_std = y_std / (40 * 40 * 3) * 100  # Compensate for total volume
         ax.plot(x, y, 'b-')
         ax.fill_between(x, y - y_std, y + y_std, facecolor='b', alpha=.2)
         ax.plot([x[i] for i in early_stops], [y[i] for i in early_stops],
@@ -294,6 +294,16 @@ class EvaluationManager(object):
         ax.set_ylim(bottom=0)
         ax.set_xlim(left=0, right=x[-1])
         ax.set_xlabel('Simulated Time [%s]' % unit)
+
+        ax = axes[1, 0]
+        y = np.array(means['DistanceTraveled'], dtype=float)
+        y_std = np.array(std_devs['DistanceTraveled'], dtype=float)
+        ax.plot(x, y, 'g-')
+        ax.fill_between(x, y - y_std, y + y_std, facecolor='g', alpha=.2)
+        ax.set_ylabel('Distance Traveled [m]')
+        ax.set_ylim(bottom=0)
+        ax.set_xlim(left=0, right=x[-1])
+        ax.set_xlabel("Simulated Time [%s]" % unit)
 
         ax = axes[0, 1]
         y = np.array(means['PositionDrift'], dtype=float)
@@ -370,9 +380,17 @@ class EvaluationManager(object):
 
         ax = axes[0, 0]
         mean = np.array(data['ObservedVolume'], dtype=float)
-        mean = mean / (40 * 40 * 3)  # Compensate for total volume
+        mean = mean / (40 * 40 * 3) * 100  # Compensate for total volume
         ax.plot(x, mean, 'b-')
         ax.set_ylabel('Observed Volume [%]')
+        ax.set_ylim(bottom=0)
+        ax.set_xlim(left=0, right=x[-1])
+        ax.set_xlabel("Simulated Time [%s]" % unit)
+
+        ax = axes[1, 0]
+        y = np.array(data['DistanceTraveled'], dtype=float)
+        ax.plot(x, y, 'g-')
+        ax.set_ylabel('Distance Traveled [m]')
         ax.set_ylim(bottom=0)
         ax.set_xlim(left=0, right=x[-1])
         ax.set_xlabel("Simulated Time [%s]" % unit)

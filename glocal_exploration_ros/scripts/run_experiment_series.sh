@@ -1,12 +1,13 @@
 #!/bin/bash
 
 # *** Args (need to be set) ***
-n_experiments=2
-target_dir="/home/lukas/Documents/Glocal/Data/test2"		# Can reuse same dir to add experiments
+n_experiments=5
+target_dir="/home/lukas/Documents/Glocal/Data/glocal/nodrift"		# Can reuse same dir to add experiments
 clear_voxblox_maps=true		# Irreversibly remove maps after evaluation to save disk space
-launch_file="run_maze"
-duration=30
-frequency=30
+launch_file="run_maze"  # run_maze active_3d_run_maze
+drift="maze/airsim_nodrift"  # airsim_nodrift airsim_drift1
+duration=15
+frequency=15
 
 # *** Run experiments ***
 echo "Starting experiment series '$launch_file' of ${n_experiments} runs at '${target_dir}'!"
@@ -20,7 +21,26 @@ fi
 for (( i=1; i<=n_experiments; i++ ))
 do  
   # run experiment
-  roslaunch glocal_exploration_ros $launch_file.launch data_path:=$target_dir record_data:=true time_limit:=$duration data_interval:=$frequency
+  roslaunch glocal_exploration_ros $launch_file.launch data_path:=$target_dir record_data:=true time_limit:=$duration data_interval:=$frequency drift_config:=$drift.yaml
+  # evaluate
+  roslaunch glocal_exploration_ros evaluate_experiment.launch target_directory:=$target_dir method:=recent series:=false clear_voxblox_maps:=$clear_voxblox_maps evaluate:=true
+done
+
+roslaunch glocal_exploration_ros evaluate_experiment.launch target_directory:=$target_dir series:=true 
+echo "Experiment series '$launch_file' of ${n_experiments} runs at '${target_dir}' finished!"
+
+
+
+
+
+target_dir="/home/lukas/Documents/Glocal/Data/glocal/drift1"		# Can reuse same dir to add
+drift="maze/airsim_drift1"  # airsim_nodrift airsim_drift1
+
+# Run the experiments
+for (( i=1; i<=n_experiments; i++ ))
+do  
+  # run experiment
+  roslaunch glocal_exploration_ros $launch_file.launch data_path:=$target_dir record_data:=true time_limit:=$duration data_interval:=$frequency drift_config:=$drift.yaml
   # evaluate
   roslaunch glocal_exploration_ros evaluate_experiment.launch target_directory:=$target_dir method:=recent series:=false clear_voxblox_maps:=$clear_voxblox_maps evaluate:=true
 done
