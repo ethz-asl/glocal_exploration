@@ -1,12 +1,5 @@
 #!/usr/bin/env python
 
-# ros
-import rospy
-from sensor_msgs.msg import PointCloud2
-from std_msgs.msg import String, Bool
-from std_srvs.srv import SetBool
-from voxblox_msgs.srv import FilePath
-
 # Python
 import sys
 import time
@@ -15,9 +8,20 @@ import datetime
 import os
 import re
 import subprocess
+import math
+import numpy as np
+
+# ros
+import rospy
+import tf
+
+# msgs
+from std_msgs.msg import Bool
+from std_srvs.srv import SetBool
+from voxblox_msgs.srv import FilePath
 
 
-class EvalData:
+class EvalData(object):
     def __init__(self):
         '''  Initialize ros node and read params '''
         # Parse parameters
@@ -28,57 +32,86 @@ class EvalData:
         self.startup_timeout = rospy.get_param(
             '~startup_timeout', 0.0)  # Max allowed time for startup, 0 for inf
 
-        #self.evaluate = rospy.get_param('~evaluate', False)  # Periodically save the voxblox state
-        #self.eval_frequency = rospy.get_param('~eval_frequency', 5.0)  # Save rate in seconds
-        #self.time_limit = rospy.get_param('~time_limit', 0.0)  # Maximum sim duration in minutes, 0 for inf
+        self.evaluate = rospy.get_param(
+            '~evaluate', False)  # Periodically save the voxblox state
+        self.eval_frequency = rospy.get_param('~eval_frequency',
+                                              30.0)  # Save rate in seconds
+        self.time_limit = rospy.get_param(
+            '~time_limit', 0.0)  # Maximum sim duration in minutes, 0 for inf
 
         self.eval_walltime_0 = None
         self.eval_rostime_0 = None
+        self.shutdown_reason_known = False
 
-        # if self.evaluate:
-        #     # Setup parameters
-        #     self.eval_directory = rospy.get_param('~eval_directory', 'DirParamNotSet')  # Periodically save voxblox map
-        #     if not os.path.isdir(self.eval_directory):
-        #         rospy.logfatal("Invalid target directory '%s'.", self.eval_directory)
-        #         sys.exit(-1)
-        #
-        #     self.ns_voxblox = rospy.get_param('~ns_voxblox', "/voxblox/voxblox_node")
-        #
-        #     # Statistics
-        #     self.eval_n_maps = 0
-        #     self.eval_n_pointclouds = 0
-        #
-        #     # Setup data directory
-        #     if not os.path.isdir(os.path.join(self.eval_directory, "tmp_bags")):
-        #         os.mkdir(os.path.join(self.eval_directory, "tmp_bags"))
-        #     self.eval_directory = os.path.join(self.eval_directory, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
-        #     os.mkdir(self.eval_directory)
-        #     rospy.set_param(self.ns_planner + "/performance_log_dir", self.eval_directory)
-        #     os.mkdir(os.path.join(self.eval_directory, "voxblox_maps"))
-        #     self.eval_data_file = open(os.path.join(self.eval_directory, "voxblox_data.csv"), 'wb')
-        #     self.eval_writer = csv.writer(self.eval_data_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL,
-        #                                   lineterminator='\n')
-        #     self.eval_writer.writerow(['MapName', 'RosTime', 'WallTime', 'NPointclouds', 'CPUTime'])
-        #     self.eval_writer.writerow(['Unit', 'seconds', 'seconds', '-', 'seconds'])
-        #     self.eval_log_file = open(os.path.join(self.eval_directory, "data_log.txt"), 'a')
-        #
-        #     # Subscribers, Services
-        #     self.ue_out_sub = rospy.Subscriber("ue_out_in", PointCloud2, self.ue_out_callback, queue_size=10)
-        #     self.collision_sub = rospy.Subscriber("collision", String, self.collision_callback, queue_size=10)
-        #     self.cpu_time_srv = rospy.ServiceProxy(self.ns_planner + "/get_cpu_time", SetBool)
-        #
-        #     # Finish
-        #     self.writelog("Data folder created at '%s'." % self.eval_directory)
-        #     rospy.loginfo("Data folder created at '%s'." % self.eval_directory)
-        #     self.eval_voxblox_service = rospy.ServiceProxy(self.ns_voxblox + "/save_map", FilePath)
-        #     rospy.on_shutdown(self.eval_finish)
-        #     self.collided = False
+        if self.evaluate:
+            # Setup parameters
+            self.eval_directory = rospy.get_param(
+                '~eval_directory',
+                'DirParamNotSet')  # Periodically save voxblox map
+            if not os.path.isdir(self.eval_directory):
+                rospy.logfatal("Invalid target directory '%s'.",
+                               self.eval_directory)
+                sys.exit(-1)
+
+            self.ns_voxblox = rospy.get_param('~ns_voxblox',
+                                              "/voxblox/voxblox_node")
+
+            # Statistics
+            self.eval_n_maps = 0
+            self.distance_traveled = 0
+            self.previous_position = None
+            self.collided = False
+            self.run_planner_srv = None
+
+            # Setup data directory
+            if not os.path.isdir(os.path.join(self.eval_directory,
+                                              "tmp_bags")):
+                os.mkdir(os.path.join(self.eval_directory, "tmp_bags"))
+            self.eval_directory = os.path.join(
+                self.eval_directory,
+                datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
+            os.mkdir(self.eval_directory)
+            os.mkdir(os.path.join(self.eval_directory, "voxblox_maps"))
+            self.eval_data_file = open(
+                os.path.join(self.eval_directory, "voxblox_data.csv"), 'wb')
+            self.eval_writer = csv.writer(self.eval_data_file,
+                                          delimiter=',',
+                                          quotechar='|',
+                                          quoting=csv.QUOTE_MINIMAL,
+                                          lineterminator='\n')
+            self.eval_writer.writerow([
+                'MapName', 'RosTime', 'WallTime', 'PositionDrift',
+                'RotationDrift', 'PositionDriftEstimated',
+                'RotationDriftEstimated', 'DistanceTraveled'
+            ])
+            self.eval_writer.writerow(
+                ['Unit', 's', 's', 'm', 'deg', 'm', 'deg', 'm'])
+            self.eval_log_file = open(
+                os.path.join(self.eval_directory, "data_log.txt"), 'a')
+
+            # Subscribers, Services
+            self.collision_sub = rospy.Subscriber("collision",
+                                                  Bool,
+                                                  self.collision_callback,
+                                                  queue_size=10)
+            self.tf_listener = tf.TransformListener()
+
+            # Finish
+            self.writelog("Data folder created at '%s'." % self.eval_directory)
+            rospy.loginfo("[ExperimentManager]: Data folder created at '%s'." %
+                          self.eval_directory)
+            self.eval_voxblox_service = rospy.ServiceProxy(
+                self.ns_voxblox + "/save_map", FilePath)
+            rospy.on_shutdown(self.eval_finish)
+            self.eval_timer = None
+            self.dist_timer = None
 
         self.launch_simulation()
 
     def launch_simulation(self):
         rospy.loginfo(
-            "Experiment setup: waiting for unreal MAV simulation to setup...")
+            "[ExperimentManager]: Waiting for unreal MAV simulation to setup..."
+        )
         # Wait for unreal simulation to setup
         if self.startup_timeout > 0.0:
             try:
@@ -91,10 +124,14 @@ class EvalData:
                 return
         else:
             rospy.wait_for_message("/simulation_is_ready", Bool)
-        rospy.loginfo("Waiting for unreal MAV simulation to setup... done.")
+        rospy.loginfo(
+            "[ExperimentManager]: Waiting for unreal MAV simulation to setup..."
+            " done.")
 
-        # Launch planner (by service, every planner needs to advertise this service when ready)
-        rospy.loginfo("Waiting for planner to be ready...")
+        # Launch planner
+        # (every planner needs to advertise this service when ready)
+        rospy.loginfo(
+            "[ExperimentManager]: Waiting for planner to be ready...")
         if self.startup_timeout > 0.0:
             try:
                 rospy.wait_for_service(self.ns_planner, self.startup_timeout)
@@ -107,42 +144,59 @@ class EvalData:
 
         if self.planner_delay > 0:
             rospy.loginfo(
-                "Waiting for planner to be ready... done. Launch in %d seconds.",
-                self.planner_delay)
+                "[ExperimentManager]: Waiting for planner to be ready... done. "
+                "Launch in %d seconds.", self.planner_delay)
             rospy.sleep(self.planner_delay)
         else:
-            rospy.loginfo("Waiting for planner to be ready... done.")
-        run_planner_srv = rospy.ServiceProxy(self.ns_planner, SetBool)
-        run_planner_srv(True)
+            rospy.loginfo(
+                "[ExperimentManager]: Waiting for planner to be ready... done."
+            )
+        self.run_planner_srv = rospy.ServiceProxy(self.ns_planner, SetBool)
+        self.run_planner_srv(True)
 
         # Setup first measurements
-        # self.eval_walltime_0 = time.time()
-        # self.eval_rostime_0 = rospy.get_time()
-        # # Evaluation init
-        # if self.evaluate:
-        #     self.writelog("Succesfully started the simulation.")
-        #
-        #     # Dump complete rosparams for reference
-        #     subprocess.check_call(["rosparam", "dump", os.path.join(self.eval_directory, "rosparams.yaml"), "/"])
-        #     self.writelog("Dumped the parameter server into 'rosparams.yaml'.")
-        #
-        #     self.eval_n_maps = 0
-        #     self.eval_n_pointclouds = 1
-        #
-        #     # Keep track of the (most recent) rosbag
-        #     bag_expr = re.compile('tmp_bag_\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}\.bag.')  # Default names
-        #     bags = [b for b in os.listdir(os.path.join(os.path.dirname(self.eval_directory), "tmp_bags")) if
-        #             bag_expr.match(b)]
-        #     bags.sort(reverse=True)
-        #     if len(bags) > 0:
-        #         self.writelog("Registered '%s' as bag for this simulation." % bags[0])
-        #         self.eval_log_file.write("[FLAG] Rosbag: %s\n" % bags[0].split('.')[0])
-        #     else:
-        #         rospy.logwarn("No tmpbag found. Is rosbag recording?")
-        #
-        # # Periodic evaluation (call once for initial measurement)
-        # self.eval_callback(None)
-        # rospy.Timer(rospy.Duration(self.eval_frequency), self.eval_callback)
+        self.eval_walltime_0 = time.time()
+        self.eval_rostime_0 = rospy.get_time()
+        # Evaluation init
+        if self.evaluate:
+            self.writelog("Succesfully started the simulation.")
+
+            # Dump complete rosparams for reference
+            subprocess.check_call([
+                "rosparam", "dump",
+                os.path.join(self.eval_directory, "rosparams.yaml"), "/"
+            ])
+            self.writelog("Dumped the parameter server into 'rosparams.yaml'.")
+
+            self.eval_n_maps = 0
+
+            # Keep track of the (most recent) rosbag
+            bag_expr = re.compile(
+                r'tmp_bag_\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}\.bag.'
+            )  # Default names
+            bags = [
+                b for b in os.listdir(
+                    os.path.join(os.path.dirname(self.eval_directory),
+                                 "tmp_bags")) if bag_expr.match(b)
+            ]
+            bags.sort(reverse=True)
+            if bags:
+                self.writelog("Registered '%s' as bag for this experiment." %
+                              bags[0])
+                self.eval_log_file.write("[FLAG] Rosbag: %s\n" %
+                                         bags[0].split('.')[0])
+            else:
+                rospy.logwarn(
+                    "[ExperimentManager]: No tmpbag found. Is rosbag recording?"
+                )
+                self.writelog("No rosbag found to register.")
+
+            # Periodic evaluation (call once for initial measurement)
+            self.eval_callback(None)
+            self.eval_timer = rospy.Timer(rospy.Duration(self.eval_frequency),
+                                          self.eval_callback)
+            self.dist_timer = rospy.Timer(rospy.Duration(0.1),
+                                          self.distance_callback)
 
         # Finish
         rospy.loginfo("\n" + "*" * 40 +
@@ -150,26 +204,69 @@ class EvalData:
                       "*" * 40)
 
     def eval_callback(self, _):
-        if self.evaluate:
-            # Produce a data point
-            time_real = time.time() - self.eval_walltime_0
-            time_ros = rospy.get_time() - self.eval_rostime_0
-            map_name = "{0:05d}".format(self.eval_n_maps)
-            try:
-                cpu = self.cpu_time_srv(True)
-            except:
-                # Usually this means the planner died
-                self.stop_experiment("Planner Node died (cpu srv failed).")
-                return
-            self.eval_writer.writerow([
-                map_name, time_ros, time_real, self.eval_n_pointclouds,
-                float(cpu.message)
-            ])
-            self.eval_voxblox_service(
-                os.path.join(self.eval_directory, "voxblox_maps",
-                             map_name + ".vxblx"))
-            self.eval_n_pointclouds = 0
-            self.eval_n_maps += 1
+        # Check whether the planner is still alive
+        try:
+            # If planner is running calling this service again does nothing
+            self.run_planner_srv(True)
+        except:
+            # Usually this means the planner died
+            self.stop_experiment("Planner Node died.")
+            return
+
+        # Produce a data point
+        time_real = time.time() - self.eval_walltime_0
+        time_ros = rospy.get_time() - self.eval_rostime_0
+        map_name = "{0:05d}".format(self.eval_n_maps)
+
+        # Compute transform errors
+        drift_pos = None
+        drift_rot = 0
+        try:
+            (t, r) = self.tf_listener.lookupTransform(
+                'airsim_drone/Lidar', 'airsim_drone/Lidar_ground_truth',
+                rospy.Time(0))
+        except (tf.LookupException, tf.ConnectivityException,
+                tf.ExtrapolationException):
+            drift_pos = 0
+        if drift_pos is None:
+            r = np.array(r)
+            r = r / np.linalg.norm(r)
+            drift_pos = (t[0]**2 + t[1]**2 + t[2]**2)**0.5
+            drift_rot = 2 * math.acos(r[3]) * 180.0 / math.pi
+
+        drift_estimated_pos = None
+        drift_estimated_rot = 0
+        try:
+            (t, r) = self.tf_listener.lookupTransform('odom', 'initial_pose',
+                                                      rospy.Time(0))
+            (t2, r2) = self.tf_listener.lookupTransform(
+                'airsim_drone/Lidar_ground_truth', 'airsim_drone_ground_truth',
+                rospy.Time(0))
+        except (tf.LookupException, tf.ConnectivityException,
+                tf.ExtrapolationException):
+            drift_estimated_pos = 0
+        if drift_estimated_pos is None:
+            trans1 = np.dot(tf.transformations.translation_matrix(t),
+                            tf.transformations.quaternion_matrix(r))
+            trans2 = np.dot(tf.transformations.translation_matrix(t2),
+                            tf.transformations.quaternion_matrix(r2))
+
+            trans = tf.transformations.concatenate_matrices(trans1, trans2)
+            t = tf.transformations.translation_from_matrix(trans)
+            r = tf.transformations.quaternion_from_matrix(trans)
+            drift_estimated_pos = (t[0]**2 + t[1]**2 + t[2]**2)**0.5
+            r = np.array(r)
+            r = r / np.linalg.norm(r)
+            drift_estimated_rot = 2 * math.acos(r[3]) * 180.0 / math.pi
+
+        self.eval_writer.writerow([
+            map_name, time_ros, time_real, drift_pos, drift_rot,
+            drift_estimated_pos, drift_estimated_rot, self.distance_traveled
+        ])
+        self.eval_voxblox_service(
+            os.path.join(self.eval_directory, "voxblox_maps",
+                         map_name + ".vxblx"))
+        self.eval_n_maps += 1
 
         # If the time limit is reached stop the simulation
         if self.time_limit > 0.0:
@@ -177,17 +274,19 @@ class EvalData:
             ) - self.eval_rostime_0 >= self.time_limit * 60.0:
                 self.stop_experiment("Time limit reached.")
 
-    def eval_finish(self):
-        self.eval_data_file.close()
-        map_path = os.path.join(self.eval_directory, "voxblox_maps")
-        n_maps = len([
-            f for f in os.listdir(map_path)
-            if os.path.isfile(os.path.join(map_path, f))
-        ])
-        self.writelog("Finished the simulation, %d/%d maps created." %
-                      (n_maps, self.eval_n_maps))
-        self.eval_log_file.close()
-        rospy.loginfo("On eval_data_node shutdown: closing data files.")
+    def distance_callback(self, _):
+        """ Periodically query tf to see how much distance was covered """
+        t, _ = self.tf_listener.lookupTransform('odom',
+                                                'airsim_drone_ground_truth',
+                                                rospy.Time(0))
+        t = np.array(t)
+        if self.previous_position is None:
+            self.previous_position = t
+            return
+
+        self.distance_traveled = self.distance_traveled + np.linalg.norm(
+            self.previous_position - t)
+        self.previous_position = t
 
     def writelog(self, text):
         # In case of simulation data being stored, maintain a log file
@@ -197,27 +296,33 @@ class EvalData:
             datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + text +
             "\n")
 
-    def ue_out_callback(self, _):
-        if self.evaluate:
-            self.eval_n_pointclouds += 1
-
     def stop_experiment(self, reason):
-        # Shutdown the node with proper logging, only required when experiment is performed
+        # Shutdown the node with proper logging, only required when experiment
+        # is being performed
         reason = "Stopping the experiment: " + reason
+        self.shutdown_reason_known = True
         if self.evaluate:
             self.writelog(reason)
-        if self.reset_unreal_cv_ros:
-            try:
-                # If unreal is running, this will reset it, otherwise map is already in initial state
-                terminate_srv = rospy.ServiceProxy(
-                    self.ns_unreal_cv_ros + "/terminate_with_reset", SetBool)
-                terminate_srv(True)
-            except:
-                pass
         width = len(reason) + 4
         rospy.loginfo("\n" + "*" * width + "\n* " + reason + " *\n" +
                       "*" * width)
         rospy.signal_shutdown(reason)
+
+    def eval_finish(self):
+        self.eval_data_file.close()
+        map_path = os.path.join(self.eval_directory, "voxblox_maps")
+        n_maps = len([
+            f for f in os.listdir(map_path)
+            if os.path.isfile(os.path.join(map_path, f))
+        ])
+        if not self.shutdown_reason_known:
+            self.writelog("Stopping the experiment: External Interrupt.")
+        self.writelog("Finished the simulation, %d/%d maps created." %
+                      (n_maps, self.eval_n_maps))
+        self.eval_log_file.close()
+        rospy.loginfo(
+            "[ExperimentManager]: On eval_data_node shutdown: closing data "
+            "files.")
 
     def collision_callback(self, _):
         if not self.collided:
@@ -226,6 +331,6 @@ class EvalData:
 
 
 if __name__ == '__main__':
-    rospy.init_node('experiment_manager', anonymous=True)
+    rospy.init_node('experiment_manager', anonymous=False)
     ed = EvalData()
     rospy.spin()

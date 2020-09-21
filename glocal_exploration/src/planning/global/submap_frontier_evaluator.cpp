@@ -38,8 +38,10 @@ SubmapFrontierEvaluator::SubmapFrontierEvaluator(
 void SubmapFrontierEvaluator::computeFrontiersForSubmap(
     const MapBase::SubmapData& data, const Point& initial_point) {
   // Only one thread allowed at a time to run in background.
-  if(frontier_computation_thread_) {
-    frontier_computation_thread_->join();
+  if (frontier_computation_thread_) {
+    if (frontier_computation_thread_->joinable()) {
+      frontier_computation_thread_->join();
+    }
   }
   // Initialize all frontier candidates for the given layer and id.
   auto it = frontier_candidates_.find(data.id);
@@ -55,14 +57,19 @@ void SubmapFrontierEvaluator::computeFrontiersForSubmap(
   // NOTE: If not frozen the frontiers will be recomputed and overwritten.
 
   // Compute all frontiers.
-  frontier_computation_thread_ = std::make_unique<std::thread>([this, data, initial_point, it] {computeFrontierCandidates(*(data.tsdf_layer), initial_point, &(*it));});
+  frontier_computation_thread_ =
+      std::make_unique<std::thread>([this, data, initial_point, it] {
+        computeFrontierCandidates(*(data.tsdf_layer), initial_point, &(*it));
+      });
 }
 
 void SubmapFrontierEvaluator::updateFrontiers(
     const std::vector<MapBase::SubmapData>& data) {
   // Make sure frontier computation finished.
-  if(frontier_computation_thread_) {
-    frontier_computation_thread_->join();
+  if (frontier_computation_thread_) {
+    if (frontier_computation_thread_->joinable()) {
+      frontier_computation_thread_->join();
+    }
   }
   // Verify all frontiers are built. If they are frozen nothing happens.
   int num_candidate_points = 0;
@@ -188,8 +195,8 @@ void SubmapFrontierEvaluator::updateFrontiers(
 }
 
 void SubmapFrontierEvaluator::computeFrontierCandidates(
-    const voxblox::Layer<voxblox::TsdfVoxel>& layer,
-    const Point& initial_point, std::pair<const int, std::vector<Point>>* output) {
+    const voxblox::Layer<voxblox::TsdfVoxel>& layer, const Point& initial_point,
+    std::pair<const int, std::vector<Point>>* output) {
   // Perform a full sweep over the submap's free space to identify frontier
   // candidates. Frontiers are unknown points that border observed free space
   // and are attributed to the submap that contains the free space. Use

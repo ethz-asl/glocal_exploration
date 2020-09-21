@@ -29,6 +29,10 @@ cs_add_executable(glocal_system_node
     app/glocal_system_node.cpp)
 target_link_libraries(glocal_system_node ${PROJECT_NAME})
 
+cs_add_executable(voxblox_evaluation_node
+        app/experiments/voxblox_evaluation_node.cpp)
+target_link_libraries(voxblox_evaluation_node ${PROJECT_NAME})
+
 ##########
 # Export #
 ##########

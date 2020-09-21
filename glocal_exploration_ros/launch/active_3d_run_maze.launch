@@ -17,7 +17,7 @@
   <arg name="mav_name" default="airsim_drone"/>
   
   <!-- Experiment arguments -->
-  <arg name="record_data" default="false"/>
+  <arg name="record_data" default="true"/>
   <arg name="record_visualization" default="false"/>
   <arg name="data_path" default="/home/lukas/Documents/Glocal/Data"/>
   <arg name="time_limit" default="30"/> <!-- min -->
@@ -47,16 +47,48 @@
   </node>
 
   <!-- Planner -->
-  <group ns="glocal">
-    <node name="glocal_system" pkg="glocal_exploration_ros" type="glocal_system_node"
-          output="screen" launch-prefix="$(arg launch_prefix)">
-      <rosparam command="load" file="$(find glocal_exploration_ros)/config/$(arg planner_config)"/>
-      <remap from="~pointcloud" to="/$(arg mav_name)/Lidar" />
+  <group ns="active_3d_planner">
+     <!-- Voxblox -->
+    <node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr">
+      <remap from="pointcloud" to="/airsim_drone/Lidar"/> 
+      <param name="use_tf_transforms" value="true"/>
+      <param name="publish_tsdf_map" value="true" />
+      <param name="publish_esdf_map" value="true" />
+      <param name="tsdf_voxel_size" value="0.2" />
+      <param name="tsdf_voxels_per_side" value="16" />
+      <param name="color_mode" value="normals" />
+      <param name="update_mesh_every_n_sec" value="1.0" />
+      <param name="method" value="fast" />
+      <param name="max_ray_length_m" value="10" />
+      <param name="allow_clear" value="true" />
+      <param name="verbose" value="false" />
+      <param name="publish_map_incremental" value="true" />
+    </node>
+    
+    <!-- Planner -->
+    <node name="planner_node" pkg="active_3d_planning_app_reconstruction" type="reconstruction_planner_node" output="screen" >
+      <remap from="planner_node/esdf_map_in" to="voxblox_node/esdf_map_out" />
+      <remap from="planner_node/tsdf_map_in" to="voxblox_node/tsdf_map_out" />
+      <param name="use_tf_transforms" value="false" />
+      <param name="tsdf_voxel_size" value="0.2" />
+      <param name="tsdf_voxels_per_side" value="16" />
+      <param name="update_mesh_every_n_sec" value="0.0" />   
+      <param name="publish_traversable" value="false" />         
+    
       <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
-      <remap from="command/pose" to="/$(arg mav_name)/command/pose" />
-      <remap from="~/global_planner/submap_in" to="~/mapping/submap_esdfs" />
-      <remap from="~/global_planner/submap_pose_in" to="~/mapping/submap_poses" />
-    </node>  
+      <param name="verbose" value="true" />
+      <param name="visualize" value="true" />
+      <param name="log_performance" value="false" />
+      
+      <!-- Modular Config -->    
+      <rosparam command="load" file="$(find glocal_exploration_ros)/config/active_3d_planner.yaml"/>
+    </node>     
+    
+      <!-- adaptor -->
+  <node name="airsim_adaptor" pkg="active_3d_planning_app_reconstruction" type="airsim_adaptor.py" output="screen">
+    <remap from="trajectory_in" to="command/trajectory" />
+    <remap from="command_pose_out" to="/airsim_drone/command/pose" />
+  </node>
   </group>
   
   
@@ -65,7 +97,7 @@
     <!-- Manager -->
     <node name="experiment_manager" pkg="glocal_exploration_ros" type="experiment_manager.py" output="screen" required="true">                
       <remap from="collision" to="/$(arg mav_name)/collision" />
-      <param name="ns_planner" value="/glocal/glocal_system/toggle_running" />
+      <param name="ns_planner" value="/active_3d_planner/planner_node/toggle_running" />
       <param name="ns_voxblox" value="voxblox_gt" />
       <param name="evaluate" value="$(arg record_data)" />
       <param name="eval_directory" value="$(arg data_path)" />
@@ -89,7 +121,7 @@
   
   <!-- Visualization -->
   <group if="$(arg show_rviz)">
-    <arg name="rviz_file" default="$(find glocal_exploration_ros)/config/maze/maze_visualization.rviz" />
+    <arg name="rviz_file" default="$(find glocal_exploration_ros)/config/maze/maze_visualization_active_3d.rviz" />
    <node type="rviz" name="rviz" pkg="rviz" args="-d $(arg rviz_file)"/>
   </group>
 </launch>
