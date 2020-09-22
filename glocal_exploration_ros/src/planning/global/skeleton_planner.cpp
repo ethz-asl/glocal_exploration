@@ -201,6 +201,17 @@ bool SkeletonPlanner::computeGoalPoint() {
   double shortest_path = std::numeric_limits<double>::max();
   bool found_a_valid_path = false;
   for (auto& candidate : frontier_data_) {
+    constexpr int64_t kMaxClosestFrontierSearchingTimeSec = 10;
+    if (kMaxClosestFrontierSearchingTimeSec <
+        std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::high_resolution_clock::now() - t_start)
+            .count()) {
+      LOG_IF(INFO, config_.verbosity >= 1)
+          << "Maximum closest frontier searching time exceeded. Will continue "
+             "with the frontiers we found so far.";
+      break;
+    }
+
     if (candidate.euclidean_distance >= shortest_path) {
       // These points can never be closer than what we already have.
       candidate.path_distance = candidate.euclidean_distance;
