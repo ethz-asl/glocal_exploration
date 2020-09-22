@@ -10,8 +10,17 @@
 
 namespace glocal_exploration {
 
-void VoxgraphSpatialHash::updateSpatialHash(
+void VoxgraphSpatialHash::update(
     const voxgraph::VoxgraphSubmapCollection& submap_collection) {
+  // Update the transform from the odom to a fixed (non-robocentric) frame
+  if (submap_collection.empty()) {
+    return;
+  }
+  T_F_O_ = submap_collection.getSubmap(submap_collection.getFirstSubmapId())
+               .getPose()
+               .inverse()
+               .cast<FloatingPoint>();
+
   // Get the submap IDs that used to be in the collection
   SubmapIdSet submap_ids_in_spatial_hash;
   for (const auto& submap_kv : submaps_in_spatial_hash_) {
@@ -31,11 +40,12 @@ void VoxgraphSpatialHash::updateSpatialHash(
   for (const voxgraph::SubmapID submap_id : submaps_to_add) {
     const voxgraph::VoxgraphSubmap& submap =
         submap_collection.getSubmap(submap_id);
-    const voxgraph::Transformation& submap_pose = submap.getPose();
+    const voxgraph::Transformation T_F_submap =
+        T_F_O_.cast<voxblox::FloatingPoint>() * submap.getPose();
     const voxblox::Layer<voxblox::TsdfVoxel>& submap_tsdf =
         submap.getTsdfMap().getTsdfLayer();
-    ROS_INFO_STREAM("Adding submap: " << submap_id);
-    addSubmap(submap_id, submap_pose, submap_tsdf);
+    //    ROS_INFO_STREAM("Adding submap: " << submap_id);
+    addSubmap(submap_id, T_F_submap, submap_tsdf);
   }
 
   // NOTE: Submaps are currently never deleted from the submap collection,
@@ -48,13 +58,14 @@ void VoxgraphSpatialHash::updateSpatialHash(
   for (const voxgraph::SubmapID submap_id : submap_ids_in_spatial_hash) {
     const voxgraph::VoxgraphSubmap& submap =
         submap_collection.getSubmap(submap_id);
-    const voxgraph::Transformation& new_submap_pose = submap.getPose();
-    if (submapPoseChanged(submap_id, new_submap_pose)) {
+    const voxgraph::Transformation T_F_submap_new =
+        T_F_O_.cast<voxblox::FloatingPoint>() * submap.getPose();
+    if (submapPoseChanged(submap_id, T_F_submap_new)) {
       const voxblox::Layer<voxblox::TsdfVoxel>& submap_tsdf =
           submap.getTsdfMap().getTsdfLayer();
-      ROS_INFO_STREAM("Moving submap: " << submap_id);
+      //      ROS_INFO_STREAM("Moving submap: " << submap_id);
       removeSubmap(submap_id, submap_tsdf);
-      addSubmap(submap_id, new_submap_pose, submap_tsdf);
+      addSubmap(submap_id, T_F_submap_new, submap_tsdf);
     }
   }
 }
@@ -80,7 +91,7 @@ void VoxgraphSpatialHash::publishSpatialHash(ros::Publisher spatial_hash_pub) {
 
   visualization_msgs::MarkerArray marker_array;
   for (auto& marker_kv : marker_map) {
-    marker_kv.second.header.frame_id = "odom";
+    marker_kv.second.header.frame_id = fixed_frame_name_;
     marker_kv.second.header.stamp = current_time;
     marker_kv.second.action = visualization_msgs::Marker::ADD;
     marker_kv.second.pose.orientation.w = 1.0;
@@ -108,14 +119,17 @@ void VoxgraphSpatialHash::removeSubmap(
     const voxblox::Layer<voxblox::TsdfVoxel>& submap_tsdf) {
   const auto& submap_it = submaps_in_spatial_hash_.find(submap_id);
   CHECK(submap_it != submaps_in_spatial_hash_.end());
-  const voxgraph::Transformation& submap_pose = submap_it->second;
-  addSubmap(submap_id, submap_pose, submap_tsdf, true);
+  const voxgraph::Transformation& T_F_submap_old = submap_it->second;
+  addSubmap(submap_id, T_F_submap_old, submap_tsdf, true);
 }
 
 void VoxgraphSpatialHash::addSubmap(
     const voxgraph::SubmapID submap_id,
-    const voxgraph::Transformation& T_odom_submap,
+    const voxgraph::Transformation& T_F_submap,
     const voxblox::Layer<voxblox::TsdfVoxel>& submap_tsdf, const bool remove) {
+  LOG(INFO) << "Spatial hash: " << (remove ? "Removing" : "Adding")
+            << " submap " << submap_id;
+
   // Precompute the overlapping indices based on the AABB
   std::vector<voxblox::BlockIndex> colliding_index_offsets;
   {
@@ -130,7 +144,7 @@ void VoxgraphSpatialHash::addSubmap(
           if (idx_z) unit_cube_vertex.z() += 1.0;
 
           const voxblox::Point rotated_unit_cube_vertex =
-              T_odom_submap.getRotation().rotate(unit_cube_vertex);
+              T_F_submap.getRotation().rotate(unit_cube_vertex);
 
           aabb_min = aabb_min.cwiseMin(rotated_unit_cube_vertex);
           aabb_max = aabb_max.cwiseMax(rotated_unit_cube_vertex);
@@ -153,9 +167,9 @@ void VoxgraphSpatialHash::addSubmap(
         << aabb_min_idx.y() << ", " << aabb_min_idx.z() << "; AABB idx max "
         << aabb_max_idx.x() << ", " << aabb_max_idx.y() << ", "
         << aabb_max_idx.z() << "\nat submap rotation rpy:\n"
-        << T_odom_submap.getRotation().log().x() << ", "
-        << T_odom_submap.getRotation().log().y() << ", "
-        << T_odom_submap.getRotation().log().z();
+        << T_F_submap.getRotation().log().x() << ", "
+        << T_F_submap.getRotation().log().y() << ", "
+        << T_F_submap.getRotation().log().z();
 
     for (int idx_x = aabb_min_idx.x(); idx_x <= aabb_max_idx.x(); ++idx_x) {
       for (int idx_y = aabb_min_idx.y(); idx_y <= aabb_max_idx.y(); ++idx_y) {
@@ -176,7 +190,7 @@ void VoxgraphSpatialHash::addSubmap(
         voxblox::getCenterPointFromGridIndex(submap_block_index,
                                              block_grid_size_);
     const voxblox::Point t_mission_block_center =
-        T_odom_submap * t_submap_block_center;
+        T_F_submap * t_submap_block_center;
     const auto mission_block_index =
         voxblox::getGridIndexFromPoint<voxblox::BlockIndex>(
             t_mission_block_center, block_grid_size_inv_);
@@ -197,23 +211,23 @@ void VoxgraphSpatialHash::addSubmap(
   if (remove) {
     submaps_in_spatial_hash_.erase(submap_id);
   } else {
-    submaps_in_spatial_hash_.emplace(submap_id, T_odom_submap);
+    submaps_in_spatial_hash_.emplace(submap_id, T_F_submap);
   }
 }
 
 bool VoxgraphSpatialHash::submapPoseChanged(
     const voxgraph::SubmapID submap_id,
-    const voxgraph::Transformation& new_submap_pose) {
+    const voxgraph::Transformation& T_F_submap_new) {
   const auto& submap_old_it = submaps_in_spatial_hash_.find(submap_id);
   if (submap_old_it == submaps_in_spatial_hash_.end()) {
     LOG(WARNING) << "Requested whether a submap moved even though it has not "
                     "yet been integrated. This should never happen.";
     return false;
   }
-  const voxgraph::Transformation& submap_pose_old = submap_old_it->second;
+  const voxgraph::Transformation& T_F_submap_old = submap_old_it->second;
 
   const voxgraph::Transformation pose_delta =
-      submap_pose_old.inverse() * new_submap_pose;
+      T_F_submap_old.inverse() * T_F_submap_new;
   const voxblox::FloatingPoint angle_delta = pose_delta.log().tail<3>().norm();
   const voxblox::FloatingPoint translation_delta =
       pose_delta.log().head<3>().norm();

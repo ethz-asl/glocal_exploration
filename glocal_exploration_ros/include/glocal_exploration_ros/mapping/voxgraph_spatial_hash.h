@@ -2,6 +2,7 @@
 #define GLOCAL_EXPLORATION_ROS_MAPPING_VOXGRAPH_SPATIAL_HASH_H_
 
 #include <set>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -20,13 +21,15 @@ class VoxgraphSpatialHash {
   using SpatialSubmapIdHash =
       voxblox::AnyIndexHashMapType<UnorderedSubmapIdSet>::type;
 
-  VoxgraphSpatialHash() = default;
+  VoxgraphSpatialHash() : fixed_frame_name_("submap_0") {}
 
   std::vector<voxgraph::SubmapID> getSubmapsAtPosition(
       const Point& position) const {
+    const voxblox::Point t_F_block =
+        (T_F_O_ * position).cast<voxblox::FloatingPoint>();
     const auto mission_block_index =
         voxblox::getGridIndexFromPoint<voxblox::BlockIndex>(
-            position.cast<voxblox::FloatingPoint>(), block_grid_size_inv_);
+            t_F_block, block_grid_size_inv_);
     if (spatial_submap_id_hash_.count(mission_block_index)) {
       std::lock_guard<std::mutex> spatial_hash_lock(spatial_hash_mutex_);
       const UnorderedSubmapIdSet& submap_id_set =
@@ -39,12 +42,14 @@ class VoxgraphSpatialHash {
     }
   }
 
-  void updateSpatialHash(
-      const voxgraph::VoxgraphSubmapCollection& submap_collection);
+  void update(const voxgraph::VoxgraphSubmapCollection& submap_collection);
 
   void publishSpatialHash(ros::Publisher spatial_hash_pub);
 
  private:
+  Transformation T_F_O_;
+  const std::string fixed_frame_name_;
+
   SpatialSubmapIdHash spatial_submap_id_hash_;
   std::unordered_map<voxgraph::SubmapID, voxgraph::Transformation>
       submaps_in_spatial_hash_;
@@ -56,12 +61,12 @@ class VoxgraphSpatialHash {
   void removeSubmap(const voxgraph::SubmapID submap_id,
                     const voxblox::Layer<voxblox::TsdfVoxel>& submap_tsdf);
   void addSubmap(const voxgraph::SubmapID submap_id,
-                 const voxgraph::Transformation& T_odom_submap,
+                 const voxgraph::Transformation& T_F_submap,
                  const voxblox::Layer<voxblox::TsdfVoxel>& submap_tsdf,
                  const bool remove = false);
 
   bool submapPoseChanged(const voxgraph::SubmapID submap_id,
-                         const voxgraph::Transformation& new_submap_pose);
+                         const voxgraph::Transformation& T_F_submap_new);
 };
 }  // namespace glocal_exploration
 

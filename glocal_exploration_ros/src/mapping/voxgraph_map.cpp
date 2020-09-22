@@ -67,8 +67,7 @@ VoxgraphMap::VoxgraphMap(const Config& config,
   // Setup the new voxgraph submap callback
   voxgraph_server_->setExternalNewSubmapCallback([&] {
     // Update the spatial submap ID hash
-    voxgraph_spatial_hash_.updateSpatialHash(
-        voxgraph_server_->getSubmapCollection());
+    voxgraph_spatial_hash_.update(voxgraph_server_->getSubmapCollection());
     if (0 < voxgraph_spatial_hash_pub_.getNumSubscribers()) {
       voxgraph_spatial_hash_.publishSpatialHash(voxgraph_spatial_hash_pub_);
     }

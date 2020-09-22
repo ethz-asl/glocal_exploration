@@ -3,6 +3,7 @@
 
 #include <limits>
 #include <set>
+#include <string>
 #include <unordered_map>
 
 #include <glocal_exploration/mapping/map_base.h>
@@ -20,7 +21,8 @@ class VoxgraphLocalArea {
   using SubmapIdSet = std::set<SubmapId>;
 
   explicit VoxgraphLocalArea(const voxblox::TsdfMap::Config& config)
-      : local_area_layer_(config.tsdf_voxel_size, config.tsdf_voxels_per_side) {
+      : fixed_frame_name_("submap_0"),
+        local_area_layer_(config.tsdf_voxel_size, config.tsdf_voxels_per_side) {
   }
 
   void update(const voxgraph::VoxgraphSubmapCollection& submap_collection,
@@ -35,6 +37,10 @@ class VoxgraphLocalArea {
 
  protected:
   static constexpr voxblox::FloatingPoint kTsdfObservedWeight = 1e-3;
+
+  glocal_exploration::Transformation T_F_O_;
+  const std::string fixed_frame_name_;
+
   std::unordered_map<SubmapId, Transformation> submaps_in_local_area_;
   voxblox::Layer<TsdfVoxel> local_area_layer_;
 
@@ -44,12 +50,12 @@ class VoxgraphLocalArea {
   void deintegrateSubmap(const SubmapId submap_id,
                          const voxblox::Layer<TsdfVoxel>& submap_tsdf);
   void integrateSubmap(const SubmapId submap_id,
-                       const Transformation& submap_pose,
+                       const Transformation& T_F_submap,
                        const voxblox::Layer<TsdfVoxel>& submap_tsdf,
                        bool deintegrate = false);
 
   bool submapPoseChanged(const SubmapId submap_id,
-                         const Transformation& new_submap_pose);
+                         const Transformation& T_F_submap_new);
 };
 }  // namespace glocal_exploration
 
