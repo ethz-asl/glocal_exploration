@@ -4,6 +4,7 @@
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include <glocal_exploration/common.h>
 #include <voxgraph/frontend/submap_collection/voxgraph_submap_collection.h>
@@ -21,14 +22,20 @@ class VoxgraphSpatialHash {
 
   VoxgraphSpatialHash() = default;
 
-  UnorderedSubmapIdSet* getSubmapsAtPosition(const Point& position) {
+  std::vector<voxgraph::SubmapID> getSubmapsAtPosition(
+      const Point& position) const {
     const auto mission_block_index =
         voxblox::getGridIndexFromPoint<voxblox::BlockIndex>(
             position.cast<voxblox::FloatingPoint>(), block_grid_size_inv_);
     if (spatial_submap_id_hash_.count(mission_block_index)) {
-      return &spatial_submap_id_hash_.at(mission_block_index);
+      std::lock_guard<std::mutex> spatial_hash_lock(spatial_hash_mutex_);
+      const UnorderedSubmapIdSet& submap_id_set =
+          spatial_submap_id_hash_.at(mission_block_index);
+      std::vector<voxgraph::SubmapID> submap_id_vector(submap_id_set.begin(),
+                                                       submap_id_set.end());
+      return submap_id_vector;
     } else {
-      return nullptr;
+      return std::vector<voxgraph::SubmapID>();
     }
   }
 
@@ -41,6 +48,8 @@ class VoxgraphSpatialHash {
   SpatialSubmapIdHash spatial_submap_id_hash_;
   std::unordered_map<voxgraph::SubmapID, voxgraph::Transformation>
       submaps_in_spatial_hash_;
+  mutable std::mutex spatial_hash_mutex_;
+
   const float block_grid_size_ = 3.2;
   const float block_grid_size_inv_ = 1.f / block_grid_size_;
 

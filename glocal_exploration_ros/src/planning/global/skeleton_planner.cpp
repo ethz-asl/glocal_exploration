@@ -44,8 +44,8 @@ void SkeletonPlanner::Config::printFields() const {
 SkeletonPlanner::SkeletonPlanner(const Config& config,
                                  std::shared_ptr<Communicator> communicator)
     : config_(config.checkValid()),
-      SubmapFrontierEvaluator(config.submap_frontier_config,
-                              std::move(communicator)) {
+      SubmapFrontierEvaluator(config.submap_frontier_config, communicator),
+      skeleton_a_star_(communicator) {
   LOG_IF(INFO, config_.verbosity >= 1) << "\n" << config_.toString();
 
   // NOTE(schmluk): The skeleton planner has an internal cblox server that
@@ -55,11 +55,6 @@ SkeletonPlanner::SkeletonPlanner(const Config& config,
   // Setup the skeleton planner.
   ros::NodeHandle nh_private(config_.nh_private_namespace);
   ros::NodeHandle nh(ros::names::parentNamespace(config_.nh_private_namespace));
-  // TODO(victorr): Replace with new native planner once ready
-  //  skeleton_planner_ =
-  //      std::make_unique<mav_planning::CbloxSkeletonGlobalPlanner>(nh,
-  //                                                                 nh_private);
-  //  skeleton_planner_->setupPlannerAndSmoother();
 
   // Precompute goal search offsets (points on cube ordered by distance).
   goal_search_offsets_.reserve(std::pow(config_.goal_search_steps, 3));
@@ -446,41 +441,10 @@ bool SkeletonPlanner::findValidGoalPoint(Point* goal) {
 bool SkeletonPlanner::computePath(const Point& goal,
                                   std::vector<WayPoint>* way_points) {
   CHECK_NOTNULL(way_points);
-  // Setup data.
-  geometry_msgs::PoseStamped start_pose;
-  geometry_msgs::PoseStamped goal_pose;
-  geometry_msgs::PoseArray path;
-  start_pose.pose.position.x = comm_->currentPose().x;
-  start_pose.pose.position.y = comm_->currentPose().y;
-  start_pose.pose.position.z = comm_->currentPose().z;
-  start_pose.pose.orientation.w = 1.0;
-  goal_pose.pose.position.x = goal.x();
-  goal_pose.pose.position.y = goal.y();
-  goal_pose.pose.position.z = goal.z();
-  goal_pose.pose.orientation.w = 1.0;
 
-  // TODO(victorr): Compute path along skeletons
-  return false;
-
-  // Compute path.
-  //  if (!skeleton_planner_->planPath(start_pose, goal_pose, &path)) {
-  //    return false;
-  //  }
-  if (path.poses.empty()) {
-    return false;
-  }
-
-  // Write all way points to result.
-  way_points->clear();
-  way_points->reserve(path.poses.size());
-  for (const auto& point : path.poses) {
-    WayPoint temp_point;
-    temp_point.x = point.position.x;
-    temp_point.y = point.position.y;
-    temp_point.z = point.position.z;
-    way_points->emplace_back(temp_point);
-  }
-  return true;
+  // Compute path along skeletons
+  return skeleton_a_star_.planPath(comm_->currentPose().position(), goal,
+                                   way_points);
 }
 
 }  // namespace glocal_exploration

@@ -14,6 +14,7 @@
 #include <glocal_exploration/state/communicator.h>
 #include <glocal_exploration/3rd_party/config_utilities.hpp>
 
+#include "glocal_exploration_ros/planning/global/skeleton_a_star.h"
 #include "glocal_exploration_ros/planning/global/skeleton_submap_collection.h"
 
 namespace glocal_exploration {
@@ -79,11 +80,10 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
 
   void addSubmap(voxgraph::VoxgraphSubmap::ConstPtr submap_ptr,
                  const float traversability_radius) {
-    skeleton_submap_collection_.addSubmap(std::move(submap_ptr),
-                                          traversability_radius);
+    skeleton_a_star_.addSubmap(std::move(submap_ptr), traversability_radius);
   }
   const SkeletonSubmapCollection& getSkeletonSubmapCollection() {
-    return skeleton_submap_collection_;
+    return skeleton_a_star_.getSkeletonSubmapCollection();
   }
 
  private:
@@ -104,9 +104,7 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   const Config config_;
 
   // Skeleton planner.
-  //  std::unique_ptr<mav_planning::CbloxSkeletonGlobalPlanner>
-  //  skeleton_planner_;
-  SkeletonSubmapCollection skeleton_submap_collection_;
+  SkeletonAStar skeleton_a_star_;
 
   // Variables.
   std::vector<WayPoint> way_points_;  // in mission frame.

@@ -184,18 +184,17 @@ bool VoxgraphMap::isObservedInGlobalMap(const Point& position) {
 
   // As a last resort, check the submaps in the global map that overlap with
   // the queried position
-  VoxgraphSpatialHash::UnorderedSubmapIdSet* submaps_at_position =
-      voxgraph_spatial_hash_.getSubmapsAtPosition(position);
-  return submaps_at_position &&
-         std::any_of(
-             submaps_at_position->cbegin(), submaps_at_position->cend(),
-             [this, position](const voxgraph::SubmapID& submap_id) {
-               const voxgraph::VoxgraphSubmap& submap =
-                   voxgraph_server_->getSubmapCollection().getSubmap(submap_id);
-               Point local_position =
-                   submap.getPose().inverse().cast<FloatingPoint>() * position;
-               return submap.getEsdfMap().isObserved(local_position);
-             });
+  for (const voxgraph::SubmapID submap_id :
+       voxgraph_spatial_hash_.getSubmapsAtPosition(position)) {
+    const voxgraph::VoxgraphSubmap& submap =
+        voxgraph_server_->getSubmapCollection().getSubmap(submap_id);
+    Point local_position =
+        submap.getPose().inverse().cast<FloatingPoint>() * position;
+    if (submap.getEsdfMap().isObserved(local_position)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 bool VoxgraphMap::isTraversableInGlobalMap(const Point& position) {
@@ -216,23 +215,19 @@ bool VoxgraphMap::isTraversableInGlobalMap(const Point& position) {
 
   // Check the submaps that overlap with the queried position
   bool traversable_anywhere = false;
-  VoxgraphSpatialHash::UnorderedSubmapIdSet* submaps_at_position =
-      voxgraph_spatial_hash_.getSubmapsAtPosition(position);
-  if (submaps_at_position) {
-    for (const voxgraph::SubmapID& submap_id : *submaps_at_position) {
-      double distance = 0.0;
-      const voxgraph::VoxgraphSubmap& submap =
-          voxgraph_server_->getSubmapCollection().getSubmap(submap_id);
-      Point local_position =
-          submap.getPose().inverse().cast<FloatingPoint>() * position;
-      if (submap.getEsdfMap().getDistanceAtPosition(local_position,
-                                                    &distance)) {
-        // This means the voxel is observed.
-        if (distance <= config_.traversability_radius) {
-          return false;
-        } else {
-          traversable_anywhere = true;
-        }
+  for (const voxgraph::SubmapID submap_id :
+       voxgraph_spatial_hash_.getSubmapsAtPosition(position)) {
+    double distance = 0.0;
+    const voxgraph::VoxgraphSubmap& submap =
+        voxgraph_server_->getSubmapCollection().getSubmap(submap_id);
+    Point local_position =
+        submap.getPose().inverse().cast<FloatingPoint>() * position;
+    if (submap.getEsdfMap().getDistanceAtPosition(local_position, &distance)) {
+      // This means the voxel is observed.
+      if (distance <= config_.traversability_radius) {
+        return false;
+      } else {
+        traversable_anywhere = true;
       }
     }
   }
@@ -256,6 +251,39 @@ std::vector<MapBase::SubmapData> VoxgraphMap::getAllSubmapData() {
     data.push_back(datum);
   }
   return data;
+}
+
+bool VoxgraphMap::isLineTraversableInActiveSubmap(const Point& start_point,
+                                                  const Point& end_point) {
+  const int n_points = static_cast<int>(
+      std::floor((start_point - end_point).norm() / c_voxel_size_) + 1);
+  const Point increment =
+      (end_point - start_point) / static_cast<double>(n_points);
+  for (int i = 1; i <= n_points; ++i) {
+    if (!isTraversableInActiveSubmap(start_point +
+                                     static_cast<double>(i) * increment)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool VoxgraphMap::isLineTraversableInGlobalMap(const Point& start_point,
+                                               const Point& end_point) {
+  // TODO(victorr): Use sphere tracing on the ESDFs are available
+  const int n_points = static_cast<int>(
+      std::floor((start_point - end_point).norm() / c_voxel_size_) + 1);
+  const Point increment =
+      (end_point - start_point) / static_cast<double>(n_points);
+  for (int i = 1; i <= n_points; ++i) {
+    if (!isTraversableInGlobalMap(start_point +
+                                  static_cast<double>(i) * increment)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 }  // namespace glocal_exploration

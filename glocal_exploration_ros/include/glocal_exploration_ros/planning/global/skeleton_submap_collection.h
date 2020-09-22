@@ -18,6 +18,14 @@ class SkeletonSubmapCollection {
         std::make_shared<SkeletonSubmap>(submap_ptr, traversability_radius));
   }
 
+  const SkeletonSubmap& getSubmapById(
+      const voxgraph::SubmapID submap_id) const {
+    auto it = skeleton_submaps_.find(submap_id);
+    CHECK(it != skeleton_submaps_.end())
+        << "Could not find skeleton submap with ID " << submap_id;
+    return *it->second;
+  }
+
   SkeletonSubmap::ConstPtr getSubmapConstPtrById(
       const voxgraph::SubmapID submap_id) const {
     auto it = skeleton_submaps_.find(submap_id);

@@ -170,6 +170,7 @@ void VoxgraphSpatialHash::addSubmap(
 
   voxblox::BlockIndexList submap_blocks;
   submap_tsdf.getAllAllocatedBlocks(&submap_blocks);
+  std::lock_guard<std::mutex> spatial_hash_lock(spatial_hash_mutex_);
   for (const voxblox::BlockIndex& submap_block_index : submap_blocks) {
     const voxblox::Point t_submap_block_center =
         voxblox::getCenterPointFromGridIndex(submap_block_index,

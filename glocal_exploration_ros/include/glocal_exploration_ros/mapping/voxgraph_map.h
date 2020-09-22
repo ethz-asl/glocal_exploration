@@ -38,12 +38,24 @@ class VoxgraphMap : public MapBase {
 
   // MapBase overrides.
   double getVoxelSize() override { return c_voxel_size_; }
+  std::vector<SubmapData> getAllSubmapData() override;
+
   bool isTraversableInActiveSubmap(const Point& position) override;
-  VoxelState getVoxelStateInLocalArea(const Point& position) override;
+  bool isLineTraversableInActiveSubmap(const Point& start_point,
+                                       const Point& end_point);
+
   Point getVoxelCenterInLocalArea(const Point& point) override;
+  VoxelState getVoxelStateInLocalArea(const Point& position) override;
+
   bool isObservedInGlobalMap(const Point& position) override;
   bool isTraversableInGlobalMap(const Point& position) override;
-  std::vector<SubmapData> getAllSubmapData() override;
+  bool isLineTraversableInGlobalMap(const Point& start_point,
+                                    const Point& end_point);
+
+  std::vector<voxgraph::SubmapID> getSubmapsAtPosition(
+      const Point& position) const {
+    return voxgraph_spatial_hash_.getSubmapsAtPosition(position);
+  }
 
  protected:
   const Config config_;
