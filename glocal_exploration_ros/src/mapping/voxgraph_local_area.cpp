@@ -12,6 +12,7 @@ namespace glocal_exploration {
 
 void VoxgraphLocalArea::update(
     const voxgraph::VoxgraphSubmapCollection& submap_collection,
+    const VoxgraphSpatialHash& spatial_submap_id_hash,
     const voxblox::EsdfMap& local_map) {
   // Update the transform from the odom to a fixed (non-robocentric) frame
   if (submap_collection.empty()) {
@@ -22,20 +23,20 @@ void VoxgraphLocalArea::update(
           .getPose());
 
   // Get bounding box of local map
+  // TODO(victorr): Deprecate the AABB
   updateLocalMapAabb(local_map);
 
   // Find the submaps that currently overlap with the local map
   SubmapIdSet current_neighboring_submaps;
-  for (const voxgraph::VoxgraphSubmap::ConstPtr& submap_in_global_map :
-       submap_collection.getSubmapConstPtrs()) {
-    const SubmapId submap_id = submap_in_global_map->getID();
-    if (submap_id == submap_collection.getActiveSubmapID()) {
-      // Exclude the active submap since its TSDF might not yet be finished
-      continue;
-    }
-    if (local_map_aabb_.overlapsWith(
-            submap_in_global_map->getOdomFrameSurfaceAabb())) {
-      current_neighboring_submaps.emplace(submap_id);
+  voxblox::BlockIndexList local_map_block_list;
+  local_map.getEsdfLayer().getAllAllocatedBlocks(&local_map_block_list);
+  for (const voxblox::BlockIndex& block_index : local_map_block_list) {
+    const voxblox::Point t_O_block = voxblox::getCenterPointFromGridIndex(
+        block_index, local_map.block_size());
+    for (const voxgraph::SubmapID submap_id :
+         spatial_submap_id_hash.getSubmapsAtPosition(
+             t_O_block.cast<FloatingPoint>())) {
+      current_neighboring_submaps.insert(submap_id);
     }
   }
 

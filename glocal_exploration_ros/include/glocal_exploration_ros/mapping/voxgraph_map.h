@@ -66,8 +66,6 @@ class VoxgraphMap : public MapBase {
   std::unique_ptr<VoxgraphLocalArea> local_area_;
   bool local_area_needs_update_;
   void updateLocalAreaIfNeeded();
-  static constexpr double local_area_pruning_period_s_ = 10.0;
-  ros::Timer local_area_pruning_timer_;
   ros::Publisher local_area_pub_;
 
   VoxgraphSpatialHash voxgraph_spatial_hash_;

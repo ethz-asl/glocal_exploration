@@ -11,6 +11,7 @@
 #include <voxgraph/frontend/submap_collection/voxgraph_submap_collection.h>
 
 #include "glocal_exploration_ros/mapping/frame_transformer.h"
+#include "glocal_exploration_ros/mapping/voxgraph_spatial_hash.h"
 
 namespace glocal_exploration {
 class VoxgraphLocalArea {
@@ -27,6 +28,7 @@ class VoxgraphLocalArea {
         fixed_frame_transformer_("submap_0") {}
 
   void update(const voxgraph::VoxgraphSubmapCollection& submap_collection,
+              const VoxgraphSpatialHash& spatial_submap_id_hash,
               const voxblox::EsdfMap& local_map);
   void prune();
 
