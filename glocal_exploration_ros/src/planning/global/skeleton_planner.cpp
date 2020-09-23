@@ -216,7 +216,7 @@ bool SkeletonPlanner::computeGoalPoint() {
 
     if (time_exceeded || candidate.euclidean_distance >= shortest_path) {
       // These points can never be closer than what we already have.
-      candidate.path_distance = candidate.euclidean_distance;
+      candidate.path_distance = std::numeric_limits<double>::max();
       candidate.reachability = FrontierSearchData::kUnchecked;
     } else {
       // Try to find a path via linked skeleton planning.
