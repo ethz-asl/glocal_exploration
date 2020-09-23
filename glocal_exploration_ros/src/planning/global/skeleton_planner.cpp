@@ -202,7 +202,7 @@ bool SkeletonPlanner::computeGoalPoint() {
   bool found_a_valid_path = false;
   bool time_exceeded = false;
   for (auto& candidate : frontier_data_) {
-    constexpr int64_t kMaxClosestFrontierSearchingTimeSec = 10;
+    constexpr int64_t kMaxClosestFrontierSearchingTimeSec = 25;
     if (!time_exceeded &&
         kMaxClosestFrontierSearchingTimeSec <
             std::chrono::duration_cast<std::chrono::seconds>(

@@ -2,9 +2,10 @@
 #define GLOCAL_EXPLORATION_PLANNING_GLOBAL_SUBMAP_FRONTIER_EVALUATOR_H_
 
 #include <memory>
-#include <unordered_map>
-#include <vector>
 #include <thread>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include "glocal_exploration/3rd_party/config_utilities.hpp"
 #include "glocal_exploration/planning/global/global_planner_base.h"
@@ -58,7 +59,8 @@ class SubmapFrontierEvaluator : public GlobalPlannerBase {
  private:
   void computeFrontierCandidates(
       const voxblox::Layer<voxblox::TsdfVoxel>& layer,
-      const Point& initial_point, std::pair<const int, std::vector<Point>>* output);
+      const Point& initial_point,
+      std::pair<const int, std::vector<Point>>* output);
 
   Index indexFromPoint(const Point& point, double voxel_size_inv) const;
   Point centerPointFromIndex(const Index& index, double voxel_size) const;

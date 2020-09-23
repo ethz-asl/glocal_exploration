@@ -248,11 +248,11 @@ void SubmapFrontierEvaluator::computeFrontierCandidates(
 
   // Logging
   LOG_IF(INFO, config_.verbosity >= 2)
-  << "Found " << result.size() << " frontier candidates in submap "
-  << output->first << " in "
-  << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start)
-      .count()
-  << "ms.";
+      << "Found " << result.size() << " frontier candidates in submap "
+      << output->first << " in "
+      << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start)
+             .count()
+      << "ms.";
 }
 
 SubmapFrontierEvaluator::Index SubmapFrontierEvaluator::indexFromPoint(

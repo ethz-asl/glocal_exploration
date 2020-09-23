@@ -170,9 +170,9 @@ bool SkeletonAStar::getPathBetweenVertices(
       continue;
     }
 
-    // If this vertex is a leaf (only has the 1 edge through which we reached
-    // it), try to connect to a neighboring skeleton submap
-    if (current_vertex.edge_list.size() == 1) {
+    // Unless this vertex already has many neighbors, try to connect to a
+    // neighboring skeleton submap
+    if (current_vertex.edge_list.size() <= 3) {
       const Point t_odom_current_vertex =
           current_submap->getPose() *
           current_vertex.point.cast<FloatingPoint>();
@@ -193,6 +193,7 @@ bool SkeletonAStar::getPathBetweenVertices(
             (nearby_submap->getPose().inverse() * t_odom_current_vertex)
                 .cast<voxblox::FloatingPoint>();
         constexpr int kUseNNearestNeighbors = 3;
+        constexpr float kMaxLinkingDistance = 2.f;
         std::vector<VertexIdElement> nearest_vertex_ids;
         nearby_submap->getNClosestVertices(t_nearby_submap_current_vertex,
                                            kUseNNearestNeighbors,
@@ -205,7 +206,10 @@ bool SkeletonAStar::getPathBetweenVertices(
               nearby_submap->getPose() * nearby_submap->getSkeletonGraph()
                                              .getVertex(nearby_vertex_id)
                                              .point.cast<FloatingPoint>();
-          if (map_->isLineTraversableInGlobalMap(t_odom_current_vertex,
+          const float distance_current_to_nearby_vertex =
+              (t_odom_current_vertex - t_odom_nearby_vertex).norm();
+          if (distance_current_to_nearby_vertex < kMaxLinkingDistance &&
+              map_->isLineTraversableInGlobalMap(t_odom_current_vertex,
                                                  t_odom_nearby_vertex)) {
             if (closed_set.count(nearby_vertex_global_id) > 0) {
               continue;
@@ -230,7 +234,6 @@ bool SkeletonAStar::getPathBetweenVertices(
           }
         }
       }
-      continue;
     }
 
     // Evaluate the vertex's neighbors
