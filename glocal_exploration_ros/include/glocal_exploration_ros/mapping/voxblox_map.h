@@ -33,10 +33,14 @@ class VoxbloxMap : public MapBase {
 
   double getVoxelSize() override;
   bool isTraversableInActiveSubmap(const Point& position) override;
+  bool isLineTraversableInActiveSubmap(const Point& start_point,
+                                       const Point& end_point) override;
   VoxelState getVoxelStateInLocalArea(const Point& position) override;
   Point getVoxelCenterInLocalArea(const Point& position) override;
   bool isObservedInGlobalMap(const Point& position) override;
   bool isTraversableInGlobalMap(const Point& position) override;
+  bool isLineTraversableInGlobalMap(const Point& start_point,
+                                    const Point& end_point) override;
   std::vector<SubmapData> getAllSubmapData() override;
 
  protected:

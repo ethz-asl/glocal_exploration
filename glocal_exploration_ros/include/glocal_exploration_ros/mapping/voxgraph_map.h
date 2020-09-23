@@ -42,7 +42,7 @@ class VoxgraphMap : public MapBase {
 
   bool isTraversableInActiveSubmap(const Point& position) override;
   bool isLineTraversableInActiveSubmap(const Point& start_point,
-                                       const Point& end_point);
+                                       const Point& end_point) override;
 
   Point getVoxelCenterInLocalArea(const Point& point) override;
   VoxelState getVoxelStateInLocalArea(const Point& position) override;
@@ -50,7 +50,7 @@ class VoxgraphMap : public MapBase {
   bool isObservedInGlobalMap(const Point& position) override;
   bool isTraversableInGlobalMap(const Point& position) override;
   bool isLineTraversableInGlobalMap(const Point& start_point,
-                                    const Point& end_point);
+                                    const Point& end_point) override;
   bool getDistanceInGlobalMapAtPosition(const Point& position,
                                         double* min_esdf_distance);
 

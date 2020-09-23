@@ -35,6 +35,8 @@ class MapBase {
 
   /* Local planner */
   virtual bool isTraversableInActiveSubmap(const Point& position) = 0;
+  virtual bool isLineTraversableInActiveSubmap(const Point& start_point,
+                                               const Point& end_point) = 0;
 
   // Voxels are referred in the planner by their center points.
   virtual Point getVoxelCenterInLocalArea(const Point& position) = 0;
@@ -45,6 +47,8 @@ class MapBase {
   virtual bool isObservedInGlobalMap(const Point& position) = 0;
 
   virtual bool isTraversableInGlobalMap(const Point& position) = 0;
+  virtual bool isLineTraversableInGlobalMap(const Point& start_point,
+                                            const Point& end_point) = 0;
 
   virtual std::vector<SubmapData> getAllSubmapData() = 0;
 

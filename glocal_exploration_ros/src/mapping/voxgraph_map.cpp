@@ -261,15 +261,22 @@ std::vector<MapBase::SubmapData> VoxgraphMap::getAllSubmapData() {
 
 bool VoxgraphMap::isLineTraversableInActiveSubmap(const Point& start_point,
                                                   const Point& end_point) {
-  const int n_points = static_cast<int>(
-      std::floor((start_point - end_point).norm() / c_voxel_size_) + 1);
-  const Point increment =
-      (end_point - start_point) / static_cast<double>(n_points);
-  for (int i = 1; i <= n_points; ++i) {
-    if (!isTraversableInActiveSubmap(start_point +
-                                     static_cast<double>(i) * increment)) {
+  const double line_length = (end_point - start_point).norm();
+  const Point line_direction = (end_point - start_point) / line_length;
+  double traveled_distance = 0.0;
+  Point current_position = start_point;
+  CHECK(c_voxel_size_ < config_.traversability_radius);
+  while (traveled_distance <= line_length) {
+    double esdf_distance;
+    if (!voxblox_server_->getEsdfMapPtr()->getDistanceAtPosition(
+            current_position, &esdf_distance) ||
+        esdf_distance < config_.traversability_radius) {
       return false;
     }
+    const double step_size =
+        std::max(c_voxel_size_, esdf_distance - config_.traversability_radius);
+    current_position += step_size * line_direction;
+    traveled_distance += step_size;
   }
 
   return true;
@@ -282,14 +289,16 @@ bool VoxgraphMap::isLineTraversableInGlobalMap(const Point& start_point,
   double traveled_distance = 0.0;
   Point current_position = start_point;
   CHECK(c_voxel_size_ < config_.traversability_radius);
-  while (traveled_distance < line_length) {
+  while (traveled_distance <= line_length) {
     double esdf_distance;
     if (!getDistanceInGlobalMapAtPosition(current_position, &esdf_distance) ||
         esdf_distance < config_.traversability_radius) {
       return false;
     }
-    current_position += esdf_distance * line_direction;
-    traveled_distance += esdf_distance;
+    const double step_size =
+        std::max(c_voxel_size_, esdf_distance - config_.traversability_radius);
+    current_position += step_size * line_direction;
+    traveled_distance += step_size;
   }
 
   return true;
