@@ -10,6 +10,7 @@
 #include <glocal_exploration/common.h>
 #include <voxgraph/frontend/submap_collection/voxgraph_submap_collection.h>
 
+#include "glocal_exploration_ros/mapping/frame_transformer.h"
 #include "glocal_exploration_ros/mapping/set_utils.h"
 
 namespace glocal_exploration {
@@ -21,12 +22,12 @@ class VoxgraphSpatialHash {
   using SpatialSubmapIdHash =
       voxblox::AnyIndexHashMapType<UnorderedSubmapIdSet>::type;
 
-  VoxgraphSpatialHash() : fixed_frame_name_("submap_0") {}
+  VoxgraphSpatialHash() : fixed_frame_transformer_("submap_0") {}
 
   std::vector<voxgraph::SubmapID> getSubmapsAtPosition(
       const Point& position) const {
     const voxblox::Point t_F_block =
-        (T_F_O_ * position).cast<voxblox::FloatingPoint>();
+        fixed_frame_transformer_.transformFromOdomToFixedFrame(position);
     const auto mission_block_index =
         voxblox::getGridIndexFromPoint<voxblox::BlockIndex>(
             t_F_block, block_grid_size_inv_);
@@ -47,13 +48,12 @@ class VoxgraphSpatialHash {
   void publishSpatialHash(ros::Publisher spatial_hash_pub);
 
  private:
-  Transformation T_F_O_;
-  const std::string fixed_frame_name_;
-
   SpatialSubmapIdHash spatial_submap_id_hash_;
   std::unordered_map<voxgraph::SubmapID, voxgraph::Transformation>
       submaps_in_spatial_hash_;
   mutable std::mutex spatial_hash_mutex_;
+
+  FrameTransformer fixed_frame_transformer_;
 
   const float block_grid_size_ = 3.2;
   const float block_grid_size_inv_ = 1.f / block_grid_size_;

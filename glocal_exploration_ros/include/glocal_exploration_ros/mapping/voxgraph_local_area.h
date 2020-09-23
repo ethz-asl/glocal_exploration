@@ -10,6 +10,8 @@
 #include <voxgraph/common.h>
 #include <voxgraph/frontend/submap_collection/voxgraph_submap_collection.h>
 
+#include "glocal_exploration_ros/mapping/frame_transformer.h"
+
 namespace glocal_exploration {
 class VoxgraphLocalArea {
  public:
@@ -21,9 +23,8 @@ class VoxgraphLocalArea {
   using SubmapIdSet = std::set<SubmapId>;
 
   explicit VoxgraphLocalArea(const voxblox::TsdfMap::Config& config)
-      : fixed_frame_name_("submap_0"),
-        local_area_layer_(config.tsdf_voxel_size, config.tsdf_voxels_per_side) {
-  }
+      : local_area_layer_(config.tsdf_voxel_size, config.tsdf_voxels_per_side),
+        fixed_frame_transformer_("submap_0") {}
 
   void update(const voxgraph::VoxgraphSubmapCollection& submap_collection,
               const voxblox::EsdfMap& local_map);
@@ -38,11 +39,10 @@ class VoxgraphLocalArea {
  protected:
   static constexpr voxblox::FloatingPoint kTsdfObservedWeight = 1e-3;
 
-  glocal_exploration::Transformation T_F_O_;
-  const std::string fixed_frame_name_;
-
   std::unordered_map<SubmapId, Transformation> submaps_in_local_area_;
   voxblox::Layer<TsdfVoxel> local_area_layer_;
+
+  FrameTransformer fixed_frame_transformer_;
 
   voxgraph::BoundingBox local_map_aabb_;
   void updateLocalMapAabb(const voxblox::EsdfMap& local_map);

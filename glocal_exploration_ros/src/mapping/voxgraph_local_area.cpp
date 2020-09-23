@@ -17,10 +17,9 @@ void VoxgraphLocalArea::update(
   if (submap_collection.empty()) {
     return;
   }
-  T_F_O_ = submap_collection.getSubmap(submap_collection.getFirstSubmapId())
-               .getPose()
-               .inverse()
-               .cast<FloatingPoint>();
+  fixed_frame_transformer_.update(
+      submap_collection.getSubmap(submap_collection.getFirstSubmapId())
+          .getPose());
 
   // Get bounding box of local map
   updateLocalMapAabb(local_map);
@@ -62,7 +61,8 @@ void VoxgraphLocalArea::update(
       Transformation T_O_submap_new;
       CHECK(submap_collection.getSubmapPose(submap_id, &T_O_submap_new));
       const Transformation T_F_submap_new =
-          T_F_O_.cast<voxblox::FloatingPoint>() * T_O_submap_new;
+          fixed_frame_transformer_.transformFromOdomToFixedFrame(
+              T_O_submap_new);
       if (submapPoseChanged(submap_id, T_F_submap_new)) {
         submaps_to_deintegrate.emplace(submap_id);
         submaps_to_integrate.emplace(submap_id);
@@ -82,7 +82,8 @@ void VoxgraphLocalArea::update(
     const voxgraph::VoxgraphSubmap& submap =
         submap_collection.getSubmap(submap_id);
     const Transformation T_F_submap =
-        T_F_O_.cast<voxblox::FloatingPoint>() * submap.getPose();
+        fixed_frame_transformer_.transformFromOdomToFixedFrame(
+            submap.getPose());
     const voxblox::Layer<TsdfVoxel>& submap_tsdf =
         submap.getTsdfMap().getTsdfLayer();
     integrateSubmap(submap_id, T_F_submap, submap_tsdf);
@@ -118,7 +119,7 @@ void VoxgraphLocalArea::prune() {
 VoxgraphLocalArea::VoxelState VoxgraphLocalArea::getVoxelStateAtPosition(
     const Eigen::Vector3d& position) {
   const voxblox::Point t_F_position =
-      (T_F_O_ * position).cast<voxblox::FloatingPoint>();
+      fixed_frame_transformer_.transformFromOdomToFixedFrame(position);
   TsdfVoxel* voxel_ptr =
       local_area_layer_.getVoxelPtrByCoordinates(t_F_position);
   if (voxel_ptr) {
@@ -135,7 +136,7 @@ VoxgraphLocalArea::VoxelState VoxgraphLocalArea::getVoxelStateAtPosition(
 
 bool VoxgraphLocalArea::isObserved(const Eigen::Vector3d& position) {
   const voxblox::Point t_F_position =
-      (T_F_O_ * position).cast<voxblox::FloatingPoint>();
+      fixed_frame_transformer_.transformFromOdomToFixedFrame(position);
   TsdfVoxel* voxel_ptr =
       local_area_layer_.getVoxelPtrByCoordinates(t_F_position);
   return voxel_ptr && voxblox::utils::isObservedVoxel(*voxel_ptr);
@@ -143,7 +144,7 @@ bool VoxgraphLocalArea::isObserved(const Eigen::Vector3d& position) {
 
 bool VoxgraphLocalArea::isValidAtPosition(const Eigen::Vector3d& position) {
   const voxblox::Point t_F_position =
-      (T_F_O_ * position).cast<voxblox::FloatingPoint>();
+      fixed_frame_transformer_.transformFromOdomToFixedFrame(position);
   return ((local_map_aabb_.min.array() < t_F_position.array()).all() &&
           (t_F_position.array() < local_map_aabb_.max.array()).all());
 }
@@ -151,7 +152,8 @@ bool VoxgraphLocalArea::isValidAtPosition(const Eigen::Vector3d& position) {
 void VoxgraphLocalArea::publishLocalArea(ros::Publisher local_area_pub) {
   pcl::PointCloud<pcl::PointXYZI> local_area_pointcloud_msg;
   local_area_pointcloud_msg.header.stamp = ros::Time::now().toNSec() / 1000ull;
-  local_area_pointcloud_msg.header.frame_id = fixed_frame_name_;
+  local_area_pointcloud_msg.header.frame_id =
+      fixed_frame_transformer_.getFixedFrameId();
 
   voxblox::BlockIndexList block_indices;
   local_area_layer_.getAllAllocatedBlocks(&block_indices);

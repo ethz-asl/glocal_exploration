@@ -16,10 +16,9 @@ void VoxgraphSpatialHash::update(
   if (submap_collection.empty()) {
     return;
   }
-  T_F_O_ = submap_collection.getSubmap(submap_collection.getFirstSubmapId())
-               .getPose()
-               .inverse()
-               .cast<FloatingPoint>();
+  fixed_frame_transformer_.update(
+      submap_collection.getSubmap(submap_collection.getFirstSubmapId())
+          .getPose());
 
   // Get the submap IDs that used to be in the collection
   SubmapIdSet submap_ids_in_spatial_hash;
@@ -41,7 +40,8 @@ void VoxgraphSpatialHash::update(
     const voxgraph::VoxgraphSubmap& submap =
         submap_collection.getSubmap(submap_id);
     const voxgraph::Transformation T_F_submap =
-        T_F_O_.cast<voxblox::FloatingPoint>() * submap.getPose();
+        fixed_frame_transformer_.transformFromOdomToFixedFrame(
+            submap.getPose());
     const voxblox::Layer<voxblox::TsdfVoxel>& submap_tsdf =
         submap.getTsdfMap().getTsdfLayer();
     //    ROS_INFO_STREAM("Adding submap: " << submap_id);
@@ -59,7 +59,8 @@ void VoxgraphSpatialHash::update(
     const voxgraph::VoxgraphSubmap& submap =
         submap_collection.getSubmap(submap_id);
     const voxgraph::Transformation T_F_submap_new =
-        T_F_O_.cast<voxblox::FloatingPoint>() * submap.getPose();
+        fixed_frame_transformer_.transformFromOdomToFixedFrame(
+            submap.getPose());
     if (submapPoseChanged(submap_id, T_F_submap_new)) {
       const voxblox::Layer<voxblox::TsdfVoxel>& submap_tsdf =
           submap.getTsdfMap().getTsdfLayer();
@@ -91,7 +92,8 @@ void VoxgraphSpatialHash::publishSpatialHash(ros::Publisher spatial_hash_pub) {
 
   visualization_msgs::MarkerArray marker_array;
   for (auto& marker_kv : marker_map) {
-    marker_kv.second.header.frame_id = fixed_frame_name_;
+    marker_kv.second.header.frame_id =
+        fixed_frame_transformer_.getFixedFrameId();
     marker_kv.second.header.stamp = current_time;
     marker_kv.second.action = visualization_msgs::Marker::ADD;
     marker_kv.second.pose.orientation.w = 1.0;
