@@ -131,6 +131,19 @@ void VoxgraphSpatialHash::addSubmap(
     const voxblox::Layer<voxblox::TsdfVoxel>& submap_tsdf, const bool remove) {
   LOG(INFO) << "Spatial hash: " << (remove ? "Removing" : "Adding")
             << " submap " << submap_id;
+  if (remove) {
+    if (!submaps_in_spatial_hash_.count(submap_id)) {
+      LOG(ERROR) << "Spatial hash: Tried to remove submap that currently isn't "
+                    "in the spatial hash. This should never happen.";
+      return;
+    }
+  } else {
+    if (submaps_in_spatial_hash_.count(submap_id)) {
+      LOG(ERROR) << "Spatial hash: Tried to add submap that is already "
+                    "in the spatial hash. This should never happen.";
+      return;
+    }
+  }
 
   // Precompute the overlapping indices based on the AABB
   std::vector<voxblox::BlockIndex> colliding_index_offsets;
