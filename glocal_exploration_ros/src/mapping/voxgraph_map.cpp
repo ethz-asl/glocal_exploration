@@ -185,12 +185,14 @@ bool VoxgraphMap::isObservedInGlobalMap(const Point& position) {
   // the queried position
   for (const voxgraph::SubmapID submap_id :
        voxgraph_spatial_hash_.getSubmapsAtPosition(position)) {
-    const voxgraph::VoxgraphSubmap& submap =
-        voxgraph_server_->getSubmapCollection().getSubmap(submap_id);
-    Point local_position =
-        submap.getPose().inverse().cast<FloatingPoint>() * position;
-    if (submap.getEsdfMap().isObserved(local_position)) {
-      return true;
+    voxgraph::VoxgraphSubmap::ConstPtr submap_ptr =
+        voxgraph_server_->getSubmapCollection().getSubmapConstPtr(submap_id);
+    if (submap_ptr) {
+      Point local_position =
+          submap_ptr->getPose().inverse().cast<FloatingPoint>() * position;
+      if (submap_ptr->getEsdfMap().isObserved(local_position)) {
+        return true;
+      }
     }
   }
   return false;
@@ -217,16 +219,19 @@ bool VoxgraphMap::isTraversableInGlobalMap(const Point& position) {
   for (const voxgraph::SubmapID submap_id :
        voxgraph_spatial_hash_.getSubmapsAtPosition(position)) {
     double distance = 0.0;
-    const voxgraph::VoxgraphSubmap& submap =
-        voxgraph_server_->getSubmapCollection().getSubmap(submap_id);
-    Point local_position =
-        submap.getPose().inverse().cast<FloatingPoint>() * position;
-    if (submap.getEsdfMap().getDistanceAtPosition(local_position, &distance)) {
-      // This means the voxel is observed.
-      if (distance <= config_.traversability_radius) {
-        return false;
-      } else {
-        traversable_anywhere = true;
+    voxgraph::VoxgraphSubmap::ConstPtr submap_ptr =
+        voxgraph_server_->getSubmapCollection().getSubmapConstPtr(submap_id);
+    if (submap_ptr) {
+      Point local_position =
+          submap_ptr->getPose().inverse().cast<FloatingPoint>() * position;
+      if (submap_ptr->getEsdfMap().getDistanceAtPosition(local_position,
+                                                         &distance)) {
+        // This means the voxel is observed.
+        if (distance <= config_.traversability_radius) {
+          return false;
+        } else {
+          traversable_anywhere = true;
+        }
       }
     }
   }
