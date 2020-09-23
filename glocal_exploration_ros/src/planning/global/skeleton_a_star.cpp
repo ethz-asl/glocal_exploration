@@ -172,10 +172,9 @@ bool SkeletonAStar::getPathBetweenVertices(
 
     // Unless this vertex already has many neighbors, try to connect to a
     // neighboring skeleton submap
+    const Point t_odom_current_vertex =
+        current_submap->getPose() * current_vertex.point.cast<FloatingPoint>();
     if (current_vertex.edge_list.size() <= 3) {
-      const Point t_odom_current_vertex =
-          current_submap->getPose() *
-          current_vertex.point.cast<FloatingPoint>();
       for (const voxgraph::SubmapID submap_id :
            map_->getSubmapsAtPosition(t_odom_current_vertex)) {
         // Avoid linking the current vertex against vertices of its own submap
@@ -247,15 +246,25 @@ bool SkeletonAStar::getPathBetweenVertices(
       }
 
       if (closed_set.count(neighbor_vertex_id) > 0) {
-        // Already checked this guy as well.
+        // This neighbor has already been checked
         continue;
       }
+
+      // Check if this neighbor is reachable from the current vertex
+      const voxblox::SkeletonVertex& neighbor_vertex =
+          current_graph->getVertex(neighbor_vertex_id.vertex_id);
+      const voxblox::Point t_odom_neighbor_vertex =
+          current_submap->getPose().cast<voxblox::FloatingPoint>() *
+          neighbor_vertex.point;
+      if (!map_->isLineTraversableInGlobalMap(
+              t_odom_current_vertex.cast<FloatingPoint>(),
+              t_odom_neighbor_vertex.cast<FloatingPoint>())) {
+        continue;
+      }
+
       if (open_set.count(neighbor_vertex_id) == 0) {
         open_set.insert(neighbor_vertex_id);
       }
-
-      const voxblox::SkeletonVertex& neighbor_vertex =
-          current_graph->getVertex(neighbor_vertex_id.vertex_id);
 
       FloatingPoint tentative_g_score =
           g_score_map[current_vertex_id] +
@@ -265,9 +274,6 @@ bool SkeletonAStar::getPathBetweenVertices(
       if (g_score_map.count(neighbor_vertex_id) == 0 ||
           g_score_map[neighbor_vertex_id] < tentative_g_score) {
         g_score_map[neighbor_vertex_id] = tentative_g_score;
-        const voxblox::Point t_odom_neighbor_vertex =
-            current_submap->getPose().cast<voxblox::FloatingPoint>() *
-            neighbor_vertex.point;
         f_score_map[neighbor_vertex_id] =
             tentative_g_score + (goal_point - t_odom_neighbor_vertex).norm();
         parent_map[neighbor_vertex_id] = current_vertex_id;
