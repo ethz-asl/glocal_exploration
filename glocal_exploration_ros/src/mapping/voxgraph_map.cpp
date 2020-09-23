@@ -55,6 +55,9 @@ VoxgraphMap::VoxgraphMap(const Config& config,
       [&] { local_area_needs_update_ = true; });
   local_area_pub_ = nh_private.advertise<pcl::PointCloud<pcl::PointXYZI>>(
       "local_area", 1, true);
+  local_area_pruning_timer_ = nh_private.createTimer(
+      ros::Duration(local_area_pruning_period_s_),
+      std::bind(&VoxgraphLocalArea::prune, local_area_.get()));
 
   // Setup the spatial hash
   voxgraph_spatial_hash_pub_ =
@@ -68,12 +71,6 @@ VoxgraphMap::VoxgraphMap(const Config& config,
     if (0 < voxgraph_spatial_hash_pub_.getNumSubscribers()) {
       voxgraph_spatial_hash_.publishSpatialHash(voxgraph_spatial_hash_pub_);
     }
-
-    // Update and prune the local area
-    local_area_->update(voxgraph_server_->getSubmapCollection(),
-                        voxgraph_spatial_hash_,
-                        *voxblox_server_->getEsdfMapPtr());
-    local_area_->prune();
 
     // If the global planner is a frontier based planner we compute the frontier
     // candidates every time a submap is finished to reduce overhead when
