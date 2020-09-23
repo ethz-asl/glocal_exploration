@@ -51,6 +51,8 @@ class VoxgraphMap : public MapBase {
   bool isTraversableInGlobalMap(const Point& position) override;
   bool isLineTraversableInGlobalMap(const Point& start_point,
                                     const Point& end_point);
+  bool getDistanceInGlobalMapAtPosition(const Point& position,
+                                        double* min_esdf_distance);
 
   std::vector<voxgraph::SubmapID> getSubmapsAtPosition(
       const Point& position) const {

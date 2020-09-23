@@ -1,6 +1,7 @@
 #include "glocal_exploration_ros/mapping/voxgraph_map.h"
 
 #include <algorithm>
+#include <limits>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -276,19 +277,53 @@ bool VoxgraphMap::isLineTraversableInActiveSubmap(const Point& start_point,
 
 bool VoxgraphMap::isLineTraversableInGlobalMap(const Point& start_point,
                                                const Point& end_point) {
-  // TODO(victorr): Use sphere tracing on the ESDFs are available
-  const int n_points = static_cast<int>(
-      std::floor((start_point - end_point).norm() / c_voxel_size_) + 1);
-  const Point increment =
-      (end_point - start_point) / static_cast<double>(n_points);
-  for (int i = 1; i <= n_points; ++i) {
-    if (!isTraversableInGlobalMap(start_point +
-                                  static_cast<double>(i) * increment)) {
+  const double line_length = (end_point - start_point).norm();
+  const Point line_direction = (end_point - start_point) / line_length;
+  double traveled_distance = 0.0;
+  Point current_position = start_point;
+  CHECK(c_voxel_size_ < config_.traversability_radius);
+  while (traveled_distance < line_length) {
+    double esdf_distance;
+    if (!getDistanceInGlobalMapAtPosition(current_position, &esdf_distance) ||
+        esdf_distance < config_.traversability_radius) {
       return false;
     }
+    current_position += esdf_distance * line_direction;
+    traveled_distance += esdf_distance;
   }
 
   return true;
+}
+
+bool VoxgraphMap::getDistanceInGlobalMapAtPosition(const Point& position,
+                                                   double* min_esdf_distance) {
+  CHECK_NOTNULL(min_esdf_distance);
+
+  if (!comm_->regionOfInterest()->contains(position)) {
+    return false;
+  }
+
+  // Check the submaps that overlap with the queried position
+  bool distance_available_anywhere = false;
+  *min_esdf_distance = std::numeric_limits<double>::max();
+  for (const voxgraph::SubmapID submap_id :
+       voxgraph_spatial_hash_.getSubmapsAtPosition(position)) {
+    voxgraph::VoxgraphSubmap::ConstPtr submap_ptr =
+        voxgraph_server_->getSubmapCollection().getSubmapConstPtr(submap_id);
+    if (submap_ptr) {
+      Point local_position =
+          submap_ptr->getPose().inverse().cast<FloatingPoint>() * position;
+      double submap_esdf_distance = 0.0;
+      if (submap_ptr->getEsdfMap().getDistanceAtPosition(
+              local_position, &submap_esdf_distance)) {
+        // This means the voxel is observed.
+        *min_esdf_distance = std::min(*min_esdf_distance, submap_esdf_distance);
+        distance_available_anywhere = true;
+      }
+    }
+  }
+
+  return distance_available_anywhere;
 }
 
 }  // namespace glocal_exploration
