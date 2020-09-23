@@ -12,7 +12,8 @@ Panels:
         - /Voxgraph1/Global1/Mesh1
         - /Local planner1
         - /Global planner1
-      Splitter Ratio: 0.7882353067398071
+        - /Global planner1/Submap skeletons1/Namespaces1
+      Splitter Ratio: 0.75
     Tree Height: 738
   - Class: rviz/Selection
     Name: Selection
@@ -32,7 +33,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: Frontiers
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -80,12 +81,19 @@ Visualization Manager:
       Reference Frame: airsim_drone/Lidar
       Value: false
     - Class: rviz/Axes
-      Enabled: false
+      Enabled: true
       Length: 1
       Name: Origin
       Radius: 0.05000000074505806
       Reference Frame: <Fixed Frame>
-      Value: false
+      Value: true
+    - Class: rviz/Axes
+      Enabled: true
+      Length: 1
+      Name: Initial pose
+      Radius: 0.05000000074505806
+      Reference Frame: initial_pose
+      Value: true
     - Class: rviz/Group
       Displays:
         - Alpha: 1
@@ -444,6 +452,11 @@ Visualization Manager:
                   Visible:
                     Value: true
                     submap_0: true
+                    submap_1: true
+                    submap_2: true
+                    submap_3: true
+                    submap_4: true
+                    submap_5: true
                 - Class: voxblox_rviz_plugin/VoxbloxMesh
                   Enabled: false
                   Name: Merged map
@@ -453,6 +466,14 @@ Visualization Manager:
                   Visible: true
               Enabled: true
               Name: Mesh
+            - Class: rviz/MarkerArray
+              Enabled: false
+              Marker Topic: /glocal/glocal_system/mapping/spatial_hash
+              Name: Spatial hash
+              Namespaces:
+                {}
+              Queue Size: 100
+              Value: false
           Enabled: true
           Name: Global
         - Alpha: 0.019999999552965164
@@ -568,7 +589,7 @@ Visualization Manager:
           Marker Topic: /glocal/glocal_system/global_planner/goal_points
           Name: Goal points
           Namespaces:
-            {}
+            "": true
           Queue Size: 100
           Value: true
         - Class: rviz/Marker
@@ -579,14 +600,6 @@ Visualization Manager:
             {}
           Queue Size: 100
           Value: true
-        - Class: rviz/MarkerArray
-          Enabled: false
-          Marker Topic: /glocal/glocal_system/global_planner/skeleton/local_graphs
-          Name: Skeleton
-          Namespaces:
-            {}
-          Queue Size: 100
-          Value: false
         - Class: rviz/Marker
           Enabled: false
           Marker Topic: /glocal/glocal_system/global_planner/frontier_text
@@ -601,6 +614,25 @@ Visualization Manager:
           Name: Executed path
           Namespaces:
             {}
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /glocal/glocal_system/global_planner/skeleton_submaps
+          Name: Submap skeletons
+          Namespaces:
+            submap_0_edges: true
+            submap_0_vertices: true
+            submap_1_edges: true
+            submap_1_vertices: true
+            submap_2_edges: true
+            submap_2_vertices: true
+            submap_3_edges: true
+            submap_3_vertices: true
+            submap_4_edges: true
+            submap_4_vertices: true
+            submap_5_edges: true
+            submap_5_vertices: true
           Queue Size: 100
           Value: true
       Enabled: true
@@ -633,25 +665,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 25.67461395263672
+      Distance: 44.75981521606445
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.5295351147651672
-        Y: 2.37852144241333
-        Z: -1.3976805210113525
+        X: 6.660552024841309
+        Y: -4.806388854980469
+        Z: -4.325517177581787
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6647971868515015
+      Pitch: 0.7647972702980042
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 5.453171253204346
+      Yaw: 4.4431328773498535
     Saved: ~
 Window Geometry:
   Displays:

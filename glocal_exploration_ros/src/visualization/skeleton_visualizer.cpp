@@ -6,8 +6,11 @@
 #include <sstream>
 #include <string>
 
+#include <pcl_conversions/pcl_conversions.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <voxblox/utils/color_maps.h>
+#include <voxblox_skeleton/ros/skeleton_vis.h>
 
 namespace glocal_exploration {
 
@@ -49,6 +52,8 @@ SkeletonVisualizer::SkeletonVisualizer(
       nh_.advertise<visualization_msgs::Marker>("frontier_text", queue_size_);
   inactive_frontiers_pub_ = nh_.advertise<sensor_msgs::PointCloud2>(
       "inactive_frontiers", queue_size_);
+  skeleton_submaps_pub_ = nh_.advertise<visualization_msgs::MarkerArray>(
+      "skeleton_submaps", queue_size_);
 }
 
 void SkeletonVisualizer::visualize() {
@@ -76,6 +81,12 @@ void SkeletonVisualizer::visualize() {
   if (config_.visualize_inactive_frontiers &&
       inactive_frontiers_pub_.getNumSubscribers() > 0) {
     visualizeInactiveFrontiers();
+  }
+
+  // Skeleton submaps.
+  if (config_.visualize_skeleton_submaps &&
+      skeleton_submaps_pub_.getNumSubscribers() > 0) {
+    visualizeSkeletonSubmaps();
   }
 
   // Visualization stat tracking.
@@ -362,6 +373,41 @@ void SkeletonVisualizer::visualizeInactiveFrontiers() {
       inactive_frontiers_pub_.publish(frontier_points_msg);
     }
   }
+}
+
+void SkeletonVisualizer::visualizeSkeletonSubmaps() {
+  voxblox::ExponentialOffsetIdColorMap submap_id_color_map;
+  visualization_msgs::MarkerArray marker_array;
+  for (const auto& submap_ptr :
+       planner_->getSkeletonSubmapCollection().getSubmapConstPtrs()) {
+    // Generate the graph markers
+    visualization_msgs::MarkerArray submap_marker_array;
+    std::string submap_frame_id = submap_ptr->getFrameId();
+    voxblox::visualizeSkeletonGraph(submap_ptr->getSkeletonGraph(),
+                                    submap_frame_id, &submap_marker_array);
+
+    // Namespace and recolor by ID
+    const voxblox::Color submap_color =
+        submap_id_color_map.colorLookup(submap_ptr->getId());
+    const voxblox::Color submap_vertex_color = voxblox::Color::blendTwoColors(
+        submap_color, 0.7f, voxblox::Color::Black(), 0.3f);
+    for (auto& marker : submap_marker_array.markers) {
+      if (marker.ns == "vertices") {
+        voxblox::colorVoxbloxToMsg(submap_vertex_color, &marker.color);
+        marker.colors.clear();
+      } else if (marker.ns == "edges") {
+        voxblox::colorVoxbloxToMsg(submap_color, &marker.color);
+      }
+      marker.ns = submap_frame_id + "_" + marker.ns;
+    }
+
+    // Concatenate
+    marker_array.markers.insert(
+        marker_array.markers.end(),
+        std::make_move_iterator(submap_marker_array.markers.begin()),
+        std::make_move_iterator(submap_marker_array.markers.end()));
+  }
+  skeleton_submaps_pub_.publish(marker_array);
 }
 
 std::string SkeletonVisualizer::frontierTextFormat(double value) const {

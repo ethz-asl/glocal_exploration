@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include <pcl/conversions.h>
@@ -10,6 +11,8 @@
 
 #include <glocal_exploration/planning/global/submap_frontier_evaluator.h>
 #include <glocal_exploration/state/communicator.h>
+
+#include "glocal_exploration_ros/planning/global/skeleton_planner.h"
 
 namespace glocal_exploration {
 
@@ -56,8 +59,19 @@ VoxgraphMap::VoxgraphMap(const Config& config,
       ros::Duration(local_area_pruning_period_s_),
       std::bind(&VoxgraphLocalArea::prune, local_area_.get()));
 
+  // Setup the spatial hash
+  voxgraph_spatial_hash_pub_ =
+      nh_private.advertise<visualization_msgs::MarkerArray>("spatial_hash", 1,
+                                                            true);
+
   // Setup the new voxgraph submap callback
   voxgraph_server_->setExternalNewSubmapCallback([&] {
+    // Update the spatial submap ID hash
+    voxgraph_spatial_hash_.update(voxgraph_server_->getSubmapCollection());
+    if (0 < voxgraph_spatial_hash_pub_.getNumSubscribers()) {
+      voxgraph_spatial_hash_.publishSpatialHash(voxgraph_spatial_hash_pub_);
+    }
+
     // If the global planner is a frontier based planner we compute the frontier
     // candidates every time a submap is finished to reduce overhead when
     // switching to global planning.
@@ -70,6 +84,21 @@ VoxgraphMap::VoxgraphMap(const Config& config,
       datum.tsdf_layer = std::make_shared<const voxblox::Layer<voxblox::TsdfVoxel>>(voxgraph_server_->getSubmapCollection().getSubmap(datum.id).getTsdfMap().getTsdfLayer());
       Point initial_point(0.0, 0.0, 0.0);  // The origin is always free space.
       frontier_evaluator->computeFrontiersForSubmap(datum, initial_point);
+    }
+
+    // If the global planner is a skeleton planner,
+    // add a new skeleton submap corresponding to the new voxgraph submap
+    auto skeleton_planner =
+        dynamic_cast<SkeletonPlanner*>(comm_->globalPlanner().get());
+    if (skeleton_planner) {
+      voxgraph::SubmapID new_submap_id =
+          voxgraph_server_->getSubmapCollection().getLastSubmapId();
+      voxgraph::VoxgraphSubmap::ConstPtr new_submap_ptr =
+          voxgraph_server_->getSubmapCollection().getSubmapConstPtr(
+              new_submap_id);
+      skeleton_planner->addSubmap(
+          std::move(new_submap_ptr),
+          static_cast<float>(config_.traversability_radius));
     }
   });
 
@@ -128,10 +157,11 @@ void VoxgraphMap::updateLocalAreaIfNeeded() {
     CHECK_NOTNULL(local_area_);
 
     local_area_->update(voxgraph_server_->getSubmapCollection(),
+                        voxgraph_spatial_hash_,
                         *voxblox_server_->getEsdfMapPtr());
     local_area_needs_update_ = false;
 
-    if (local_area_pub_.getNumSubscribers() > 0) {
+    if (0 < local_area_pub_.getNumSubscribers()) {
       local_area_->publishLocalArea(local_area_pub_);
     }
   }
@@ -149,48 +179,55 @@ bool VoxgraphMap::isObservedInGlobalMap(const Point& position) {
     return true;
   }
 
-  // As a last resort, search the global map
-  // TODO(victorr): Speed this up using a spatial hash to narrow down
-  //                relevant global submaps
-  auto submaps = voxgraph_server_->getSubmapCollection().getSubmapConstPtrs();
-  return std::any_of(submaps.begin(), submaps.end(),
-                     [position](const voxgraph::VoxgraphSubmap::ConstPtr& s) {
-                       Point local_position =
-                           s->getPose().inverse().cast<FloatingPoint>() *
-                           position;
-                       return s->getEsdfMap().isObserved(local_position);
-                     });
+  // As a last resort, check the submaps in the global map that overlap with
+  // the queried position
+  for (const voxgraph::SubmapID submap_id :
+       voxgraph_spatial_hash_.getSubmapsAtPosition(position)) {
+    voxgraph::VoxgraphSubmap::ConstPtr submap_ptr =
+        voxgraph_server_->getSubmapCollection().getSubmapConstPtr(submap_id);
+    if (submap_ptr) {
+      Point local_position =
+          submap_ptr->getPose().inverse().cast<FloatingPoint>() * position;
+      if (submap_ptr->getEsdfMap().isObserved(local_position)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 bool VoxgraphMap::isTraversableInGlobalMap(const Point& position) {
-  // Discard early if the point isn't traversable in the local area
-  updateLocalAreaIfNeeded();
-  // NOTE: We can only check whether the local area is not occupied and not
-  //       unknown, since the local area only consists of a TSDF (no ESDF) and
-  //       the traversability radius generally exceeds the TSDF truncation
-  //       distance.
-  if (local_area_->isValidAtPosition(position) &&
-      local_area_->getVoxelStateAtPosition(position) != VoxelState::kFree) {
-    return false;
-  }
-
-  // TODO(victorr): Speed this up by using a spatial hash to narrow down
-  //  relevant global submaps
   if (!comm_->regionOfInterest()->contains(position)) {
     return false;
   }
+
+  // Discard early if the point isn't traversable in the local area
+  updateLocalAreaIfNeeded();
+  // NOTE: We can only check whether the local area is not occupied. Since the
+  //       local area only consists of a TSDF (no ESDF) and the traversability
+  //       radius generally exceeds the TSDF truncation distance.
+  if (local_area_->getVoxelStateAtPosition(position) == VoxelState::kOccupied) {
+    return false;
+  }
+
+  // Check the submaps that overlap with the queried position
   bool traversable_anywhere = false;
-  for (const auto& submap :
-       voxgraph_server_->getSubmapCollection().getSubmapPtrs()) {
+  for (const voxgraph::SubmapID submap_id :
+       voxgraph_spatial_hash_.getSubmapsAtPosition(position)) {
     double distance = 0.0;
-    Point local_position =
-        submap->getPose().inverse().cast<FloatingPoint>() * position;
-    if (submap->getEsdfMap().getDistanceAtPosition(local_position, &distance)) {
-      // This means the voxel is observed.
-      if (distance <= config_.traversability_radius) {
-        return false;
-      } else {
-        traversable_anywhere = true;
+    voxgraph::VoxgraphSubmap::ConstPtr submap_ptr =
+        voxgraph_server_->getSubmapCollection().getSubmapConstPtr(submap_id);
+    if (submap_ptr) {
+      Point local_position =
+          submap_ptr->getPose().inverse().cast<FloatingPoint>() * position;
+      if (submap_ptr->getEsdfMap().getDistanceAtPosition(local_position,
+                                                         &distance)) {
+        // This means the voxel is observed.
+        if (distance <= config_.traversability_radius) {
+          return false;
+        } else {
+          traversable_anywhere = true;
+        }
       }
     }
   }
@@ -214,6 +251,39 @@ std::vector<MapBase::SubmapData> VoxgraphMap::getAllSubmapData() {
     data.push_back(datum);
   }
   return data;
+}
+
+bool VoxgraphMap::isLineTraversableInActiveSubmap(const Point& start_point,
+                                                  const Point& end_point) {
+  const int n_points = static_cast<int>(
+      std::floor((start_point - end_point).norm() / c_voxel_size_) + 1);
+  const Point increment =
+      (end_point - start_point) / static_cast<double>(n_points);
+  for (int i = 1; i <= n_points; ++i) {
+    if (!isTraversableInActiveSubmap(start_point +
+                                     static_cast<double>(i) * increment)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool VoxgraphMap::isLineTraversableInGlobalMap(const Point& start_point,
+                                               const Point& end_point) {
+  // TODO(victorr): Use sphere tracing on the ESDFs are available
+  const int n_points = static_cast<int>(
+      std::floor((start_point - end_point).norm() / c_voxel_size_) + 1);
+  const Point increment =
+      (end_point - start_point) / static_cast<double>(n_points);
+  for (int i = 1; i <= n_points; ++i) {
+    if (!isTraversableInGlobalMap(start_point +
+                                  static_cast<double>(i) * increment)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 }  // namespace glocal_exploration
