@@ -22,10 +22,6 @@ void VoxgraphLocalArea::update(
       submap_collection.getSubmap(submap_collection.getFirstSubmapId())
           .getPose());
 
-  // Get bounding box of local map
-  // TODO(victorr): Deprecate the AABB
-  updateLocalMapAabb(local_map);
-
   // Find the submaps that currently overlap with the local map
   SubmapIdSet current_neighboring_submaps;
   voxblox::BlockIndexList local_map_block_list;
@@ -143,13 +139,6 @@ bool VoxgraphLocalArea::isObserved(const Eigen::Vector3d& position) {
   return voxel_ptr && voxblox::utils::isObservedVoxel(*voxel_ptr);
 }
 
-bool VoxgraphLocalArea::isValidAtPosition(const Eigen::Vector3d& position) {
-  const voxblox::Point t_F_position =
-      fixed_frame_transformer_.transformFromOdomToFixedFrame(position);
-  return ((local_map_aabb_.min.array() < t_F_position.array()).all() &&
-          (t_F_position.array() < local_map_aabb_.max.array()).all());
-}
-
 void VoxgraphLocalArea::publishLocalArea(ros::Publisher local_area_pub) {
   pcl::PointCloud<pcl::PointXYZI> local_area_pointcloud_msg;
   local_area_pointcloud_msg.header.stamp = ros::Time::now().toNSec() / 1000ull;
@@ -180,24 +169,11 @@ void VoxgraphLocalArea::publishLocalArea(ros::Publisher local_area_pub) {
   local_area_pub.publish(local_area_pointcloud_msg);
 }
 
-void VoxgraphLocalArea::updateLocalMapAabb(const voxblox::EsdfMap& local_map) {
-  local_map_aabb_.reset();
-  voxblox::BlockIndexList local_map_blocks;
-  local_map.getEsdfLayer().getAllAllocatedBlocks(&local_map_blocks);
-  for (const voxblox::BlockIndex& block_index : local_map_blocks) {
-    local_map_aabb_.min = local_map_aabb_.min.cwiseMin(
-        local_area_layer_.block_size() *
-        block_index.cast<voxblox::FloatingPoint>());
-    local_map_aabb_.max = local_map_aabb_.max.cwiseMax(
-        local_area_layer_.block_size() *
-        (block_index.cast<voxblox::FloatingPoint>() + Point::Ones()));
-  }
-}
-
 void VoxgraphLocalArea::deintegrateSubmap(
     const SubmapId submap_id, const voxblox::Layer<TsdfVoxel>& submap_tsdf) {
   const auto& submap_it = submaps_in_local_area_.find(submap_id);
-  CHECK(submap_it != submaps_in_local_area_.end());
+  CHECK(submap_it != submaps_in_local_area_.end())
+      << "Could not find submap with ID: " << submap_id;
   const Transformation& T_F_submap_old = submap_it->second;
   integrateSubmap(submap_id, T_F_submap_old, submap_tsdf, true);
 }

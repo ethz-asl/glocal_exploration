@@ -46,9 +46,6 @@ class VoxgraphLocalArea {
 
   FrameTransformer fixed_frame_transformer_;
 
-  voxgraph::BoundingBox local_map_aabb_;
-  void updateLocalMapAabb(const voxblox::EsdfMap& local_map);
-
   void deintegrateSubmap(const SubmapId submap_id,
                          const voxblox::Layer<TsdfVoxel>& submap_tsdf);
   void integrateSubmap(const SubmapId submap_id,
