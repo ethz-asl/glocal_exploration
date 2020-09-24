@@ -455,57 +455,58 @@ bool SkeletonPlanner::computePath(const Point& goal,
                                   std::vector<WayPoint>* way_points) {
   CHECK_NOTNULL(way_points);
 
+  Point start_point = comm_->currentPose().position();
+  if (comm_->map()->isTraversableInActiveSubmap(start_point) ||
+      findNearbyTraversablePoint(&start_point)) {
+    // Compute path along skeletons
+    return skeleton_a_star_.planPath(start_point, goal, way_points);
+  }
+
+  LOG(WARNING) << "Skeleton planner: The active submap is not traversable "
+                  "at the current pose. Could not find a nearby valid "
+                  "start position.";
+  return false;
+}
+
+bool SkeletonPlanner::findNearbyTraversablePoint(Point* position) {
+  CHECK_NOTNULL(position);
+  const Point initial_position = *position;
+
   constexpr int kMaxNumSteps = 3;
   const std::shared_ptr<MapBase> map_ptr = comm_->map();
-  const Point current_position = comm_->currentPose().position();
   // TODO(victorr): Get traversability radius from map interface
   const double traversability_radius = 1.0;
 
-  Point start_point = current_position;
-  if (!map_ptr->isTraversableInActiveSubmap(current_position)) {
-    double distance;
-    Point gradient;
-    bool success = false;
-    int step_idx = 1;
-    for (; step_idx <= kMaxNumSteps; ++step_idx) {
-      // Get the distance
-      if (!map_ptr->getDistanceAndGradientAtPositionInActiveSubmap(
-              start_point, &distance, &gradient)) {
-        LOG(WARNING)
-            << "Skeleton planner: The active submap is not traversable at the "
-               "current position. Attempted to find nearby valid start "
-               "position, but failed to look up distance and gradient "
-               "information in its neighborhood.";
-        return false;
-      }
-      // Take a step in the direction that maximizes the distance
-      const double step_size =
-          std::max(map_ptr->getVoxelSize(), traversability_radius - distance);
-      start_point = current_position + step_size * gradient;
-      // Determine if we found a solution
-      if (map_ptr->isTraversableInActiveSubmap(start_point)) {
-        success = true;
-        LOG(INFO) << "Skeleton planner: Succesfully moved start point from "
-                     "intraversable current position ("
-                  << current_position.x() << ", " << current_position.y()
-                  << ", " << current_position.z()
-                  << ") to traversable start point (" << start_point.x() << ", "
-                  << start_point.y() << ", " << start_point.z() << "), after "
-                  << step_idx << " gradient ascent steps.";
-        break;
-      }
-    }
-    if (!success) {
-      LOG(WARNING) << "Skeleton planner: The active submap is not traversable "
-                      "at the current pose. Could not find a nearby valid "
-                      "start position. Giving up after "
-                   << step_idx << " gradient ascent steps.";
+  double distance;
+  Point gradient;
+  int step_idx = 1;
+  for (; step_idx < kMaxNumSteps; ++step_idx) {
+    // Get the distance
+    if (!map_ptr->getDistanceAndGradientAtPositionInActiveSubmap(
+            *position, &distance, &gradient)) {
+      LOG(WARNING) << "Failed to look up distance and gradient "
+                      "information at:\n"
+                   << *position;
       return false;
+    }
+    // Take a step in the direction that maximizes the distance
+    const double step_size =
+        std::max(map_ptr->getVoxelSize(), traversability_radius - distance);
+    *position += step_size * gradient;
+    // Determine if we found a solution
+    if (map_ptr->isTraversableInActiveSubmap(*position)) {
+      LOG(INFO) << "Skeleton planner: Succesfully moved point from "
+                   "intraversable initial position ("
+                << initial_position.x() << ", " << initial_position.y() << ", "
+                << initial_position.z() << ") to traversable start point ("
+                << position->x() << ", " << position->y() << ", "
+                << position->z() << "), after " << step_idx
+                << " gradient ascent steps.";
+      return true;
     }
   }
 
-  // Compute path along skeletons
-  return skeleton_a_star_.planPath(start_point, goal, way_points);
+  return false;
 }
 
 }  // namespace glocal_exploration

@@ -99,6 +99,7 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   void clusterFrontiers();
   bool lineIsIntraversableInSlidingWindowAt(Point* goal_point);
   bool verifyNextWayPoints();
+  bool findNearbyTraversablePoint(Point* position);
 
  private:
   const Config config_;
