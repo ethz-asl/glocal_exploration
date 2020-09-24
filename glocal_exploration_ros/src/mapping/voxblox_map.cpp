@@ -72,6 +72,15 @@ bool VoxbloxMap::isLineTraversableInActiveSubmap(const Point& start_point,
   return true;
 }
 
+bool VoxbloxMap::getDistanceAndGradientAtPositionInActiveSubmap(
+    const Eigen::Vector3d& position, double* distance,
+    Eigen::Vector3d* gradient) {
+  CHECK_NOTNULL(distance);
+  CHECK_NOTNULL(gradient);
+  return server_->getEsdfMapPtr()->getDistanceAndGradientAtPosition(
+      position, distance, gradient);
+}
+
 MapBase::VoxelState VoxbloxMap::getVoxelStateInLocalArea(
     const Point& position) {
   double distance = 0.0;

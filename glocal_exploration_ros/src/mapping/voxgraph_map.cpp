@@ -282,6 +282,15 @@ bool VoxgraphMap::isLineTraversableInActiveSubmap(const Point& start_point,
   return true;
 }
 
+bool VoxgraphMap::getDistanceAndGradientAtPositionInActiveSubmap(
+    const Eigen::Vector3d& position, double* distance,
+    Eigen::Vector3d* gradient) {
+  CHECK_NOTNULL(distance);
+  CHECK_NOTNULL(gradient);
+  return voxblox_server_->getEsdfMapPtr()->getDistanceAndGradientAtPosition(
+      position, distance, gradient);
+}
+
 bool VoxgraphMap::isLineTraversableInGlobalMap(const Point& start_point,
                                                const Point& end_point) {
   const double line_length = (end_point - start_point).norm();

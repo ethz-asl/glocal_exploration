@@ -63,8 +63,8 @@ mapping:
   slice_level: -0.5
   publish_pointclouds: false
   publish_traversable: false
-  publish_slices: false
-  publish_pointclouds_on_update: false
+  publish_slices: true
+  publish_pointclouds_on_update: true
 
   # VOXGRAPH
   debug: false

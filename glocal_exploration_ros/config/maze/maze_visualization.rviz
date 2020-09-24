@@ -13,7 +13,7 @@ Panels:
         - /Local planner1
         - /Global planner1
         - /Global planner1/Submap skeletons1/Namespaces1
-      Splitter Ratio: 0.75
+      Splitter Ratio: 0.8294117450714111
     Tree Height: 738
   - Class: rviz/Selection
     Name: Selection
@@ -355,7 +355,7 @@ Visualization Manager:
               Max Color: 255; 255; 255
               Max Intensity: 3.726989269256592
               Min Color: 0; 0; 0
-              Min Intensity: 1.399999976158142
+              Min Intensity: 1
               Name: Traversable
               Position Transformer: XYZ
               Queue Size: 10
@@ -380,7 +380,7 @@ Visualization Manager:
               Color: 239; 41; 41
               Color Transformer: FlatColor
               Decay Time: 0
-              Enabled: false
+              Enabled: true
               Invert Rainbow: false
               Max Color: 255; 255; 255
               Max Intensity: 4096
@@ -397,7 +397,7 @@ Visualization Manager:
               Unreliable: false
               Use Fixed Frame: true
               Use rainbow: true
-              Value: false
+              Value: true
             - Alpha: 0.20000000298023224
               Autocompute Intensity Bounds: false
               Autocompute Value Bounds:
@@ -413,9 +413,9 @@ Visualization Manager:
               Enabled: true
               Invert Rainbow: false
               Max Color: 255; 255; 255
-              Max Intensity: 2
+              Max Intensity: 1
               Min Color: 0; 0; 0
-              Min Intensity: -2
+              Min Intensity: -1
               Name: ESDF slice
               Position Transformer: XYZ
               Queue Size: 10
@@ -428,6 +428,36 @@ Visualization Manager:
               Use Fixed Frame: true
               Use rainbow: true
               Value: true
+            - Alpha: 0.20000000298023224
+              Autocompute Intensity Bounds: false
+              Autocompute Value Bounds:
+                Max Value: 10
+                Min Value: -10
+                Value: true
+              Axis: Z
+              Channel Name: intensity
+              Class: rviz/PointCloud2
+              Color: 255; 255; 255
+              Color Transformer: Intensity
+              Decay Time: 0
+              Enabled: false
+              Invert Rainbow: false
+              Max Color: 255; 255; 255
+              Max Intensity: 1
+              Min Color: 0; 0; 0
+              Min Intensity: -1
+              Name: TSDF slice
+              Position Transformer: XYZ
+              Queue Size: 10
+              Selectable: true
+              Size (Pixels): 3
+              Size (m): 0.20000000298023224
+              Style: Boxes
+              Topic: /glocal/glocal_system/mapping/tsdf_slice
+              Unreliable: false
+              Use Fixed Frame: true
+              Use rainbow: true
+              Value: false
           Enabled: true
           Name: Local
         - Class: rviz/Group
@@ -483,42 +513,7 @@ Visualization Manager:
                     Value: true
                     submap_0: true
                     submap_1: true
-                    submap_10: true
-                    submap_11: true
-                    submap_12: true
-                    submap_13: true
-                    submap_14: true
-                    submap_15: true
-                    submap_16: true
-                    submap_17: true
-                    submap_18: true
-                    submap_19: true
                     submap_2: true
-                    submap_20: true
-                    submap_21: true
-                    submap_22: true
-                    submap_23: true
-                    submap_24: true
-                    submap_25: true
-                    submap_26: true
-                    submap_27: true
-                    submap_28: true
-                    submap_29: true
-                    submap_3: true
-                    submap_30: true
-                    submap_31: true
-                    submap_32: true
-                    submap_33: true
-                    submap_34: true
-                    submap_35: true
-                    submap_36: true
-                    submap_37: true
-                    submap_4: true
-                    submap_5: true
-                    submap_6: true
-                    submap_7: true
-                    submap_8: true
-                    submap_9: true
                 - Class: voxblox_rviz_plugin/VoxbloxMesh
                   Enabled: false
                   Name: Merged map
@@ -651,7 +646,7 @@ Visualization Manager:
           Marker Topic: /glocal/glocal_system/global_planner/goal_points
           Name: Goal points
           Namespaces:
-            "": true
+            {}
           Queue Size: 100
           Value: true
         - Class: rviz/Marker
@@ -659,7 +654,7 @@ Visualization Manager:
           Marker Topic: /glocal/glocal_system/global_planner/planned_path
           Name: Planned path
           Namespaces:
-            "": true
+            {}
           Queue Size: 100
           Value: true
         - Class: rviz/Marker
@@ -675,7 +670,7 @@ Visualization Manager:
           Marker Topic: /glocal/glocal_system/global_planner/executed_path
           Name: Executed path
           Namespaces:
-            "": true
+            {}
           Queue Size: 100
           Value: true
         - Class: rviz/MarkerArray
@@ -716,25 +711,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 71.52812957763672
+      Distance: 34.785499572753906
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 5.058090686798096
-        Y: -0.4037952721118927
-        Z: 0.23675522208213806
-      Focal Shape Fixed Size: true
+        X: 0
+        Y: 0
+        Z: 0
+      Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 0.7853981852531433
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.719954490661621
+      Yaw: 0.7853981852531433
     Saved: ~
 Window Geometry:
   Displays:
