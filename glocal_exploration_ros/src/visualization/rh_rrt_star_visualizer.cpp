@@ -79,9 +79,6 @@ void RHRRTStarVisualizer::visualize() {
 
   // initialize data
   auto& points = planner_->getTreeData().points;
-  if (points.empty()) {
-    return;
-  }
 
   // cached headers for all msgs
   timestamp_ = ros::Time::now();
