@@ -33,7 +33,8 @@
   <depend>voxblox_ros</depend>
   <depend>voxgraph</depend>
   <depend>voxgraph_msgs</depend>
-  <depend>cblox_planning_global</depend>
+
+  <depend>voxblox_skeleton_planner</depend>
 
   <depend>glocal_exploration</depend>
 
