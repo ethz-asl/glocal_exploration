@@ -320,8 +320,7 @@ void SkeletonAStar::convertVertexToWaypointPath(
   way_points->clear();
   for (const GlobalVertexId& global_vertex_id : vertex_path) {
     if (global_vertex_id == kGoalVertexId) {
-      way_points->emplace_back(WayPoint{goal_point.x(), goal_point.y(),
-                                        goal_point.z(), /* yaw */ 0.0});
+      way_points->emplace_back(WayPoint(goal_point, /* yaw */ 0.0));
     } else {
       const SkeletonSubmap& submap =
           skeleton_submap_collection_.getSubmapById(global_vertex_id.submap_id);
@@ -329,8 +328,7 @@ void SkeletonAStar::convertVertexToWaypointPath(
           submap.getSkeletonGraph().getVertex(global_vertex_id.vertex_id);
       const Point t_odom_vertex =
           submap.getPose() * vertex.point.cast<FloatingPoint>();
-      way_points->emplace_back(WayPoint{t_odom_vertex.x(), t_odom_vertex.y(),
-                                        t_odom_vertex.z(), /* yaw */ 0.0});
+      way_points->emplace_back(WayPoint(t_odom_vertex, /* yaw */ 0.0));
     }
   }
 }

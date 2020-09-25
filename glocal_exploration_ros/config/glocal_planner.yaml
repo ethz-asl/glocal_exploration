@@ -122,9 +122,12 @@ local_planner:
   path_cropping_length: 0.5 # m
   max_number_of_neighbors: 20
   maximum_rewiring_iterations: 100
+  
+  # Termination
   terminaton_min_tree_size: 3
-  termination_max_gain: 0 #999999999 #100
+  termination_max_gain: 100
   termination_min_time: 2  # s
+  DEBUG_number_of_iterations: -1  # -1 to turn off
   
   # Lidar Model
   ray_length: *max_ray_length  # m

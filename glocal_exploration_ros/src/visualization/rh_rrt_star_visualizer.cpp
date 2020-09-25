@@ -66,13 +66,9 @@ void RHRRTStarVisualizer::visualize() {
     msg.color.b = 0.8;
     msg.action = visualization_msgs::Marker::ADD;
     geometry_msgs::Point pt;
-    pt.x = comm_->getPreviousWayPoint().x;
-    pt.y = comm_->getPreviousWayPoint().y;
-    pt.z = comm_->getPreviousWayPoint().z;
+    tf::pointEigenToMsg(comm_->getPreviousWayPoint().position, pt);
     msg.points.push_back(pt);
-    pt.x = comm_->getRequestedWayPoint().x;
-    pt.y = comm_->getRequestedWayPoint().y;
-    pt.z = comm_->getRequestedWayPoint().z;
+    tf::pointEigenToMsg(comm_->getRequestedWayPoint().position, pt);
     msg.points.push_back(pt);
     path_pub_.publish(msg);
   }
@@ -204,20 +200,18 @@ void RHRRTStarVisualizer::visualizeValue(const RHRRTStar::ViewPoint& point,
 
     // points
     geometry_msgs::Point pt;
-    const Eigen::Vector3d& start = point.pose.position();
-    pt.x = start.x();
-    pt.y = start.y();
-    pt.z = start.z();
+    pt.x = point.pose.position.x();
+    pt.y = point.pose.position.y();
+    pt.z = point.pose.position.z();
     msg.points.push_back(pt);
     RHRRTStar::ViewPoint* viewpoint_end =
         point.getConnectedViewPoint(point.active_connection);
     if (viewpoint_end) {
-      const Eigen::Vector3d& end = viewpoint_end->pose.position();
-      tf::pointEigenToMsg(end, pt);
+      tf::pointEigenToMsg(viewpoint_end->pose.position, pt);
     } else {
       LOG(WARNING) << "Tried to visualize a view point without valid "
                       "connected view point.";
-      tf::pointEigenToMsg(Eigen::Vector3d::Zero(), pt);
+      tf::pointEigenToMsg(Point::Zero(), pt);
     }
     msg.points.push_back(pt);
   } else {
@@ -239,9 +233,7 @@ void RHRRTStarVisualizer::visualizeGain(const RHRRTStar::ViewPoint& point,
   msg.scale.x = 0.2;
   msg.scale.y = 0.1;
   msg.scale.z = 0.1;
-  msg.pose.position.x = point.pose.x;
-  msg.pose.position.y = point.pose.y;
-  msg.pose.position.z = point.pose.z;
+  tf::pointEigenToMsg(point.pose.position, msg.pose.position);
   tf2::Quaternion q;
   q.setRPY(0, 0, point.pose.yaw);
   msg.pose.orientation.w = q.w();
@@ -276,9 +268,7 @@ void RHRRTStarVisualizer::visualizeText(const RHRRTStar::ViewPoint& point,
   msg.color.g = 0.0f;
   msg.color.b = 0.0f;
   msg.color.a = 1.0;
-  msg.pose.position.x = point.pose.x;
-  msg.pose.position.y = point.pose.y;
-  msg.pose.position.z = point.pose.z;
+  tf::pointEigenToMsg(point.pose.position, msg.pose.position);
   double g = point.gain;
   double c;
   const RHRRTStar::Connection* active_connection = point.getActiveConnection();
@@ -307,7 +297,7 @@ void RHRRTStarVisualizer::visualizeVisibleVoxels(
   // NOTE(schmluk): This could also be a single message of type cube array but
   // that won't display properly on my rviz.
   auto result = visualization_msgs::MarkerArray();
-  std::vector<Eigen::Vector3d> voxels, colors;
+  std::vector<Point> voxels, colors;
   double scale;
   planner_->visualizeGain(point.pose, &voxels, &colors, &scale);
 

@@ -36,9 +36,9 @@ class VoxbloxMap : public MapBase {
   bool isLineTraversableInActiveSubmap(
       const Point& start_point, const Point& end_point,
       Point* last_traversable_point = nullptr) override;
-  bool getDistanceAndGradientAtPositionInActiveSubmap(
-      const Eigen::Vector3d& position, double* distance,
-      Eigen::Vector3d* gradient) override;
+  bool getDistanceAndGradientAtPositionInActiveSubmap(const Point& position,
+                                                      double* distance,
+                                                      Point* gradient) override;
   VoxelState getVoxelStateInLocalArea(const Point& position) override;
   Point getVoxelCenterInLocalArea(const Point& position) override;
   bool isObservedInGlobalMap(const Point& position) override;

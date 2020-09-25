@@ -82,7 +82,7 @@ LidarModel::LidarModel(const Config& config,
 }
 
 bool LidarModel::getVisibleVoxels(const WayPoint& waypoint,
-                                  std::vector<Eigen::Vector3d>* centers,
+                                  std::vector<Point>* centers,
                                   std::vector<MapBase::VoxelState>* states) {
   // NOTE(schmluk): Legacy raycasting for general gain computations.
 
@@ -91,13 +91,12 @@ bool LidarModel::getVisibleVoxels(const WayPoint& waypoint,
 
   // Ray-casting
   Eigen::Quaterniond orientation =
-      Eigen::AngleAxisd(waypoint.yaw, Eigen::Vector3d::UnitZ()) *
+      Eigen::AngleAxisd(waypoint.yaw, Point::UnitZ()) *
       config_.T_baselink_sensor.getEigenQuaternion();
-  Eigen::Vector3d position =
-      waypoint.position() + config_.T_baselink_sensor.getPosition();
-  Eigen::Vector3d camera_direction;
-  Eigen::Vector3d direction;
-  Eigen::Vector3d current_position;
+  Point position = waypoint.position + config_.T_baselink_sensor.getPosition();
+  Point camera_direction;
+  Point direction;
+  Point current_position;
   double distance;
   bool cast_ray;
   for (int i = 0; i < kResolutionX_; ++i) {
@@ -161,13 +160,12 @@ void LidarModel::getVisibleUnknownVoxels(const WayPoint& waypoint,
 
   // Ray-casting
   Eigen::Quaterniond orientation =
-      Eigen::AngleAxisd(waypoint.yaw, Eigen::Vector3d::UnitZ()) *
+      Eigen::AngleAxisd(waypoint.yaw, Point::UnitZ()) *
       config_.T_baselink_sensor.getEigenQuaternion();
-  Eigen::Vector3d position =
-      waypoint.position() + config_.T_baselink_sensor.getPosition();
-  Eigen::Vector3d camera_direction;
-  Eigen::Vector3d direction;
-  Eigen::Vector3d current_position;
+  Point position = waypoint.position + config_.T_baselink_sensor.getPosition();
+  Point camera_direction;
+  Point direction;
+  Point current_position;
   double distance;
   bool cast_ray;
   for (int i = 0; i < kResolutionX_; ++i) {
@@ -232,13 +230,12 @@ void LidarModel::markNeighboringRays(int x, int y, int segment, int value) {
   }
 }
 
-void LidarModel::getDirectionVector(Eigen::Vector3d* result, double relative_x,
+void LidarModel::getDirectionVector(Point* result, double relative_x,
                                     double relative_y) const {
   double polar_angle = (0.5 - relative_x) * kFovX_;
   double azimuth_angle = M_PI / 2.0 + (relative_y - 0.5) * kFovY_;
-  *result = Eigen::Vector3d(sin(azimuth_angle) * cos(polar_angle),
-                            sin(azimuth_angle) * sin(polar_angle),
-                            cos(azimuth_angle));
+  *result = Point(sin(azimuth_angle) * cos(polar_angle),
+                  sin(azimuth_angle) * sin(polar_angle), cos(azimuth_angle));
 }
 
 }  // namespace glocal_exploration

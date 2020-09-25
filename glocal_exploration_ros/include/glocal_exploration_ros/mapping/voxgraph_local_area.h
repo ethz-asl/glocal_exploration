@@ -32,9 +32,9 @@ class VoxgraphLocalArea {
               const voxblox::EsdfMap& local_map);
   void prune();
 
-  VoxelState getVoxelStateAtPosition(const Eigen::Vector3d& position);
-  bool isObserved(const Eigen::Vector3d& position);
-  bool isValidAtPosition(const Eigen::Vector3d& position);
+  VoxelState getVoxelStateAtPosition(const Point& position);
+  bool isObserved(const Point& position);
+  bool isValidAtPosition(const Point& position);
 
   void publishLocalArea(ros::Publisher local_area_pub);
 

@@ -179,7 +179,7 @@ bool SkeletonPlanner::computeGoalPoint() {
   // Try to find feasible goal near centroid and remove infeasible frontiers.
   int unreachable_goal_counter = 0;
   const int total_frontiers = frontier_data_.size();
-  const Point current_position = comm_->currentPose().position();
+  const Point current_position = comm_->currentPose().position;
   for (auto& frontier : frontier_data_) {
     if (!findValidGoalPoint(&(frontier.centroid))) {
       unreachable_goal_counter++;
@@ -226,10 +226,10 @@ bool SkeletonPlanner::computeGoalPoint() {
         // Frontier is reachable, save path and compute path length.
         candidate.way_points = way_points;
         candidate.path_distance =
-            (way_points[0].position() - current_position).norm();
+            (way_points[0].position - current_position).norm();
         for (size_t i = 1; i < way_points.size(); ++i) {
           candidate.path_distance +=
-              (way_points[i].position() - way_points[i - 1].position()).norm();
+              (way_points[i].position - way_points[i - 1].position).norm();
         }
         shortest_path = std::min(shortest_path, candidate.path_distance);
         candidate.reachability = FrontierSearchData::kReachable;
@@ -336,8 +336,9 @@ void SkeletonPlanner::executeWayPoint() {
 
       // Send the next waypoint in the list.
       WayPoint& way_point = way_points_[0];
-      way_point.yaw = std::atan2((way_point.y - comm_->currentPose().y),
-                                 (way_point.x - comm_->currentPose().x));
+      way_point.yaw = std::atan2(
+          (way_point.position.y() - comm_->currentPose().position.y()),
+          (way_point.position.x() - comm_->currentPose().position.x()));
       comm_->requestWayPoint(way_point);
       way_points_.erase(way_points_.begin());
     }
@@ -351,8 +352,8 @@ bool SkeletonPlanner::verifyNextWayPoints() {
   Point goal;
   while (waypoint_index < way_points_.size()) {
     if (comm_->map()->isLineTraversableInActiveSubmap(
-            comm_->currentPose().position(),
-            way_points_[waypoint_index].position(), &goal)) {
+            comm_->currentPose().position, way_points_[waypoint_index].position,
+            &goal)) {
       break;
     } else {
       waypoint_index++;
@@ -361,21 +362,17 @@ bool SkeletonPlanner::verifyNextWayPoints() {
 
   // If less than one segment is connected check for minimum distance.
   if (waypoint_index == 0) {
-    Point current_position = comm_->currentPose().position();
+    Point current_position = comm_->currentPose().position;
     // TODO(schmluk): make this a param if we keep it.
     const double safety = 0.3;
 
     if ((current_position - goal).norm() >
         config_.path_verification_min_distance + safety) {
       // Insert intermediate goal s.t. path can be observed.
-      WayPoint way_point;
       Point direction = goal - current_position;
       Point new_goal =
           current_position + direction * (1.0 - safety / direction.norm());
-      way_point.x = new_goal.x();
-      way_point.y = new_goal.y();
-      way_point.z = new_goal.z();
-      way_points_.insert(way_points_.begin(), way_point);
+      way_points_.insert(way_points_.begin(), WayPoint(new_goal, 0.0));
     } else {
       // The goal is inaccessible, return to local planning.
       comm_->stateMachine()->signalLocalPlanning();
@@ -383,13 +380,9 @@ bool SkeletonPlanner::verifyNextWayPoints() {
           << "Global path became infeasible, returning to local planning.";
 
       // Make sure we don't stop in intraversable space.
-      Point free_position = comm_->currentPose().position();
+      Point free_position = comm_->currentPose().position;
       findNearbyTraversablePoint(&free_position);
-      WayPoint way_point;
-      way_point.x = free_position.x();
-      way_point.y = free_position.y();
-      way_point.z = free_position.z();
-      comm_->requestWayPoint(way_point);
+      comm_->requestWayPoint(WayPoint(free_position, 0.0));
 
       vis_data_.execution_finished = true;
       return false;
@@ -419,7 +412,7 @@ bool SkeletonPlanner::computePath(const Point& goal,
                                   std::vector<WayPoint>* way_points) {
   CHECK_NOTNULL(way_points);
 
-  Point start_point = comm_->currentPose().position();
+  Point start_point = comm_->currentPose().position;
   if (comm_->map()->isTraversableInActiveSubmap(start_point) ||
       findNearbyTraversablePoint(&start_point)) {
     // Compute path along skeletons

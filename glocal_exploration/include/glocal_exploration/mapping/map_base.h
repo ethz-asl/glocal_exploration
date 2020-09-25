@@ -39,8 +39,7 @@ class MapBase {
       const Point& start_point, const Point& end_point,
       Point* last_traversable_point = nullptr) = 0;
   virtual bool getDistanceAndGradientAtPositionInActiveSubmap(
-      const Eigen::Vector3d& position, double* distance,
-      Eigen::Vector3d* gradient) = 0;
+      const Point& position, double* distance, Point* gradient) = 0;
 
   // Voxels are referred in the planner by their center points.
   virtual Point getVoxelCenterInLocalArea(const Point& position) = 0;

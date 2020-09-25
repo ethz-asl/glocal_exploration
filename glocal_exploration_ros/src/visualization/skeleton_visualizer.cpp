@@ -134,25 +134,17 @@ void SkeletonVisualizer::visualizePlannedPath() {
     // Publish segments.
     msg.id = 0;
     geometry_msgs::Point pt;
-    pt.x = comm_->getRequestedWayPoint().x;
-    pt.y = comm_->getRequestedWayPoint().y;
-    pt.z = comm_->getRequestedWayPoint().z;
+    tf::pointEigenToMsg(comm_->getRequestedWayPoint().position, pt);
     msg.points.push_back(pt);
-    pt.x = planner_->getWayPoints()[0].x;
-    pt.y = planner_->getWayPoints()[0].y;
-    pt.z = planner_->getWayPoints()[0].z;
+    tf::pointEigenToMsg(planner_->getWayPoints()[0].position, pt);
     msg.points.push_back(pt);
     planned_path_pub_.publish(msg);
     for (int i = 1; i < planner_->getWayPoints().size(); ++i) {
       msg.id = i;
       msg.points.clear();
-      pt.x = planner_->getWayPoints()[i - 1].x;
-      pt.y = planner_->getWayPoints()[i - 1].y;
-      pt.z = planner_->getWayPoints()[i - 1].z;
+      tf::pointEigenToMsg(planner_->getWayPoints()[i - 1].position, pt);
       msg.points.push_back(pt);
-      pt.x = planner_->getWayPoints()[i].x;
-      pt.y = planner_->getWayPoints()[i].y;
-      pt.z = planner_->getWayPoints()[i].z;
+      tf::pointEigenToMsg(planner_->getWayPoints()[i].position, pt);
       msg.points.push_back(pt);
       planned_path_pub_.publish(msg);
     }
@@ -179,13 +171,9 @@ void SkeletonVisualizer::visualizeExecutedPath() {
   msg.color.b = 0.8;
   msg.action = visualization_msgs::Marker::ADD;
   geometry_msgs::Point pt;
-  pt.x = comm_->getPreviousWayPoint().x;
-  pt.y = comm_->getPreviousWayPoint().y;
-  pt.z = comm_->getPreviousWayPoint().z;
+  tf::pointEigenToMsg(comm_->getPreviousWayPoint().position, pt);
   msg.points.push_back(pt);
-  pt.x = comm_->getRequestedWayPoint().x;
-  pt.y = comm_->getRequestedWayPoint().y;
-  pt.z = comm_->getRequestedWayPoint().z;
+  tf::pointEigenToMsg(comm_->getRequestedWayPoint().position, pt);
   msg.points.push_back(pt);
   executed_path_pub_.publish(msg);
 }
@@ -219,9 +207,7 @@ void SkeletonVisualizer::visualizeGoalPoints() {
       // Go through all goal points.
       int id = 0;
       for (const auto& goal : planner_->getFrontierSearchData()) {
-        msg.pose.position.x = goal.centroid.x();
-        msg.pose.position.y = goal.centroid.y();
-        msg.pose.position.z = goal.centroid.z();
+        tf::pointEigenToMsg(goal.centroid, msg.pose.position);
         msg.id = id++;
 
         switch (goal.reachability) {

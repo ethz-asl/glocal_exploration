@@ -124,7 +124,7 @@ bool VoxgraphMap::isTraversableInActiveSubmap(const Point& position) {
     return (distance > config_.traversability_radius);
   }
 
-  return (position - comm_->currentPose().position()).norm() <
+  return (position - comm_->currentPose().position).norm() <
          config_.clearing_radius;
 }
 
@@ -152,7 +152,8 @@ MapBase::VoxelState VoxgraphMap::getVoxelStateInLocalArea(
   }
 
   updateLocalAreaIfNeeded();
-  return local_area_->getVoxelStateAtPosition(position);
+  return local_area_->getVoxelStateAtPosition(
+      position.cast<voxblox::FloatingPoint>());
 }
 
 Point VoxgraphMap::getVoxelCenterInLocalArea(const Point& position) {
@@ -182,7 +183,7 @@ bool VoxgraphMap::isObservedInGlobalMap(const Point& position) {
 
   // Then fall back to local area
   updateLocalAreaIfNeeded();
-  if (local_area_->isObserved(position)) {
+  if (local_area_->isObserved(position.cast<voxblox::FloatingPoint>())) {
     return true;
   }
 
@@ -213,7 +214,8 @@ bool VoxgraphMap::isTraversableInGlobalMap(const Point& position) {
   // NOTE: We can only check whether the local area is not occupied. Since the
   //       local area only consists of a TSDF (no ESDF) and the traversability
   //       radius generally exceeds the TSDF truncation distance.
-  if (local_area_->getVoxelStateAtPosition(position) == VoxelState::kOccupied) {
+  if (local_area_->getVoxelStateAtPosition(
+          position.cast<voxblox::FloatingPoint>()) == VoxelState::kOccupied) {
     return false;
   }
 
@@ -277,7 +279,7 @@ bool VoxgraphMap::isLineTraversableInActiveSubmap(
             current_position, &esdf_distance)) {
       collided = esdf_distance <= config_.traversability_radius;
     } else {
-      collided = (current_position - comm_->currentPose().position()).norm() >=
+      collided = (current_position - comm_->currentPose().position).norm() >=
                  config_.clearing_radius;
     }
     if (collided) {
@@ -300,8 +302,7 @@ bool VoxgraphMap::isLineTraversableInActiveSubmap(
 }
 
 bool VoxgraphMap::getDistanceAndGradientAtPositionInActiveSubmap(
-    const Eigen::Vector3d& position, double* distance,
-    Eigen::Vector3d* gradient) {
+    const Point& position, double* distance, Point* gradient) {
   CHECK_NOTNULL(distance);
   CHECK_NOTNULL(gradient);
   return voxblox_server_->getEsdfMapPtr()->getDistanceAndGradientAtPosition(

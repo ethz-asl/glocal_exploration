@@ -45,7 +45,7 @@ bool VoxbloxMap::isTraversableInActiveSubmap(const Point& position) {
     // This means the voxel is observed
     return (distance > config_.traversability_radius);
   }
-  return (position - comm_->currentPose().position()).norm() <
+  return (position - comm_->currentPose().position).norm() <
          config_.clearing_radius;
 }
 
@@ -65,7 +65,7 @@ bool VoxbloxMap::isLineTraversableInActiveSubmap(
                                                         &esdf_distance)) {
       collided = esdf_distance <= config_.traversability_radius;
     } else {
-      collided = (current_position - comm_->currentPose().position()).norm() >=
+      collided = (current_position - comm_->currentPose().position).norm() >=
                  config_.clearing_radius;
     }
     if (collided) {
@@ -87,8 +87,7 @@ bool VoxbloxMap::isLineTraversableInActiveSubmap(
 }
 
 bool VoxbloxMap::getDistanceAndGradientAtPositionInActiveSubmap(
-    const Eigen::Vector3d& position, double* distance,
-    Eigen::Vector3d* gradient) {
+    const Point& position, double* distance, Point* gradient) {
   CHECK_NOTNULL(distance);
   CHECK_NOTNULL(gradient);
   return server_->getEsdfMapPtr()->getDistanceAndGradientAtPosition(
