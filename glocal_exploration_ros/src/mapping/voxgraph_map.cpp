@@ -118,22 +118,10 @@ bool VoxgraphMap::isTraversableInActiveSubmap(const Point& position) {
     return false;
   }
   double distance = 0.0;
-  std::cout << "MAP: REQUEST: " < < < < std::endl;
   if (voxblox_server_->getEsdfMapPtr()->getDistanceAtPosition(position,
                                                               &distance)) {
     // This means the voxel is observed.
-
-    if (position.z() >= 2.0) {
-      std::cout << "MAP: OBSERVED: dist" << distance << ", radius"
-                << config_.traversability_radius << std::endl;
-    }
-
     return (distance > config_.traversability_radius);
-  }
-  if (position.z() >= 2.0) {
-    std::cout << "MAP: UNKNOWN: clearing"
-              << (position - comm_->currentPose().position()).norm()
-              << ", radius" << config_.clearing_radius << std::endl;
   }
 
   return (position - comm_->currentPose().position()).norm() <

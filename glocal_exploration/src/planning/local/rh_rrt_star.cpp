@@ -559,7 +559,7 @@ bool RHRRTStar::sampleNewPoint(ViewPoint* point) {
       range <= distance_max) {
     range += range_increment;
   }
-  range = range - config_.path_cropping_length;
+  range = range - config_.path_cropping_length - range_increment;
 
   // Check min distance.
   goal = origin + range * direction;
@@ -634,13 +634,12 @@ bool RHRRTStar::ViewPoint::tryAddConnection(ViewPoint* target, MapBase* map) {
   // Check traversability.
   Eigen::Vector3d origin = pose.position();
   Eigen::Vector3d direction = target->pose.position() - origin;
-  // Note: x2 to test for better collision checking.
-  int n_points = std::ceil(direction.norm() * 2.0 / map->getVoxelSize() + 1.0);
-  direction.normalize();
+  int n_points = std::ceil(direction.norm() / map->getVoxelSize() + 2.0);
   std::vector<Eigen::Vector3d> path_points;
   path_points.resize(n_points);
   for (size_t i = 0; i < n_points; ++i) {
-    path_points[i] = origin + static_cast<double>(i) / n_points * direction;
+    path_points[i] = origin + static_cast<double>(i) /
+                                  static_cast<double>(n_points - 1) * direction;
     if (!map->isTraversableInActiveSubmap(path_points[i])) {
       return false;
     }
