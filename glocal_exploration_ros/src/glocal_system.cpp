@@ -12,8 +12,8 @@ namespace glocal_exploration {
 GlocalSystem::Config::Config() { setConfigName("GlocalSystem"); }
 
 void GlocalSystem::Config::checkParams() const {
-  checkParamGT(replan_position_threshold, 0.0, "replan_position_threshold");
-  checkParamGT(replan_yaw_threshold, 0.0, "replan_yaw_threshold");
+  checkParamGT(replan_position_threshold, 0.f, "replan_position_threshold");
+  checkParamGT(replan_yaw_threshold, 0.f, "replan_yaw_threshold");
 }
 
 void GlocalSystem::Config::fromRosParam() {
@@ -161,7 +161,7 @@ void GlocalSystem::odomCallback(const nav_msgs::Odometry& msg) {
       msg.pose.pose.orientation.y, msg.pose.pose.orientation.z);
 
   // update the state machine with the current pose.
-  double yaw = tf2::getYaw(msg.pose.pose.orientation);
+  FloatingPoint yaw = tf2::getYaw(msg.pose.pose.orientation);
   WayPoint current_point;
   current_point.position = current_position_;
   current_point.yaw = yaw;
@@ -180,21 +180,21 @@ void GlocalSystem::odomCallback(const nav_msgs::Odometry& msg) {
     if ((target_position_ - current_position_).norm() <=
         config_.replan_position_threshold) {
       // check yaw.
-      double yaw_diff = target_yaw_ - yaw;
+      FloatingPoint yaw_diff = target_yaw_ - yaw;
       if (yaw_diff < 0) {
-        yaw_diff += 2.0 * M_PI;
+        yaw_diff += 2.f * M_PI;
       }
       if (yaw_diff > M_PI) {
-        yaw_diff = 2.0 * M_PI - yaw_diff;
+        yaw_diff = 2.f * M_PI - yaw_diff;
       }
-      if (yaw_diff <= config_.replan_yaw_threshold * M_PI / 180.0) {
+      if (yaw_diff <= config_.replan_yaw_threshold * M_PI / 180.f) {
         comm_->setTargetReached(true);
       }
     }
 
     // Check whether the last move command is timing out.
-    if (config_.replan_timeout_velocity > 0.0 ||
-        config_.replan_timeout_constant > 0.0) {
+    if (config_.replan_timeout_velocity > 0.f ||
+        config_.replan_timeout_constant > 0.f) {
       if ((msg.header.stamp - last_waypoint_published_).toSec() >
           last_waypoint_timeout_) {
         // NOTE(schmluk): This usually means the MAV is close to the target but

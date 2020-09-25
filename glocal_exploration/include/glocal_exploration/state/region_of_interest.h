@@ -23,12 +23,12 @@ class RegionOfInterest {
 class BoundingBox : public RegionOfInterest {
  public:
   struct Config : public config_utilities::Config<Config> {
-    double x_min = 0.0;
-    double y_min = 0.0;
-    double z_min = 0.0;
-    double x_max = 0.0;
-    double y_max = 0.0;
-    double z_max = 0.0;
+    FloatingPoint x_min = 0.f;
+    FloatingPoint y_min = 0.f;
+    FloatingPoint z_min = 0.f;
+    FloatingPoint x_max = 0.f;
+    FloatingPoint y_max = 0.f;
+    FloatingPoint z_max = 0.f;
 
     Config();
     void checkParams() const override;

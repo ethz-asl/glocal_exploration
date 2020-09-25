@@ -20,16 +20,16 @@ namespace glocal_exploration {
 RHRRTStar::Config::Config() { setConfigName("RHRRTStar"); }
 
 void RHRRTStar::Config::checkParams() const {
-  checkParamGT(max_path_length, 0.0, "max_path_length");
-  checkParamGE(path_cropping_length, 0.0, "path_cropping_length");
+  checkParamGT(max_path_length, 0.f, "max_path_length");
+  checkParamGE(path_cropping_length, 0.f, "path_cropping_length");
   checkParamGT(max_number_of_neighbors, 0, "max_number_of_neighbors");
   checkParamGT(maximum_rewiring_iterations, 0, "maximum_rewiring_iterations");
-  checkParamGT(sampling_range, 0.0, "sampling_range");
-  checkParamGE(min_path_length, 0.0, "min_path_length");
-  checkParamGE(min_sampling_distance, 0.0, "min_sampling_distance");
+  checkParamGT(sampling_range, 0.f, "sampling_range");
+  checkParamGE(min_path_length, 0.f, "min_path_length");
+  checkParamGE(min_sampling_distance, 0.f, "min_sampling_distance");
   checkParamGE(terminaton_min_tree_size, 0, "terminaton_min_tree_size");
-  checkParamGE(termination_max_gain, 0.0, "termination_max_gain");
-  checkParamGE(termination_min_time, 0.0, "termination_min_time");
+  checkParamGE(termination_max_gain, 0.f, "termination_max_gain");
+  checkParamGE(termination_min_time, 0.f, "termination_min_time");
   checkParamConfig(lidar_config);
 }
 
@@ -230,7 +230,7 @@ bool RHRRTStar::selectNextBestWayPoint(WayPoint* next_waypoint) {
 
   // select the best node from the current root
   int next_point_idx = -1;
-  double best_value = -std::numeric_limits<double>::max();
+  FloatingPoint best_value = -std::numeric_limits<FloatingPoint>::max();
   for (size_t i = 0; i < root_->connections.size(); ++i) {
     ViewPoint* target = root_->getConnectedViewPoint(i);
     if (target->getConnectedViewPoint(target->active_connection) == root_) {
@@ -368,7 +368,7 @@ void RHRRTStar::updateGains() {
   for (auto& point : tree_data_.points) {
     if (point->getActiveConnection() == current_connection_) {
       // don't update the old or new root
-      point->gain = 0.0;
+      point->gain = 0.f;
       continue;
     }
     evaluateViewPoint(point.get());
@@ -393,7 +393,7 @@ bool RHRRTStar::connectViewPoint(ViewPoint* view_point) {
   }
   bool connection_found = false;
   for (const auto& index : nearest_viewpoints) {
-    double distance =
+    FloatingPoint distance =
         (view_point->pose.position - tree_data_.points[index]->pose.position)
             .norm();
     if (distance > config_.max_path_length ||
@@ -415,7 +415,7 @@ bool RHRRTStar::selectBestConnection(ViewPoint* view_point) {
   if (view_point->connections.empty() || view_point->is_root) {
     return false;
   }
-  double best_value = -std::numeric_limits<double>::max();
+  FloatingPoint best_value = -std::numeric_limits<FloatingPoint>::max();
   size_t best_connection = -1;
   for (size_t i = 0; i < view_point->connections.size(); ++i) {
     // make sure there are no loops in the tree
@@ -458,7 +458,7 @@ void RHRRTStar::evaluateViewPoint(ViewPoint* view_point) {
   view_point->gain = voxels.size();
 }
 
-double RHRRTStar::computeCost(const Connection& connection) {
+FloatingPoint RHRRTStar::computeCost(const Connection& connection) {
   // just use distance
   return (connection.parent->pose.position - connection.target->pose.position)
       .norm();
@@ -466,11 +466,11 @@ double RHRRTStar::computeCost(const Connection& connection) {
 
 void RHRRTStar::computeValue(ViewPoint* view_point) {
   if (view_point->is_root) {
-    view_point->value = 0.0;
+    view_point->value = 0.f;
     return;
   }
-  double gain = 0.0;
-  double cost = 0.0;
+  FloatingPoint gain = 0.f;
+  FloatingPoint cost = 0.f;
   ViewPoint* current = view_point;
   while (true) {
     // propagate the new value up to the root
@@ -486,11 +486,12 @@ void RHRRTStar::computeValue(ViewPoint* view_point) {
   view_point->value = computeGNVStep(view_point, gain, cost);
 }
 
-double RHRRTStar::computeGNVStep(ViewPoint* view_point, double gain,
-                                 double cost) {
+FloatingPoint RHRRTStar::computeGNVStep(ViewPoint* view_point,
+                                        FloatingPoint gain,
+                                        FloatingPoint cost) {
   // recursively iterate towards leaf, then iterate backwards and select best
   // value of children
-  double value = 0.0;
+  FloatingPoint value = 0.f;
   gain += view_point->gain;
   cost += view_point->getActiveConnection()->cost;
   if (cost > 0) {
@@ -514,10 +515,12 @@ double RHRRTStar::computeGNVStep(ViewPoint* view_point, double gain,
 bool RHRRTStar::sampleNewPoint(ViewPoint* point) {
   // Sample the goal point.
 
-  const double theta = 2.0 * M_PI * static_cast<double>(std::rand()) /
-                       static_cast<double>(RAND_MAX);
-  const double phi = acos(1.0 - 2.0 * static_cast<double>(std::rand()) /
-                                    static_cast<double>(RAND_MAX));
+  const FloatingPoint theta = 2.f * M_PI *
+                              static_cast<FloatingPoint>(std::rand()) /
+                              static_cast<FloatingPoint>(RAND_MAX);
+  const FloatingPoint phi =
+      acos(1.f - 2.f * static_cast<FloatingPoint>(std::rand()) /
+                     static_cast<FloatingPoint>(RAND_MAX));
   Point goal = comm_->currentPose().position +
                config_.sampling_range * Point(sin(phi) * cos(theta),
                                               sin(phi) * sin(theta), cos(phi));
@@ -528,7 +531,7 @@ bool RHRRTStar::sampleNewPoint(ViewPoint* point) {
     return false;
   }
   Point origin = tree_data_.points[nearest_viewpoint.front()]->pose.position;
-  double distance_max =
+  FloatingPoint distance_max =
       std::min((goal - origin).norm(), config_.max_path_length);
   if (distance_max < config_.min_sampling_distance) {
     return false;
@@ -552,8 +555,8 @@ bool RHRRTStar::sampleNewPoint(ViewPoint* point) {
 
   // Write the result.
   point->pose.position = goal_cropped;
-  point->pose.yaw = 2.0 * M_PI * static_cast<double>(std::rand()) /
-                    static_cast<double>(RAND_MAX);
+  point->pose.yaw = 2.f * M_PI * static_cast<FloatingPoint>(std::rand()) /
+                    static_cast<FloatingPoint>(RAND_MAX);
   return true;
 }
 
@@ -562,10 +565,10 @@ bool RHRRTStar::findNearestNeighbors(Point position,
                                      int n_neighbors) {
   // how to use nanoflann (:
   // Returns the indices of the neighbors in tree data.
-  double query_pt[3] = {position.x(), position.y(), position.z()};
-  std::size_t ret_index[n_neighbors];  // NOLINT
-  double out_dist[n_neighbors];        // NOLINT
-  nanoflann::KNNResultSet<double> resultSet(n_neighbors);
+  FloatingPoint query_pt[3] = {position.x(), position.y(), position.z()};
+  std::size_t ret_index[n_neighbors];   // NOLINT
+  FloatingPoint out_dist[n_neighbors];  // NOLINT
+  nanoflann::KNNResultSet<FloatingPoint> resultSet(n_neighbors);
   resultSet.init(ret_index, out_dist);
   kdtree_->findNeighbors(resultSet, query_pt, nanoflann::SearchParams(10));
   if (resultSet.size() == 0) {
@@ -578,7 +581,8 @@ bool RHRRTStar::findNearestNeighbors(Point position,
 }
 
 void RHRRTStar::visualizeGain(const WayPoint& pose, std::vector<Point>* voxels,
-                              std::vector<Point>* colors, double* scale) const {
+                              std::vector<Point>* colors,
+                              FloatingPoint* scale) const {
   CHECK_NOTNULL(voxels);
   CHECK_NOTNULL(colors);
   CHECK_NOTNULL(scale);
@@ -591,14 +595,13 @@ void RHRRTStar::visualizeGain(const WayPoint& pose, std::vector<Point>* voxels,
 
   // voxel size
   *scale = comm_->map()->getVoxelSize();
-  const double voxel_size = comm_->map()->getVoxelSize();
+  const FloatingPoint voxel_size = comm_->map()->getVoxelSize();
 
   // get centers
   voxels->clear();
   voxels->reserve(voxels_idx.size());
   for (const auto& idx : voxels_idx) {
-    voxels->push_back(
-        voxblox::getCenterPointFromGridIndex(idx, voxel_size).cast<double>());
+    voxels->push_back(voxblox::getCenterPointFromGridIndex(idx, voxel_size));
   }
 
   // Uniform coloring [0, 1].

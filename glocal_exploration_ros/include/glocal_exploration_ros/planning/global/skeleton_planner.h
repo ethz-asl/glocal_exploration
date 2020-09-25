@@ -26,11 +26,11 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
     int verbosity = 1;
     std::string nh_private_namespace = "~/SkeletonPlanner";
     bool use_centroid_clustering = false;
-    double centroid_clustering_radius = 1.0;  // m
+    FloatingPoint centroid_clustering_radius = 1.f;  // m
     bool use_path_verification = true;  // Check traversability in temporal map.
-    double path_verification_min_distance = 1.0;  // m
+    FloatingPoint path_verification_min_distance = 1.f;  // m
     int goal_search_steps = 5;  // number of grid elements per side of cube.
-    double goal_search_step_size = 1.0;  // m, grid element length.
+    FloatingPoint goal_search_step_size = 1.f;  // m, grid element length.
 
     // Frontier evaluator.
     SubmapFrontierEvaluator::Config submap_frontier_config;
@@ -43,9 +43,9 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
 
   // Frontier search data collection.
   struct FrontierSearchData {
-    Point centroid = Point(0.0, 0.0, 0.0);
-    double euclidean_distance = 0;
-    double path_distance = 0;
+    Point centroid = Point(0.f, 0.f, 0.f);
+    FloatingPoint euclidean_distance = 0.f;
+    FloatingPoint path_distance = 0.f;
     int num_points = 0;
     int clusters = 1;
     std::vector<WayPoint> way_points;

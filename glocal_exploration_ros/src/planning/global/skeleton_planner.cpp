@@ -60,17 +60,17 @@ SkeletonPlanner::SkeletonPlanner(const Config& config,
     FloatingPoint x =
         config_.goal_search_step_size *
         (static_cast<FloatingPoint>(i_x) -
-         static_cast<FloatingPoint>(config_.goal_search_steps - 1) / 2.0);
+         static_cast<FloatingPoint>(config_.goal_search_steps - 1) / 2.f);
     for (int i_y = 0; i_y < config_.goal_search_steps; ++i_y) {
       FloatingPoint y =
           config_.goal_search_step_size *
           (static_cast<FloatingPoint>(i_y) -
-           static_cast<FloatingPoint>(config_.goal_search_steps - 1) / 2.0);
+           static_cast<FloatingPoint>(config_.goal_search_steps - 1) / 2.f);
       for (int i_z = 0; i_z < config_.goal_search_steps; ++i_z) {
         FloatingPoint z =
             config_.goal_search_step_size *
             (static_cast<FloatingPoint>(i_z) -
-             static_cast<FloatingPoint>(config_.goal_search_steps - 1) / 2.0);
+             static_cast<FloatingPoint>(config_.goal_search_steps - 1) / 2.f);
         goal_search_offsets_.emplace_back(x, y, z);
       }
     }
@@ -182,7 +182,7 @@ bool SkeletonPlanner::computeGoalPoint() {
     if (!findValidGoalPoint(&(frontier.centroid))) {
       unreachable_goal_counter++;
       frontier.reachability = FrontierSearchData::kInvalidGoal;
-      frontier.euclidean_distance = std::numeric_limits<double>::max();
+      frontier.euclidean_distance = std::numeric_limits<FloatingPoint>::max();
     } else {
       frontier.euclidean_distance =
           (current_position - frontier.centroid).norm();
@@ -196,7 +196,7 @@ bool SkeletonPlanner::computeGoalPoint() {
               return lhs.euclidean_distance < rhs.euclidean_distance;
             });
   int path_counter = 0;
-  double shortest_path = std::numeric_limits<double>::max();
+  FloatingPoint shortest_path = std::numeric_limits<FloatingPoint>::max();
   bool found_a_valid_path = false;
   bool time_exceeded = false;
   for (auto& candidate : frontier_data_) {
@@ -214,7 +214,7 @@ bool SkeletonPlanner::computeGoalPoint() {
 
     if (time_exceeded || candidate.euclidean_distance >= shortest_path) {
       // These points can never be closer than what we already have.
-      candidate.path_distance = std::numeric_limits<double>::max();
+      candidate.path_distance = std::numeric_limits<FloatingPoint>::max();
       candidate.reachability = FrontierSearchData::kUnchecked;
     } else {
       // Try to find a path via linked skeleton planning.
@@ -234,7 +234,7 @@ bool SkeletonPlanner::computeGoalPoint() {
         found_a_valid_path = true;
       } else {
         // Inaccessible frontier.
-        candidate.path_distance = std::numeric_limits<double>::max();
+        candidate.path_distance = std::numeric_limits<FloatingPoint>::max();
         candidate.reachability = FrontierSearchData::kUnreachable;
       }
     }
@@ -362,15 +362,15 @@ bool SkeletonPlanner::verifyNextWayPoints() {
   if (waypoint_index == 0) {
     Point current_position = comm_->currentPose().position;
     // TODO(schmluk): make this a param if we keep it.
-    const double safety = 0.3;
+    const FloatingPoint safety = 0.3;
 
     if ((current_position - goal).norm() >
         config_.path_verification_min_distance + safety) {
       // Insert intermediate goal s.t. path can be observed.
       Point direction = goal - current_position;
       Point new_goal =
-          current_position + direction * (1.0 - safety / direction.norm());
-      way_points_.insert(way_points_.begin(), WayPoint(new_goal, 0.0));
+          current_position + direction * (1.f - safety / direction.norm());
+      way_points_.insert(way_points_.begin(), WayPoint(new_goal, 0.f));
     } else {
       // The goal is inaccessible, return to local planning.
       comm_->stateMachine()->signalLocalPlanning();
@@ -380,7 +380,7 @@ bool SkeletonPlanner::verifyNextWayPoints() {
       // Make sure we don't stop in intraversable space.
       Point free_position = comm_->currentPose().position;
       findNearbyTraversablePoint(&free_position);
-      comm_->requestWayPoint(WayPoint(free_position, 0.0));
+      comm_->requestWayPoint(WayPoint(free_position, 0.f));
 
       vis_data_.execution_finished = true;
       return false;
@@ -430,9 +430,9 @@ bool SkeletonPlanner::findNearbyTraversablePoint(Point* position) {
   constexpr int kMaxNumSteps = 20;
   const std::shared_ptr<MapBase> map_ptr = comm_->map();
   // TODO(victorr): Get traversability radius from map interface
-  const double traversability_radius = 1.0;
+  const FloatingPoint traversability_radius = 1.f;
 
-  double distance;
+  FloatingPoint distance;
   Point gradient;
   int step_idx = 1;
   for (; step_idx < kMaxNumSteps; ++step_idx) {
@@ -445,7 +445,7 @@ bool SkeletonPlanner::findNearbyTraversablePoint(Point* position) {
       return false;
     }
     // Take a step in the direction that maximizes the distance
-    const double step_size =
+    const FloatingPoint step_size =
         std::max(map_ptr->getVoxelSize(), traversability_radius - distance);
     // Determine if we found a solution
     if (map_ptr->isTraversableInActiveSubmap(*position)) {

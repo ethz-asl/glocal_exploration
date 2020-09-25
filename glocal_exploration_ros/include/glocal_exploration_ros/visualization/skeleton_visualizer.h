@@ -49,7 +49,7 @@ class SkeletonVisualizer : public GlobalPlannerVisualizerBase {
   void visualizeSkeletonSubmaps();
 
  private:
-  std::string frontierTextFormat(double value) const;
+  std::string frontierTextFormat(FloatingPoint value) const;
 
  private:
   const Config config_;

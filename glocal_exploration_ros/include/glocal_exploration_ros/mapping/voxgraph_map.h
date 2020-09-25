@@ -22,8 +22,8 @@ class VoxgraphMap : public MapBase {
   struct Config : public config_utilities::Config<Config> {
     // Since this is a ros-class anyways we make it easy and just get the nh.
     std::string nh_private_namespace = "~";
-    double traversability_radius = 0.3;  // m
-    double clearing_radius = 0.5;        // m
+    FloatingPoint traversability_radius = 0.3f;  // m
+    FloatingPoint clearing_radius = 0.5f;        // m
     int verbosity = 1;
 
     Config();
@@ -37,14 +37,14 @@ class VoxgraphMap : public MapBase {
   ~VoxgraphMap() override = default;
 
   // MapBase overrides.
-  double getVoxelSize() override { return c_voxel_size_; }
+  FloatingPoint getVoxelSize() override { return c_voxel_size_; }
 
   bool isTraversableInActiveSubmap(const Point& position) override;
   bool isLineTraversableInActiveSubmap(
       const Point& start_point, const Point& end_point,
       Point* last_traversable_point = nullptr) override;
   bool getDistanceAndGradientAtPositionInActiveSubmap(const Point& position,
-                                                      double* distance,
+                                                      FloatingPoint* distance,
                                                       Point* gradient) override;
 
   Point getVoxelCenterInLocalArea(const Point& point) override;
@@ -56,7 +56,7 @@ class VoxgraphMap : public MapBase {
       const Point& start_point, const Point& end_point,
       Point* last_traversable_point = nullptr) override;
   bool getDistanceInGlobalMapAtPosition(const Point& position,
-                                        double* min_esdf_distance);
+                                        FloatingPoint* min_esdf_distance);
 
   std::vector<voxgraph::SubmapID> getSubmapIdsAtPosition(
       const Point& position) const override {
@@ -73,7 +73,7 @@ class VoxgraphMap : public MapBase {
   std::unique_ptr<VoxgraphLocalArea> local_area_;
   bool local_area_needs_update_;
   void updateLocalAreaIfNeeded();
-  static constexpr double local_area_pruning_period_s_ = 10.0;
+  static constexpr FloatingPoint local_area_pruning_period_s_ = 10.f;
   ros::Timer local_area_pruning_timer_;
   ros::Publisher local_area_pub_;
 
@@ -81,8 +81,8 @@ class VoxgraphMap : public MapBase {
   ros::Publisher voxgraph_spatial_hash_pub_;
 
   // cached constants
-  double c_block_size_;
-  double c_voxel_size_;
+  FloatingPoint c_block_size_;
+  FloatingPoint c_voxel_size_;
 };
 
 }  // namespace glocal_exploration

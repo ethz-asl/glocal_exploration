@@ -39,7 +39,7 @@ class SkeletonSubmap {
     vertex_inds->reserve(num_vertices);
 
     std::vector<size_t> ret_index(num_vertices);
-    std::vector<voxblox::FloatingPoint> out_dist_sqr(num_vertices);
+    std::vector<FloatingPoint> out_dist_sqr(num_vertices);
 
     voxblox::nanoflann::SearchParams params;  // Defaults are fine.
     size_t num_results = kd_tree_.knnSearch(point.data(), num_vertices,
@@ -55,9 +55,7 @@ class SkeletonSubmap {
     return "submap_" + std::to_string(submap_ptr_->getID());
   }
 
-  Transformation getPose() const {
-    return submap_ptr_->getPose().cast<FloatingPoint>();
-  }
+  Transformation getPose() const { return submap_ptr_->getPose(); }
 
  private:
   cblox::TsdfEsdfSubmap::ConstPtr submap_ptr_;

@@ -18,7 +18,7 @@ cs_add_library(${PROJECT_NAME}
         src/planning/local/lidar_model.cpp
         src/planning/global/submap_frontier_evaluator.cpp
         src/planning/global/skeleton/skeleton_a_star.cpp
-        )
+)
 
 ##########
 # Export #

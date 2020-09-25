@@ -154,9 +154,9 @@ void VoxgraphSpatialHash::addSubmap(
       for (int idx_y = 0; idx_y < 2; ++idx_y) {
         for (int idx_z = 0; idx_z < 2; ++idx_z) {
           voxblox::Point unit_cube_vertex = voxblox::Point::Zero();
-          if (idx_x) unit_cube_vertex.x() += 1.0;
-          if (idx_y) unit_cube_vertex.y() += 1.0;
-          if (idx_z) unit_cube_vertex.z() += 1.0;
+          if (idx_x) unit_cube_vertex.x() += 1.f;
+          if (idx_y) unit_cube_vertex.y() += 1.f;
+          if (idx_z) unit_cube_vertex.z() += 1.f;
 
           const voxblox::Point rotated_unit_cube_vertex =
               T_F_submap.getRotation().rotate(unit_cube_vertex);
@@ -243,11 +243,10 @@ bool VoxgraphSpatialHash::submapPoseChanged(
 
   const voxgraph::Transformation pose_delta =
       T_F_submap_old.inverse() * T_F_submap_new;
-  const voxblox::FloatingPoint angle_delta = pose_delta.log().tail<3>().norm();
-  const voxblox::FloatingPoint translation_delta =
-      pose_delta.log().head<3>().norm();
-  constexpr voxblox::FloatingPoint kAngleThresholdRad = 0.0872665;  // 5 deg
-  constexpr voxblox::FloatingPoint kTranslationThresholdM = 1.0;    // 1 m
+  const FloatingPoint angle_delta = pose_delta.log().tail<3>().norm();
+  const FloatingPoint translation_delta = pose_delta.log().head<3>().norm();
+  constexpr FloatingPoint kAngleThresholdRad = 0.0872665f;  // 5 deg
+  constexpr FloatingPoint kTranslationThresholdM = 1.f;     // 1 m
 
   return (kTranslationThresholdM < translation_delta ||
           kAngleThresholdRad < angle_delta);

@@ -62,8 +62,9 @@ class SubmapFrontierEvaluator : public GlobalPlannerBase {
       const Point& initial_point,
       std::pair<const int, std::vector<Point>>* output);
 
-  Index indexFromPoint(const Point& point, double voxel_size_inv) const;
-  Point centerPointFromIndex(const Index& index, double voxel_size) const;
+  Index indexFromPoint(const Point& point, FloatingPoint voxel_size_inv) const;
+  Point centerPointFromIndex(const Index& index,
+                             FloatingPoint voxel_size) const;
   MapBase::VoxelState voxelState(
       const Index& index,
       const voxblox::Layer<voxblox::TsdfVoxel>& layer) const;

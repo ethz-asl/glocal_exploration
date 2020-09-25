@@ -12,15 +12,16 @@ namespace glocal_exploration {
  */
 struct WayPoint {
   // position m
-  Point position = Point(0.0, 0.0, 0.0);
+  Point position = Point(0.f, 0.f, 0.f);
   // orientation rad
-  double yaw = 0;
+  FloatingPoint yaw = 0.f;
 
   // Constructors.
   WayPoint() = default;
-  WayPoint(Point _position, double _yaw)
+  WayPoint(Point _position, FloatingPoint _yaw)
       : position(std::move(_position)), yaw(_yaw) {}
-  WayPoint(double x, double y, double z, double _yaw)
+  WayPoint(FloatingPoint x, FloatingPoint y, FloatingPoint z,
+           FloatingPoint _yaw)
       : position(x, y, z), yaw(_yaw) {}
 };
 

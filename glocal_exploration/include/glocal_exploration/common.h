@@ -3,17 +3,17 @@
 
 #include <glog/logging.h>
 #include <kindr/minimal/quat-transformation.h>
+#include <voxblox/core/common.h>
 #include <Eigen/Geometry>
 
 namespace glocal_exploration {
 
 // floating point accuracy
-using FloatingPoint = double;
+using FloatingPoint = voxblox::FloatingPoint;
 
 // Vector types
-using Point = Eigen::Matrix<FloatingPoint, 3, 1>;
-using Transformation =
-    kindr::minimal::QuatTransformationTemplate<FloatingPoint>;
+using Point = voxblox::Point;
+using Transformation = voxblox::Transformation;
 
 // Submapping related types
 using SubmapId = unsigned int;  // NOTE: This must match cblox's SubmapID type

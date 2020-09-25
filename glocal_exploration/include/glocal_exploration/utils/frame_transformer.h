@@ -4,8 +4,6 @@
 #include <string>
 
 #include <glocal_exploration/common.h>
-#include <kindr/minimal/quat-transformation.h>
-#include <voxblox/core/common.h>
 
 namespace glocal_exploration {
 class FrameTransformer {
@@ -13,25 +11,14 @@ class FrameTransformer {
   explicit FrameTransformer(const std::string& fixed_frame_id)
       : fixed_frame_id_(fixed_frame_id) {}
 
-  template <typename InputFloatingPointType>
-  void update(
-      const kindr::minimal::QuatTransformationTemplate<InputFloatingPointType>&
-          T_O_F) {
-    T_F_O_ = T_O_F.inverse().template cast<FloatingPoint>();
-  }
+  void update(const Transformation& T_O_F) { T_F_O_ = T_O_F.inverse(); }
 
-  template <typename InputFloatingPointType>
-  voxblox::Point transformFromOdomToFixedFrame(
-      const Eigen::Matrix<InputFloatingPointType, 3, 1>& t_O_position) const {
-    return T_F_O_.cast<voxblox::FloatingPoint>() *
-           t_O_position.template cast<voxblox::FloatingPoint>();
+  Point transformFromOdomToFixedFrame(const Point& t_O_position) const {
+    return T_F_O_ * t_O_position;
   }
-  template <typename InputFloatingPointType>
-  voxblox::Transformation transformFromOdomToFixedFrame(
-      const kindr::minimal::QuatTransformationTemplate<InputFloatingPointType>&
-          T_O_i) const {
-    return T_F_O_.cast<voxblox::FloatingPoint>() *
-           T_O_i.template cast<voxblox::FloatingPoint>();
+  Transformation transformFromOdomToFixedFrame(
+      const Transformation& T_O_i) const {
+    return T_F_O_ * T_O_i;
   }
 
   const std::string& getFixedFrameId() { return fixed_frame_id_; }
