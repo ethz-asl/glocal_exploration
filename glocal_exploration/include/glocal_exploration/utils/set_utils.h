@@ -1,5 +1,5 @@
-#ifndef GLOCAL_EXPLORATION_ROS_MAPPING_SET_UTILS_H_
-#define GLOCAL_EXPLORATION_ROS_MAPPING_SET_UTILS_H_
+#ifndef GLOCAL_EXPLORATION_UTILS_SET_UTILS_H_
+#define GLOCAL_EXPLORATION_UTILS_SET_UTILS_H_
 
 #include <algorithm>
 #include <set>
@@ -28,4 +28,4 @@ inline std::set<KeyType> setIntersection(const std::set<KeyType>& first_set,
 
 }  // namespace glocal_exploration::set_utils
 
-#endif  // GLOCAL_EXPLORATION_ROS_MAPPING_SET_UTILS_H_
+#endif  // GLOCAL_EXPLORATION_UTILS_SET_UTILS_H_

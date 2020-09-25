@@ -6,7 +6,7 @@
 #include <voxblox/utils/evaluation_utils.h>
 #include <voxblox_ros/ptcloud_vis.h>
 
-#include "glocal_exploration_ros/mapping/set_utils.h"
+#include <glocal_exploration/utils/set_utils.h>
 
 namespace glocal_exploration {
 

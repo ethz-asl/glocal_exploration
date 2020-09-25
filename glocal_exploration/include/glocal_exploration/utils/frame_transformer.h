@@ -1,5 +1,7 @@
-#ifndef INCLUDE_GLOCAL_EXPLORATION_ROS_MAPPING_FRAME_TRANSFORMER_H_
-#define INCLUDE_GLOCAL_EXPLORATION_ROS_MAPPING_FRAME_TRANSFORMER_H_
+#ifndef GLOCAL_EXPLORATION_UTILS_FRAME_TRANSFORMER_H_
+#define GLOCAL_EXPLORATION_UTILS_FRAME_TRANSFORMER_H_
+
+#include <string>
 
 #include <glocal_exploration/common.h>
 #include <kindr/minimal/quat-transformation.h>
@@ -40,4 +42,4 @@ class FrameTransformer {
 };
 }  // namespace glocal_exploration
 
-#endif  // INCLUDE_GLOCAL_EXPLORATION_ROS_MAPPING_FRAME_TRANSFORMER_H_
+#endif  // GLOCAL_EXPLORATION_UTILS_FRAME_TRANSFORMER_H_
