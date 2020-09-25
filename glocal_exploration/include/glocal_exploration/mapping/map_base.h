@@ -53,6 +53,8 @@ class MapBase {
   virtual bool isLineTraversableInGlobalMap(const Point& start_point,
                                             const Point& end_point) = 0;
 
+  virtual std::vector<SubmapId> getSubmapIdsAtPosition(
+      const Point& position) const = 0;
   virtual std::vector<SubmapData> getAllSubmapData() = 0;
 
  protected:

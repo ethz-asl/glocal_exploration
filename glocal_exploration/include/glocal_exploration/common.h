@@ -15,6 +15,9 @@ using Point = Eigen::Matrix<FloatingPoint, 3, 1>;
 using Transformation =
     kindr::minimal::QuatTransformationTemplate<FloatingPoint>;
 
+// Submapping related types
+using SubmapId = unsigned int;  // NOTE: This must match cblox's SubmapID type
+
 }  // namespace glocal_exploration
 
 #endif  // GLOCAL_EXPLORATION_COMMON_H_

@@ -38,7 +38,6 @@ class VoxgraphMap : public MapBase {
 
   // MapBase overrides.
   double getVoxelSize() override { return c_voxel_size_; }
-  std::vector<SubmapData> getAllSubmapData() override;
 
   bool isTraversableInActiveSubmap(const Point& position) override;
   bool isLineTraversableInActiveSubmap(const Point& start_point,
@@ -57,10 +56,11 @@ class VoxgraphMap : public MapBase {
   bool getDistanceInGlobalMapAtPosition(const Point& position,
                                         double* min_esdf_distance);
 
-  std::vector<voxgraph::SubmapID> getSubmapsAtPosition(
-      const Point& position) const {
+  std::vector<voxgraph::SubmapID> getSubmapIdsAtPosition(
+      const Point& position) const override {
     return voxgraph_spatial_hash_.getSubmapsAtPosition(position);
   }
+  std::vector<SubmapData> getAllSubmapData() override;
 
  protected:
   const Config config_;

@@ -1,16 +1,15 @@
-#ifndef GLOCAL_EXPLORATION_ROS_PLANNING_GLOBAL_SKELETON_SUBMAP_H_
-#define GLOCAL_EXPLORATION_ROS_PLANNING_GLOBAL_SKELETON_SUBMAP_H_
+#ifndef GLOCAL_EXPLORATION_PLANNING_GLOBAL_SKELETON_SKELETON_SUBMAP_H_
+#define GLOCAL_EXPLORATION_PLANNING_GLOBAL_SKELETON_SKELETON_SUBMAP_H_
 
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include <cblox/core/tsdf_esdf_submap.h>
 #include <voxblox_skeleton/skeleton.h>
 #include <voxblox_skeleton/skeleton_generator.h>
 #include <voxblox_skeleton/sparse_graph_planner.h>
-#include <voxgraph/common.h>
-#include <voxgraph/frontend/submap_collection/voxgraph_submap.h>
 
 namespace glocal_exploration {
 class SkeletonSubmap {
@@ -18,7 +17,7 @@ class SkeletonSubmap {
   using Ptr = std::shared_ptr<SkeletonSubmap>;
   using ConstPtr = std::shared_ptr<const SkeletonSubmap>;
 
-  SkeletonSubmap(voxgraph::VoxgraphSubmap::ConstPtr submap_ptr,
+  SkeletonSubmap(cblox::TsdfEsdfSubmap::ConstPtr submap_ptr,
                  const float traversability_radius)
       : submap_ptr_(CHECK_NOTNULL(submap_ptr)),
         traversability_radius_(traversability_radius),
@@ -51,7 +50,7 @@ class SkeletonSubmap {
     return num_results;
   }
 
-  voxgraph::SubmapID getId() const { return submap_ptr_->getID(); }
+  SubmapId getId() const { return submap_ptr_->getID(); }
   std::string getFrameId() const {
     return "submap_" + std::to_string(submap_ptr_->getID());
   }
@@ -61,13 +60,12 @@ class SkeletonSubmap {
   }
 
  private:
-  voxgraph::VoxgraphSubmap::ConstPtr submap_ptr_;
+  cblox::TsdfEsdfSubmap::ConstPtr submap_ptr_;
   const float traversability_radius_;
 
   voxblox::SparseSkeletonGraph graph_;
   static voxblox::SparseSkeletonGraph generateSparseSkeletonGraph(
-      const voxgraph::VoxgraphSubmap& submap,
-      const float traversability_radius) {
+      const cblox::TsdfEsdfSubmap& submap, const float traversability_radius) {
     voxblox::SkeletonGenerator skeleton_generator(
         &submap.getEsdfMap().getEsdfLayer());
     LOG(INFO) << "Generating skeleton for submap: " << submap.getID();
@@ -85,4 +83,4 @@ class SkeletonSubmap {
 };
 }  // namespace glocal_exploration
 
-#endif  // GLOCAL_EXPLORATION_ROS_PLANNING_GLOBAL_SKELETON_SUBMAP_H_
+#endif  // GLOCAL_EXPLORATION_PLANNING_GLOBAL_SKELETON_SKELETON_SUBMAP_H_

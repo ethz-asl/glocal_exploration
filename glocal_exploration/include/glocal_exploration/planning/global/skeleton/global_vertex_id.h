@@ -1,14 +1,15 @@
-#ifndef GLOCAL_EXPLORATION_ROS_PLANNING_GLOBAL_GLOBAL_VERTEX_ID_H_
-#define GLOCAL_EXPLORATION_ROS_PLANNING_GLOBAL_GLOBAL_VERTEX_ID_H_
+#ifndef GLOCAL_EXPLORATION_PLANNING_GLOBAL_SKELETON_GLOBAL_VERTEX_ID_H_
+#define GLOCAL_EXPLORATION_PLANNING_GLOBAL_SKELETON_GLOBAL_VERTEX_ID_H_
 
 #include <voxblox_skeleton/skeleton.h>
-#include <voxgraph/common.h>
+
+#include "glocal_exploration/common.h"
 
 namespace glocal_exploration {
 using VertexIdElement = typeof(voxblox::SkeletonVertex::vertex_id);
 
 struct GlobalVertexId {
-  voxgraph::SubmapID submap_id = -1;
+  SubmapId submap_id = -1;
   VertexIdElement vertex_id = -1;
 
   friend bool operator==(const GlobalVertexId& lhs, const GlobalVertexId& rhs) {
@@ -40,4 +41,4 @@ struct GlobalVertexIdHash {
 
 }  // namespace glocal_exploration
 
-#endif  // GLOCAL_EXPLORATION_ROS_PLANNING_GLOBAL_GLOBAL_VERTEX_ID_H_
+#endif  // GLOCAL_EXPLORATION_PLANNING_GLOBAL_SKELETON_GLOBAL_VERTEX_ID_H_

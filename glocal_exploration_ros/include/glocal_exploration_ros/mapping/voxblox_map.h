@@ -44,6 +44,10 @@ class VoxbloxMap : public MapBase {
   bool isTraversableInGlobalMap(const Point& position) override;
   bool isLineTraversableInGlobalMap(const Point& start_point,
                                     const Point& end_point) override;
+  std::vector<SubmapId> getSubmapIdsAtPosition(
+      const Point& position) const override {
+    return std::vector<SubmapId>({0u});
+  }
   std::vector<SubmapData> getAllSubmapData() override;
 
  protected:

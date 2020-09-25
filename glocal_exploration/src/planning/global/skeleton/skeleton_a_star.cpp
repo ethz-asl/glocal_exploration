@@ -1,4 +1,4 @@
-#include "glocal_exploration_ros/planning/global/skeleton_a_star.h"
+#include "glocal_exploration/planning/global/skeleton/skeleton_a_star.h"
 
 #include <limits>
 #include <list>
@@ -12,7 +12,7 @@ namespace glocal_exploration {
 
 bool SkeletonAStar::planPath(const Point& start_point, const Point& goal_point,
                              std::vector<WayPoint>* way_points) {
-  map_ = std::dynamic_pointer_cast<VoxgraphMap>(comm_->map());
+  map_ = comm_->map();
   if (!map_) {
     LOG(WARNING) << "Could not get pointer to VoxgraphMap from communicator";
     return false;
@@ -131,7 +131,7 @@ bool SkeletonAStar::getPathBetweenVertices(
 
   // Run the Astar search
   size_t iteration_counter = 0u;
-  voxgraph::SubmapID previous_submap_id = -1;
+  SubmapId previous_submap_id = -1;
   const SkeletonSubmap* current_submap = nullptr;
   const voxblox::SparseSkeletonGraph* current_graph = nullptr;
   while (!open_set.empty()) {
@@ -189,8 +189,8 @@ bool SkeletonAStar::getPathBetweenVertices(
     const Point t_odom_current_vertex =
         current_submap->getPose() * current_vertex.point.cast<FloatingPoint>();
     if (current_vertex.edge_list.size() <= 3) {
-      for (const voxgraph::SubmapID submap_id :
-           map_->getSubmapsAtPosition(t_odom_current_vertex)) {
+      for (const SubmapId submap_id :
+           map_->getSubmapIdsAtPosition(t_odom_current_vertex)) {
         // Avoid linking the current vertex against vertices of its own submap
         if (submap_id == current_vertex_id.submap_id) {
           continue;
@@ -367,7 +367,7 @@ SkeletonAStar::searchNClosestReachableSkeletonVertices(
     float distance = -1.f;
   };
   std::list<CandidateVertex> candidate_start_vertices;
-  for (const voxgraph::SubmapID submap_id : map_->getSubmapsAtPosition(point)) {
+  for (const SubmapId submap_id : map_->getSubmapIdsAtPosition(point)) {
     SkeletonSubmap::ConstPtr skeleton_submap =
         skeleton_submap_collection_.getSubmapConstPtrById(submap_id);
     if (!skeleton_submap) {

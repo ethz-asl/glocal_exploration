@@ -1,5 +1,5 @@
-#ifndef GLOCAL_EXPLORATION_ROS_PLANNING_GLOBAL_SKELETON_A_STAR_H_
-#define GLOCAL_EXPLORATION_ROS_PLANNING_GLOBAL_SKELETON_A_STAR_H_
+#ifndef GLOCAL_EXPLORATION_PLANNING_GLOBAL_SKELETON_SKELETON_A_STAR_H_
+#define GLOCAL_EXPLORATION_PLANNING_GLOBAL_SKELETON_SKELETON_A_STAR_H_
 
 #include <map>
 #include <memory>
@@ -7,12 +7,12 @@
 #include <utility>
 #include <vector>
 
-#include <glocal_exploration/state/communicator.h>
-#include <glocal_exploration/state/waypoint.h>
-#include <glocal_exploration_ros/planning/global/skeleton_submap_collection.h>
+#include <cblox/core/tsdf_esdf_submap.h>
 
-#include "glocal_exploration_ros/mapping/voxgraph_map.h"
-#include "glocal_exploration_ros/planning/global/global_vertex_id.h"
+#include "glocal_exploration/planning/global/skeleton/global_vertex_id.h"
+#include "glocal_exploration/planning/global/skeleton/skeleton_submap_collection.h"
+#include "glocal_exploration/state/communicator.h"
+#include "glocal_exploration/state/waypoint.h"
 
 namespace glocal_exploration {
 class SkeletonAStar {
@@ -23,7 +23,7 @@ class SkeletonAStar {
   bool planPath(const Point& start_point, const Point& goal_point,
                 std::vector<WayPoint>* way_points);
 
-  void addSubmap(voxgraph::VoxgraphSubmap::ConstPtr submap_ptr,
+  void addSubmap(cblox::TsdfEsdfSubmap::ConstPtr submap_ptr,
                  const float traversability_radius) {
     skeleton_submap_collection_.addSubmap(std::move(submap_ptr),
                                           traversability_radius);
@@ -34,7 +34,7 @@ class SkeletonAStar {
 
  protected:
   std::shared_ptr<Communicator> comm_;
-  std::shared_ptr<VoxgraphMap> map_;
+  std::shared_ptr<MapBase> map_;
   SkeletonSubmapCollection skeleton_submap_collection_;
 
   const GlobalVertexId kGoalVertexId{-1u, -1u};
@@ -66,4 +66,4 @@ class SkeletonAStar {
 };
 }  // namespace glocal_exploration
 
-#endif  // GLOCAL_EXPLORATION_ROS_PLANNING_GLOBAL_SKELETON_A_STAR_H_
+#endif  // GLOCAL_EXPLORATION_PLANNING_GLOBAL_SKELETON_SKELETON_A_STAR_H_

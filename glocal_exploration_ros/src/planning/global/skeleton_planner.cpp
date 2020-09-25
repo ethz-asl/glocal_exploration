@@ -7,8 +7,6 @@
 #include <utility>
 #include <vector>
 
-#include <mav_planning_common/physical_constraints.h>
-
 namespace glocal_exploration {
 
 SkeletonPlanner::Config::Config() { setConfigName("SkeletonPlanner"); }
