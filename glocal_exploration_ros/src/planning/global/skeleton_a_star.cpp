@@ -19,6 +19,13 @@ bool SkeletonAStar::planPath(const Point& start_point, const Point& goal_point,
   }
 
   // Search the nearest reachable start vertex on the skeleton graphs
+  if (!map_->isTraversableInActiveSubmap(start_point)) {
+    LOG(INFO) << "Start point is not traversable in active submap ("
+              << start_point.x() << ", " << start_point.y() << ", "
+              << start_point.z()
+              << "). Will not be able to connect to skeleton graphs.";
+    return false;
+  }
   constexpr int kNClosestStartVertices = 5;
   const std::vector<GlobalVertexId> start_vertex_candidates =
       searchNClosestReachableSkeletonVertices(
@@ -36,6 +43,13 @@ bool SkeletonAStar::planPath(const Point& start_point, const Point& goal_point,
   }
 
   // Search the N closest reachable end vertices on the skeleton graph
+  if (!map_->isTraversableInGlobalMap(goal_point)) {
+    LOG(INFO) << "Goal point is not traversable in global map ("
+              << goal_point.x() << ", " << goal_point.y() << ", "
+              << goal_point.z()
+              << "). Will not be able to connect to skeleton graphs.";
+    return false;
+  }
   constexpr int kNClosestEndVertices = 30;
   std::vector<GlobalVertexId> end_vertex_candidates =
       searchNClosestReachableSkeletonVertices(

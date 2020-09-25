@@ -37,6 +37,9 @@ class MapBase {
   virtual bool isTraversableInActiveSubmap(const Point& position) = 0;
   virtual bool isLineTraversableInActiveSubmap(const Point& start_point,
                                                const Point& end_point) = 0;
+  virtual bool getDistanceAndGradientAtPositionInActiveSubmap(
+      const Eigen::Vector3d& position, double* distance,
+      Eigen::Vector3d* gradient) = 0;
 
   // Voxels are referred in the planner by their center points.
   virtual Point getVoxelCenterInLocalArea(const Point& position) = 0;

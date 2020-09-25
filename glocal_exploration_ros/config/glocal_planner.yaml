@@ -66,6 +66,7 @@ mapping:
   publish_slices: false
   publish_pointclouds_on_update: false
 
+
   # VOXGRAPH
   debug: false
   submap_topic: "/glocal/glocal_system/mapping/tsdf_map_out"

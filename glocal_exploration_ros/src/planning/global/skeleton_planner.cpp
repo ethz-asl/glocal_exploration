@@ -369,11 +369,11 @@ bool SkeletonPlanner::verifyNextWayPoints() {
       // Insert intermediate goal s.t. path can be observed.
       WayPoint way_point;
       Point direction = goal - current_position;
-      Point new_gaol =
+      Point new_goal =
           current_position + direction * (1.0 - safety / direction.norm());
-      way_point.x = new_gaol.x();
-      way_point.y = new_gaol.y();
-      way_point.z = new_gaol.z();
+      way_point.x = new_goal.x();
+      way_point.y = new_goal.y();
+      way_point.z = new_goal.z();
       way_points_.insert(way_points_.begin(), way_point);
     } else {
       // The global path is no longer feasible, try to recompute it.
@@ -455,9 +455,58 @@ bool SkeletonPlanner::computePath(const Point& goal,
                                   std::vector<WayPoint>* way_points) {
   CHECK_NOTNULL(way_points);
 
-  // Compute path along skeletons
-  return skeleton_a_star_.planPath(comm_->currentPose().position(), goal,
-                                   way_points);
+  Point start_point = comm_->currentPose().position();
+  if (comm_->map()->isTraversableInActiveSubmap(start_point) ||
+      findNearbyTraversablePoint(&start_point)) {
+    // Compute path along skeletons
+    return skeleton_a_star_.planPath(start_point, goal, way_points);
+  }
+
+  LOG(WARNING) << "Skeleton planner: The active submap is not traversable "
+                  "at the current pose. Could not find a nearby valid "
+                  "start position.";
+  return false;
+}
+
+bool SkeletonPlanner::findNearbyTraversablePoint(Point* position) {
+  CHECK_NOTNULL(position);
+  const Point initial_position = *position;
+
+  constexpr int kMaxNumSteps = 3;
+  const std::shared_ptr<MapBase> map_ptr = comm_->map();
+  // TODO(victorr): Get traversability radius from map interface
+  const double traversability_radius = 1.0;
+
+  double distance;
+  Point gradient;
+  int step_idx = 1;
+  for (; step_idx < kMaxNumSteps; ++step_idx) {
+    // Get the distance
+    if (!map_ptr->getDistanceAndGradientAtPositionInActiveSubmap(
+            *position, &distance, &gradient)) {
+      LOG(WARNING) << "Failed to look up distance and gradient "
+                      "information at:\n"
+                   << *position;
+      return false;
+    }
+    // Take a step in the direction that maximizes the distance
+    const double step_size =
+        std::max(map_ptr->getVoxelSize(), traversability_radius - distance);
+    *position += step_size * gradient;
+    // Determine if we found a solution
+    if (map_ptr->isTraversableInActiveSubmap(*position)) {
+      LOG(INFO) << "Skeleton planner: Succesfully moved point from "
+                   "intraversable initial position ("
+                << initial_position.x() << ", " << initial_position.y() << ", "
+                << initial_position.z() << ") to traversable start point ("
+                << position->x() << ", " << position->y() << ", "
+                << position->z() << "), after " << step_idx
+                << " gradient ascent steps.";
+      return true;
+    }
+  }
+
+  return false;
 }
 
 }  // namespace glocal_exploration
