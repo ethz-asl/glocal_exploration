@@ -72,6 +72,7 @@ RHRRTStar::RHRRTStar(const Config& config,
 }
 
 void RHRRTStar::executePlanningIteration() {
+  std::cout << "Local Planning Iteration" << std::endl;
   // Newly started local planning.
   if (comm_->stateMachine()->previousState() !=
       StateMachine::State::kLocalPlanning) {
@@ -283,25 +284,10 @@ void RHRRTStar::updateCollision() {
           continue;
         }
 
-        bool collided = false;
-        // Check max distance.
-        if ((comm_->currentPose().position() - connection->path_points.front())
-                    .norm() >= config_.sampling_range ||
-            (comm_->currentPose().position() - connection->path_points.back())
-                    .norm() >= config_.sampling_range) {
-          collided = true;
-        } else {
-          // Check collision.
-          for (auto& path_point : connection->path_points) {
-            if (!comm_->map()->isTraversableInActiveSubmap(path_point)) {
-              collided = true;
-              break;
-            }
-          }
-        }
-
-        // Remove these connections.
-        if (collided) {
+        // Remove colliding connections.
+        if (comm_->map()->isLineTraversableInActiveSubmap(
+                connection->parent->pose.position(),
+                connection->target->pose.position())) {
           ViewPoint* target = connection->target;
           target->connections.erase(std::remove_if(target->connections.begin(),
                                                    target->connections.end(),
@@ -473,7 +459,8 @@ void RHRRTStar::evaluateViewPoint(ViewPoint* view_point) {
 
 double RHRRTStar::computeCost(const Connection& connection) {
   // just use distance
-  return (connection.path_points.front() - connection.path_points.back())
+  return (connection.parent->pose.position() -
+          connection.target->pose.position())
       .norm();
 }
 
@@ -531,7 +518,7 @@ bool RHRRTStar::sampleNewPoint(ViewPoint* point) {
                        static_cast<double>(RAND_MAX);
   const double phi = acos(1.0 - 2.0 * static_cast<double>(std::rand()) /
                                     static_cast<double>(RAND_MAX));
-  Eigen::Vector3d goal =
+  Point goal =
       comm_->currentPose().position() +
       config_.sampling_range * Eigen::Vector3d(sin(phi) * cos(theta),
                                                sin(phi) * sin(theta), cos(phi));
@@ -551,30 +538,24 @@ bool RHRRTStar::sampleNewPoint(ViewPoint* point) {
   distance_max += config_.path_cropping_length;
 
   // Verify and crop the sampled path.
-  const double range_increment = comm_->map()->getVoxelSize();
-  double range = range_increment;
-  Eigen::Vector3d direction = (goal - origin).normalized();
-  while (
-      comm_->map()->isTraversableInActiveSubmap(origin + range * direction) &&
-      range <= distance_max) {
-    range += range_increment;
-  }
-  range = range - config_.path_cropping_length - range_increment;
+  goal = origin + (goal - origin).normalized() * distance_max;
+  Point goal_cropped;
+  comm_->map()->isLineTraversableInActiveSubmap(origin, goal, &goal_cropped);
 
   // Check min distance.
-  goal = origin + range * direction;
-  if (!findNearestNeighbors(goal, &nearest_viewpoint)) {
+  if (!findNearestNeighbors(goal_cropped, &nearest_viewpoint)) {
     return false;
   }
-  if ((tree_data_.points[nearest_viewpoint.front()]->pose.position() - goal)
+  if ((tree_data_.points[nearest_viewpoint.front()]->pose.position() -
+       goal_cropped)
           .norm() < config_.min_sampling_distance) {
     return false;
   }
 
   // Write the result.
-  point->pose.x = goal.x();
-  point->pose.y = goal.y();
-  point->pose.z = goal.z();
+  point->pose.x = goal_cropped.x();
+  point->pose.y = goal_cropped.y();
+  point->pose.z = goal_cropped.z();
   point->pose.yaw = 2.0 * M_PI * static_cast<double>(std::rand()) /
                     static_cast<double>(RAND_MAX);
   return true;
@@ -633,16 +614,9 @@ void RHRRTStar::visualizeGain(const WayPoint& pose,
 bool RHRRTStar::ViewPoint::tryAddConnection(ViewPoint* target, MapBase* map) {
   // Check traversability.
   Eigen::Vector3d origin = pose.position();
-  Eigen::Vector3d direction = target->pose.position() - origin;
-  int n_points = std::ceil(direction.norm() / map->getVoxelSize() + 2.0);
-  std::vector<Eigen::Vector3d> path_points;
-  path_points.resize(n_points);
-  for (size_t i = 0; i < n_points; ++i) {
-    path_points[i] = origin + static_cast<double>(i) /
-                                  static_cast<double>(n_points - 1) * direction;
-    if (!map->isTraversableInActiveSubmap(path_points[i])) {
-      return false;
-    }
+  if (!map->isLineTraversableInActiveSubmap(pose.position(),
+                                            target->pose.position())) {
+    return false;
   }
 
   // Add the connection.
@@ -651,7 +625,6 @@ bool RHRRTStar::ViewPoint::tryAddConnection(ViewPoint* target, MapBase* map) {
   connection->target = target;
   connections.emplace_back(std::make_pair(true, connection));
   target->connections.emplace_back(std::make_pair(false, connection));
-  connection->path_points = std::move(path_points);
   return true;
 }
 

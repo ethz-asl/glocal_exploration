@@ -2,6 +2,7 @@
 #define GLOCAL_EXPLORATION_ROS_MAPPING_THREADSAFE_WRAPPERS_THREADSAFE_VOXBLOX_SERVER_H_
 
 #include <functional>
+#include <memory>
 #include <utility>
 
 #include <voxblox_ros/esdf_server.h>
@@ -32,7 +33,12 @@ class ThreadsafeVoxbloxServer : public voxblox::EsdfServer {
   // TODO(victorr): Also make sure all other thread-unsafe base class methods
   //                are no longer accessible, and see if there's a cleaner
   //                alternative to base method hiding.
-  inline voxblox::EsdfMap::Ptr getEsdfMapPtr() { return safe_esdf_map_; }
+  std::shared_ptr<const voxblox::EsdfMap> getEsdfMapPtr() const override {
+    return safe_esdf_map_;
+  }
+  std::shared_ptr<voxblox::EsdfMap> getEsdfMapPtr() override {
+    return safe_esdf_map_;
+  }
 
   void newPoseCallback(const voxblox::Transformation& T_G_C) override {
     // TODO(victorr): Block getEsdfMapPtr() during this method, preferably

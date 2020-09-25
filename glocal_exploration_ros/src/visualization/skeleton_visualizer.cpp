@@ -67,6 +67,17 @@ void SkeletonVisualizer::visualize() {
     visualizePlannedPath();
   }
 
+  std::cout << "======================================\n"
+               "frontiers changed: "
+            << planner_->visualizationData().frontiers_have_changed
+            << "\nexecution finished: "
+            << planner_->visualizationData().execution_finished
+            << "\nfinished successfully: "
+            << planner_->visualizationData().finished_successfully
+            << "\nis still global: "
+            << (comm_->stateMachine()->currentState() ==
+                StateMachine::State::kGlobalPlanning)
+            << "\n======================================" << std::endl;
   // Frontiers.
   if (config_.visualize_frontiers && frontier_pub_.getNumSubscribers() > 0) {
     visualizeFrontiers();

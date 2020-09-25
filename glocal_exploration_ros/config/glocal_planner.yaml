@@ -27,7 +27,7 @@ region_of_interest:
 mapping:
   type: voxgraph
 
-  clearing_radius: 0.6
+  clearing_radius: 1.0
   traversability_radius: *collision_radius
   verbosity: 4
 
@@ -61,8 +61,8 @@ mapping:
   verbose: false
   color_mode: "lambert" #normals
   slice_level: -0.5
-  publish_pointclouds: true
-  publish_traversable: true
+  publish_pointclouds: false
+  publish_traversable: false
   publish_slices: false
   publish_pointclouds_on_update: false
 
@@ -123,7 +123,7 @@ local_planner:
   max_number_of_neighbors: 20
   maximum_rewiring_iterations: 100
   terminaton_min_tree_size: 3
-  termination_max_gain: 100
+  termination_max_gain: 0 #999999999 #100
   termination_min_time: 2  # s
   
   # Lidar Model
