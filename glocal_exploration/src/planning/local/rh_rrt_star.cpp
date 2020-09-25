@@ -24,22 +24,18 @@ void RHRRTStar::Config::checkParams() const {
   checkParamGE(path_cropping_length, 0.0, "path_cropping_length");
   checkParamGT(max_number_of_neighbors, 0, "max_number_of_neighbors");
   checkParamGT(maximum_rewiring_iterations, 0, "maximum_rewiring_iterations");
-  checkParamGT(global_sampling_radius, 0.0, "global_sampling_radius");
-  checkParamGT(local_sampling_radius, 0.0, "local_sampling_radius");
-  checkParamGE(min_local_points, 0, "min_local_points");
+  checkParamGT(sampling_range, 0.0, "sampling_range");
   checkParamGE(min_path_length, 0.0, "min_path_length");
   checkParamGE(min_sampling_distance, 0.0, "min_sampling_distance");
   checkParamGE(terminaton_min_tree_size, 0, "terminaton_min_tree_size");
   checkParamGE(termination_max_gain, 0.0, "termination_max_gain");
-
+  checkParamGE(termination_min_time, 0.0, "termination_min_time");
   checkParamConfig(lidar_config);
 }
 
 void RHRRTStar::Config::fromRosParam() {
   rosParam("verbosity", &verbosity);
-  rosParam("local_sampling_radius", &local_sampling_radius);
-  rosParam("global_sampling_radius", &global_sampling_radius);
-  rosParam("min_local_points", &min_local_points);
+  rosParam("sampling_range", &sampling_range);
   rosParam("min_path_length", &min_path_length);
   rosParam("min_sampling_distance", &min_sampling_distance);
   rosParam("max_path_length", &max_path_length);
@@ -48,14 +44,14 @@ void RHRRTStar::Config::fromRosParam() {
   rosParam("maximum_rewiring_iterations", &maximum_rewiring_iterations);
   rosParam("terminaton_min_tree_size", &terminaton_min_tree_size);
   rosParam("termination_max_gain", &termination_max_gain);
+  rosParam("termination_min_time", &termination_min_time);
+  rosParam("DEBUG_number_of_iterations", &DEBUG_number_of_iterations);
   rosParam(&lidar_config);
 }
 
 void RHRRTStar::Config::printFields() const {
   printField("verbosity", verbosity);
-  printField("local_sampling_radius", local_sampling_radius);
-  printField("global_sampling_radius", global_sampling_radius);
-  printField("min_local_points", min_local_points);
+  printField("sampling_range", sampling_range);
   printField("min_path_length", min_path_length);
   printField("min_sampling_distance", min_sampling_distance);
   printField("max_path_length", max_path_length);
@@ -64,6 +60,8 @@ void RHRRTStar::Config::printFields() const {
   printField("maximum_rewiring_iterations", maximum_rewiring_iterations);
   printField("terminaton_min_tree_size", terminaton_min_tree_size);
   printField("termination_max_gain", termination_max_gain);
+  printField("termination_min_time", termination_min_time);
+  printField("DEBUG_number_of_iterations", DEBUG_number_of_iterations);
   printField("lidar_config", lidar_config);
 }
 
@@ -93,7 +91,7 @@ void RHRRTStar::executePlanningIteration() {
   expandTree();
 
   // Goal reached: request next point if there is a valid candidate
-  if (comm_->targetIsReached()) {
+  if (comm_->targetIsReached() && !termination_time_is_active_) {
     WayPoint next_waypoint;
     updateCollision();
     if (selectNextBestWayPoint(&next_waypoint)) {
@@ -106,10 +104,24 @@ void RHRRTStar::executePlanningIteration() {
   if (tree_data_.points.size() >= config_.terminaton_min_tree_size) {
     for (const auto& point : tree_data_.points) {
       if (point->gain > config_.termination_max_gain) {
+        termination_time_is_active_ = false;
         return;
       }
     }
-    comm_->stateMachine()->signalGlobalPlanning();
+    if (termination_time_is_active_) {
+      if (std::chrono::duration_cast<std::chrono::seconds>(
+              std::chrono::high_resolution_clock::now() - termination_time_)
+              .count() >= config_.termination_min_time) {
+        comm_->stateMachine()->signalGlobalPlanning();
+      }
+    } else {
+      LOG_IF(INFO, config_.verbosity >= 3)
+          << "Termination criterion is met, trying to overcome it for "
+          << config_.termination_min_time
+          << "s before moving to global planning.";
+      termination_time_ = std::chrono::high_resolution_clock::now();
+      termination_time_is_active_ = true;
+    }
   }
 }
 
@@ -126,10 +138,10 @@ void RHRRTStar::resetPlanner(const WayPoint& origin) {
   // reset counters
   root_ = tree_data_.points[0].get();
   current_connection_ = nullptr;
-  local_sampled_points_ = config_.min_local_points;
   gain_update_needed_ = false;
   pruned_points_ = 0;
   new_points_ = 0;
+  termination_time_is_active_ = false;
 
   // Logging.
   LOG_IF(INFO, config_.verbosity >= 4) << "Reset the RH-RRT* planner.";
@@ -156,10 +168,6 @@ void RHRRTStar::expandTree() {
   kdtree_->addPoints(tree_data_.points.size() - 1,
                      tree_data_.points.size() - 1);
 
-  // update tracking and stats
-  if (local_sampled_points_ > 0) {
-    local_sampled_points_ -= 1;
-  }
   new_points_++;
 }
 
@@ -250,20 +258,6 @@ bool RHRRTStar::selectNextBestWayPoint(WayPoint* next_waypoint) {
   current_connection_ = root_->connections[next_point_idx].second.get();
   root_ = new_root;
 
-  // refresh the number of local points
-  if (config_.min_local_points > 0) {
-    Eigen::Vector3d goal = new_root->pose.position();
-    local_sampled_points_ = config_.min_local_points;
-    std::vector<size_t> nearest_viewpoints;
-    findNearestNeighbors(goal, &nearest_viewpoints, config_.min_local_points);
-    for (auto index : nearest_viewpoints) {
-      if ((tree_data_.points[index]->pose.position() - goal).norm() <=
-          config_.local_sampling_radius) {
-        local_sampled_points_--;
-      }
-    }
-  }
-
   // logging
   LOG_IF(INFO, config_.verbosity >= 2)
       << "Published next segment: " << new_points_ << " new, " << pruned_points_
@@ -291,17 +285,10 @@ void RHRRTStar::updateCollision() {
           continue;
         }
 
-        // Check collision.
-        bool collided = false;
-        for (auto& path_point : connection->path_points) {
-          if (!comm_->map()->isTraversableInActiveSubmap(path_point)) {
-            collided = true;
-            break;
-          }
-        }
-
-        // Remove these connections.
-        if (collided) {
+        // Remove colliding connections.
+        if (comm_->map()->isLineTraversableInActiveSubmap(
+                connection->parent->pose.position,
+                connection->target->pose.position)) {
           ViewPoint* target = connection->target;
           target->connections.erase(std::remove_if(target->connections.begin(),
                                                    target->connections.end(),
@@ -311,7 +298,7 @@ void RHRRTStar::updateCollision() {
                                                    }),
                                     target->connections.end());
           viewpoint->connections.erase(viewpoint->connections.begin() + i);
-          offset -= 1;
+          offset--;
         }
       }
     }
@@ -400,15 +387,15 @@ bool RHRRTStar::connectViewPoint(ViewPoint* view_point) {
   // This method is called on newly sampled points, so they can not look up
   // themselves or duplicate connections
   std::vector<size_t> nearest_viewpoints;
-  if (!findNearestNeighbors(view_point->pose.position(), &nearest_viewpoints,
+  if (!findNearestNeighbors(view_point->pose.position, &nearest_viewpoints,
                             config_.max_number_of_neighbors)) {
     return false;
   }
   bool connection_found = false;
   for (const auto& index : nearest_viewpoints) {
-    double distance = (view_point->pose.position() -
-                       tree_data_.points[index]->pose.position())
-                          .norm();
+    double distance =
+        (view_point->pose.position - tree_data_.points[index]->pose.position)
+            .norm();
     if (distance > config_.max_path_length ||
         distance < config_.min_path_length) {
       continue;
@@ -473,7 +460,7 @@ void RHRRTStar::evaluateViewPoint(ViewPoint* view_point) {
 
 double RHRRTStar::computeCost(const Connection& connection) {
   // just use distance
-  return (connection.path_points.front() - connection.path_points.back())
+  return (connection.parent->pose.position - connection.target->pose.position)
       .norm();
 }
 
@@ -508,6 +495,8 @@ double RHRRTStar::computeGNVStep(ViewPoint* view_point, double gain,
   cost += view_point->getActiveConnection()->cost;
   if (cost > 0) {
     value = gain / cost;
+    // TEST: foucs more on local expl
+    // value = gain / cost / cost;
   }
   for (size_t i = 0; i < view_point->connections.size(); ++i) {
     ViewPoint* target = view_point->getConnectedViewPoint(i);
@@ -524,53 +513,51 @@ double RHRRTStar::computeGNVStep(ViewPoint* view_point, double gain,
 
 bool RHRRTStar::sampleNewPoint(ViewPoint* point) {
   // Sample the goal point.
+
   const double theta = 2.0 * M_PI * static_cast<double>(std::rand()) /
                        static_cast<double>(RAND_MAX);
   const double phi = acos(1.0 - 2.0 * static_cast<double>(std::rand()) /
                                     static_cast<double>(RAND_MAX));
-  const double rho = local_sampled_points_ > 0 ? config_.local_sampling_radius
-                                               : config_.global_sampling_radius;
-  Eigen::Vector3d goal = rho * Eigen::Vector3d(sin(phi) * cos(theta),
-                                               sin(phi) * sin(theta), cos(phi));
-  goal += comm_->currentPose().position();
+  Point goal = comm_->currentPose().position +
+               config_.sampling_range * Point(sin(phi) * cos(theta),
+                                              sin(phi) * sin(theta), cos(phi));
 
   // Find the nearest neighbor.
   std::vector<size_t> nearest_viewpoint;
   if (!findNearestNeighbors(goal, &nearest_viewpoint)) {
     return false;
   }
-  Eigen::Vector3d origin =
-      tree_data_.points[nearest_viewpoint.front()]->pose.position();
-  const double distance_max =
-      std::min(std::max((goal - origin).norm(), config_.min_sampling_distance),
-               config_.max_path_length) +
-      config_.path_cropping_length;
+  Point origin = tree_data_.points[nearest_viewpoint.front()]->pose.position;
+  double distance_max =
+      std::min((goal - origin).norm(), config_.max_path_length);
+  if (distance_max < config_.min_sampling_distance) {
+    return false;
+  }
+  distance_max += config_.path_cropping_length;
 
   // Verify and crop the sampled path.
-  const double range_increment = comm_->map()->getVoxelSize();
-  double range = range_increment;
-  Eigen::Vector3d direction = (goal - origin).normalized();
-  while (
-      comm_->map()->isTraversableInActiveSubmap(origin + range * direction) &&
-      range <= distance_max) {
-    range += range_increment;
+  goal = origin + (goal - origin).normalized() * distance_max;
+  Point goal_cropped;
+  comm_->map()->isLineTraversableInActiveSubmap(origin, goal, &goal_cropped);
+
+  // Check min distance.
+  if (!findNearestNeighbors(goal_cropped, &nearest_viewpoint)) {
+    return false;
   }
-  range = range - config_.path_cropping_length;
-  if (range < config_.min_sampling_distance) {
+  if ((tree_data_.points[nearest_viewpoint.front()]->pose.position -
+       goal_cropped)
+          .norm() < config_.min_sampling_distance) {
     return false;
   }
 
   // Write the result.
-  goal = origin + range * direction;
-  point->pose.x = goal.x();
-  point->pose.y = goal.y();
-  point->pose.z = goal.z();
+  point->pose.position = goal_cropped;
   point->pose.yaw = 2.0 * M_PI * static_cast<double>(std::rand()) /
                     static_cast<double>(RAND_MAX);
   return true;
 }
 
-bool RHRRTStar::findNearestNeighbors(Eigen::Vector3d position,
+bool RHRRTStar::findNearestNeighbors(Point position,
                                      std::vector<size_t>* result,
                                      int n_neighbors) {
   // how to use nanoflann (:
@@ -590,10 +577,8 @@ bool RHRRTStar::findNearestNeighbors(Eigen::Vector3d position,
   return true;
 }
 
-void RHRRTStar::visualizeGain(const WayPoint& pose,
-                              std::vector<Eigen::Vector3d>* voxels,
-                              std::vector<Eigen::Vector3d>* colors,
-                              double* scale) const {
+void RHRRTStar::visualizeGain(const WayPoint& pose, std::vector<Point>* voxels,
+                              std::vector<Point>* colors, double* scale) const {
   CHECK_NOTNULL(voxels);
   CHECK_NOTNULL(colors);
   CHECK_NOTNULL(scale);
@@ -617,22 +602,15 @@ void RHRRTStar::visualizeGain(const WayPoint& pose,
   }
 
   // Uniform coloring [0, 1].
-  colors->assign(voxels->size(), Eigen::Vector3d(1, 0.8, 0));
+  colors->assign(voxels->size(), Point(1, 0.8, 0));
 }
 
 bool RHRRTStar::ViewPoint::tryAddConnection(ViewPoint* target, MapBase* map) {
   // Check traversability.
-  Eigen::Vector3d origin = pose.position();
-  Eigen::Vector3d direction = target->pose.position() - origin;
-  int n_points = std::ceil(direction.norm() / map->getVoxelSize());
-  direction.normalize();
-  std::vector<Eigen::Vector3d> path_points;
-  path_points.resize(n_points);
-  for (size_t i = 0; i < n_points; ++i) {
-    path_points[i] = origin + static_cast<double>(i) / n_points * direction;
-    if (!map->isTraversableInActiveSubmap(path_points[i])) {
-      return false;
-    }
+  Point origin = pose.position;
+  if (!map->isLineTraversableInActiveSubmap(pose.position,
+                                            target->pose.position)) {
+    return false;
   }
 
   // Add the connection.
@@ -641,7 +619,6 @@ bool RHRRTStar::ViewPoint::tryAddConnection(ViewPoint* target, MapBase* map) {
   connection->target = target;
   connections.emplace_back(std::make_pair(true, connection));
   target->connections.emplace_back(std::make_pair(false, connection));
-  connection->path_points = std::move(path_points);
   return true;
 }
 

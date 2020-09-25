@@ -66,9 +66,9 @@ class GlocalSystem {
   void publishTargetPose();
 
   // Variables.
-  Eigen::Vector3d current_position_;  // current/goal poses are in odom frame.
+  Point current_position_;  // current/goal poses are in odom frame.
   Eigen::Quaterniond current_orientation_;
-  Eigen::Vector3d target_position_;
+  Point target_position_;
   double target_yaw_;             // rad
   double last_waypoint_timeout_;  // s
   ros::Time last_waypoint_published_;

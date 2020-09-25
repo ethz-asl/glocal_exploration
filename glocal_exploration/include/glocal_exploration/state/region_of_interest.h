@@ -14,7 +14,7 @@ class RegionOfInterest {
   RegionOfInterest() = default;
   virtual ~RegionOfInterest() = default;
 
-  virtual bool contains(const Eigen::Vector3d& point) = 0;
+  virtual bool contains(const Point& point) = 0;
 };
 
 /**
@@ -38,7 +38,7 @@ class BoundingBox : public RegionOfInterest {
   explicit BoundingBox(const Config& config);
   ~BoundingBox() override = default;
 
-  bool contains(const Eigen::Vector3d& point) override;
+  bool contains(const Point& point) override;
 
  protected:
   const Config config_;

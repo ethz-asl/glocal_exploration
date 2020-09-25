@@ -38,8 +38,7 @@ class LidarModel : public SensorModel {
   ~LidarModel() override = default;
 
   // Legacy method
-  bool getVisibleVoxels(const WayPoint& waypoint,
-                        std::vector<Eigen::Vector3d>* centers,
+  bool getVisibleVoxels(const WayPoint& waypoint, std::vector<Point>* centers,
                         std::vector<MapBase::VoxelState>* states) override;
 
   void getVisibleUnknownVoxels(const WayPoint& waypoint,
@@ -66,7 +65,7 @@ class LidarModel : public SensorModel {
   // methods
   void markNeighboringRays(int x, int y, int segment, int value);
   // x and y are cylindrical image coordinates scaled to [0, 1]
-  void getDirectionVector(Eigen::Vector3d* result, double relative_x,
+  void getDirectionVector(Point* result, double relative_x,
                           double relative_y) const;
 };
 

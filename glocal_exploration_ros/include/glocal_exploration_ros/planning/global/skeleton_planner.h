@@ -96,7 +96,6 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   bool computePath(const Point& goal, std::vector<WayPoint>* way_points);
   bool findValidGoalPoint(Point* goal);  // Changes goal to the new point.
   void clusterFrontiers();
-  bool lineIsIntraversableInSlidingWindowAt(Point* goal_point);
   bool verifyNextWayPoints();
   bool findNearbyTraversablePoint(Point* position);
 

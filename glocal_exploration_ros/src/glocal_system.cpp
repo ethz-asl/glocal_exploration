@@ -118,7 +118,7 @@ void GlocalSystem::loopIteration() {
   // Move requests.
   if (comm_->newWayPointIsRequested()) {
     const WayPoint& next_point = comm_->getRequestedWayPoint();
-    target_position_ = next_point.position();
+    target_position_ = next_point.position;
     target_yaw_ = next_point.yaw;
     publishTargetPose();
     comm_->setRequestedWayPointRead();
@@ -146,7 +146,7 @@ void GlocalSystem::publishTargetPose() {
   last_waypoint_timeout_ = config_.replan_timeout_constant;
   if (config_.replan_timeout_velocity > 0) {
     last_waypoint_timeout_ +=
-        (comm_->currentPose().position() - target_position_).norm() /
+        (comm_->currentPose().position - target_position_).norm() /
         config_.replan_timeout_velocity;
   }
   last_waypoint_published_ = ros::Time::now();
@@ -154,9 +154,8 @@ void GlocalSystem::publishTargetPose() {
 
 void GlocalSystem::odomCallback(const nav_msgs::Odometry& msg) {
   // Track the current pose
-  current_position_ =
-      Eigen::Vector3d(msg.pose.pose.position.x, msg.pose.pose.position.y,
-                      msg.pose.pose.position.z);
+  current_position_ = Point(msg.pose.pose.position.x, msg.pose.pose.position.y,
+                            msg.pose.pose.position.z);
   current_orientation_ = Eigen::Quaterniond(
       msg.pose.pose.orientation.w, msg.pose.pose.orientation.x,
       msg.pose.pose.orientation.y, msg.pose.pose.orientation.z);
@@ -164,9 +163,7 @@ void GlocalSystem::odomCallback(const nav_msgs::Odometry& msg) {
   // update the state machine with the current pose.
   double yaw = tf2::getYaw(msg.pose.pose.orientation);
   WayPoint current_point;
-  current_point.x = current_position_.x();
-  current_point.y = current_position_.y();
-  current_point.z = current_position_.z();
+  current_point.position = current_position_;
   current_point.yaw = yaw;
   comm_->setCurrentPose(current_point);
 

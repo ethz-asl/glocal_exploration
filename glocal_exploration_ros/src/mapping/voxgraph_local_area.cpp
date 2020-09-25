@@ -114,7 +114,7 @@ void VoxgraphLocalArea::prune() {
 }
 
 VoxgraphLocalArea::VoxelState VoxgraphLocalArea::getVoxelStateAtPosition(
-    const Eigen::Vector3d& position) {
+    const Point& position) {
   const voxblox::Point t_F_position =
       fixed_frame_transformer_.transformFromOdomToFixedFrame(position);
   TsdfVoxel* voxel_ptr =
@@ -131,7 +131,7 @@ VoxgraphLocalArea::VoxelState VoxgraphLocalArea::getVoxelStateAtPosition(
   return VoxelState::kUnknown;
 }
 
-bool VoxgraphLocalArea::isObserved(const Eigen::Vector3d& position) {
+bool VoxgraphLocalArea::isObserved(const Point& position) {
   const voxblox::Point t_F_position =
       fixed_frame_transformer_.transformFromOdomToFixedFrame(position);
   TsdfVoxel* voxel_ptr =

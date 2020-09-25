@@ -40,19 +40,21 @@ class VoxgraphMap : public MapBase {
   double getVoxelSize() override { return c_voxel_size_; }
 
   bool isTraversableInActiveSubmap(const Point& position) override;
-  bool isLineTraversableInActiveSubmap(const Point& start_point,
-                                       const Point& end_point) override;
-  bool getDistanceAndGradientAtPositionInActiveSubmap(
-      const Eigen::Vector3d& position, double* distance,
-      Eigen::Vector3d* gradient) override;
+  bool isLineTraversableInActiveSubmap(
+      const Point& start_point, const Point& end_point,
+      Point* last_traversable_point = nullptr) override;
+  bool getDistanceAndGradientAtPositionInActiveSubmap(const Point& position,
+                                                      double* distance,
+                                                      Point* gradient) override;
 
   Point getVoxelCenterInLocalArea(const Point& point) override;
   VoxelState getVoxelStateInLocalArea(const Point& position) override;
 
   bool isObservedInGlobalMap(const Point& position) override;
   bool isTraversableInGlobalMap(const Point& position) override;
-  bool isLineTraversableInGlobalMap(const Point& start_point,
-                                    const Point& end_point) override;
+  bool isLineTraversableInGlobalMap(
+      const Point& start_point, const Point& end_point,
+      Point* last_traversable_point = nullptr) override;
   bool getDistanceInGlobalMapAtPosition(const Point& position,
                                         double* min_esdf_distance);
 

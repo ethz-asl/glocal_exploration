@@ -19,7 +19,7 @@ void BoundingBox::Config::fromRosParam() {
   rosParam("z_max", &z_max);
 }
 
-bool BoundingBox::contains(const Eigen::Vector3d& point) {
+bool BoundingBox::contains(const Point& point) {
   if (point.x() > config_.x_max) {
     return false;
   }

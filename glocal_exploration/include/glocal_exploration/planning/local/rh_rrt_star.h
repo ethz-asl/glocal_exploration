@@ -1,6 +1,7 @@
 #ifndef GLOCAL_EXPLORATION_PLANNING_LOCAL_RH_RRT_STAR_H_
 #define GLOCAL_EXPLORATION_PLANNING_LOCAL_RH_RRT_STAR_H_
 
+#include <chrono>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -18,10 +19,6 @@ class RHRRTStar : public LocalPlannerBase {
  public:
   struct Config : public config_utilities::Config<Config> {
     int verbosity = 1;
-    // sampling
-    double local_sampling_radius = 1.5;   // m
-    double global_sampling_radius = 100;  // m
-    int min_local_points = 5;
 
     // path
     double min_path_length = 0.5;  // m, determines the length of connections
@@ -34,10 +31,15 @@ class RHRRTStar : public LocalPlannerBase {
 
     // behavior
     int maximum_rewiring_iterations = 100;
+    double sampling_range = 10;  // m
 
-    // temrination
+    // termination
     int terminaton_min_tree_size = 5;
     double termination_max_gain = 100.0;
+    double termination_min_time = 3;  // s, try to find paths breaking the exit
+                                      // condition for this amount of time.
+    int DEBUG_number_of_iterations =
+        -1;  // Only used if > 0, use for debugging.
 
     // sensor model (currently just use lidar)
     LidarModel::Config lidar_config;
@@ -78,7 +80,7 @@ class RHRRTStar : public LocalPlannerBase {
   struct Connection {
     ViewPoint* parent;
     ViewPoint* target;
-    std::vector<Eigen::Vector3d> path_points;
+    std::vector<Point> path_points;
     double cost;
   };
 
@@ -91,11 +93,11 @@ class RHRRTStar : public LocalPlannerBase {
 
     inline double kdtree_get_pt(const size_t idx, const size_t dim) const {
       if (dim == 0)
-        return points[idx]->pose.x;
+        return points[idx]->pose.position.x();
       else if (dim == 1)
-        return points[idx]->pose.y;
+        return points[idx]->pose.position.y();
       else
-        return points[idx]->pose.z;
+        return points[idx]->pose.position.z();
     }
 
     template <class BBOX>
@@ -110,8 +112,8 @@ class RHRRTStar : public LocalPlannerBase {
   // accessors for visualization
   const Config& getConfig() const { return config_; }
   const TreeData& getTreeData() const { return tree_data_; }
-  void visualizeGain(const WayPoint& pose, std::vector<Eigen::Vector3d>* voxels,
-                     std::vector<Eigen::Vector3d>* colors, double* scale) const;
+  void visualizeGain(const WayPoint& pose, std::vector<Point>* voxels,
+                     std::vector<Point>* colors, double* scale) const;
 
  protected:
   /* components */
@@ -123,35 +125,36 @@ class RHRRTStar : public LocalPlannerBase {
   /* methods */
   // general
   void resetPlanner(const WayPoint& origin);
-  bool findNearestNeighbors(Eigen::Vector3d position,
-                            std::vector<size_t>* result, int n_neighbors = 1);
+  bool findNearestNeighbors(Point position, std::vector<size_t>* result,
+                            int n_neighbors = 1);
 
-  // tree building
+  // tree building.
   void expandTree();
   bool sampleNewPoint(ViewPoint* point);
   bool connectViewPoint(ViewPoint* view_point);
 
-  // compute gains
+  // compute gains.
   void evaluateViewPoint(ViewPoint* view_point);
   double computeCost(const Connection& connection);
 
-  // extract best viewpoint
+  // extract best viewpoint.
   bool selectNextBestWayPoint(WayPoint* next_waypoint);
   bool selectBestConnection(ViewPoint* view_point);
   void computeValue(ViewPoint* view_point);
   static double computeGNVStep(ViewPoint* view_point, double gain, double cost);
 
-  // updating
+  // updating.
   void updateCollision();
   void updateGains();
   void computePointsConnectedToRoot(bool count_only_active_connections);
 
   /* variables */
-  int local_sampled_points_;
   bool gain_update_needed_;
   ViewPoint* root_;  // root pointer so it does not need to be searched for all
-  // the time
-  Connection* current_connection_;  // the connection currently being executed
+  // the time.
+  Connection* current_connection_;  // the connection currently being executed.
+  std::chrono::time_point<std::chrono::high_resolution_clock> termination_time_;
+  bool termination_time_is_active_;
 
   // stats
   int pruned_points_;

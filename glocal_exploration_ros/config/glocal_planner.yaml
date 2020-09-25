@@ -17,17 +17,17 @@ replan_timeout_velocity: 1.0
 
 region_of_interest:
   type: bounding_box
-  x_min: -20
-  x_max: 20
-  y_min: -20
-  y_max: 20
-  z_min: -1.5
-  z_max: 1.5
+  x_min: -100 #-20
+  x_max: 100 #20
+  y_min: -100 #-20
+  y_max: 100 #20
+  z_min: -100 #-1.5
+  z_max: 100 #1.5
 
 mapping:
   type: voxgraph
 
-  clearing_radius: 0.6
+  clearing_radius: 1.0
   traversability_radius: *collision_radius
   verbosity: 4
 
@@ -63,8 +63,9 @@ mapping:
   slice_level: -0.5
   publish_pointclouds: false
   publish_traversable: false
-  publish_slices: true
-  publish_pointclouds_on_update: true
+  publish_slices: false
+  publish_pointclouds_on_update: false
+
 
   # VOXGRAPH
   debug: false
@@ -114,17 +115,19 @@ local_planner:
   type: rh_rrt_star
   verbosity: 4
   # RH-RRT-Star params
-  local_sampling_radius: 3.0  # m
-  global_sampling_radius: 40 # m
-  min_local_points: 5
+  sampling_range: 10 # m
   min_path_length: 1.0  # m
-  min_sampling_distance: 0.5 # m
+  min_sampling_distance: 1.0 # m
   max_path_length: 3.0  # m
   path_cropping_length: 0.5 # m
   max_number_of_neighbors: 20
   maximum_rewiring_iterations: 100
-  terminaton_min_tree_size: 5
+  
+  # Termination
+  terminaton_min_tree_size: 3
   termination_max_gain: 100
+  termination_min_time: 2  # s
+  DEBUG_number_of_iterations: -1  # -1 to turn off
   
   # Lidar Model
   ray_length: *max_ray_length  # m
