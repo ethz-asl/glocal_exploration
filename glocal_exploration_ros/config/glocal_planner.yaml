@@ -122,7 +122,7 @@ local_planner:
   path_cropping_length: 0.5 # m
   max_number_of_neighbors: 20
   maximum_rewiring_iterations: 100
-  terminaton_min_tree_size: 0
+  terminaton_min_tree_size: 3
   termination_max_gain: 100
   termination_min_time: 2  # s
   
