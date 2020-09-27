@@ -183,7 +183,7 @@ void SkeletonVisualizer::visualizeGoalPoints() {
     msg.header.stamp = ros::Time::now();
     goals_pub_.publish(msg);
 
-    if (!planner_->visualizationData().finished) {
+    if (!planner_->visualizationData().execution_finished) {
       // Common data.
       msg = visualization_msgs::Marker();
       msg.header.frame_id = frame_id_;

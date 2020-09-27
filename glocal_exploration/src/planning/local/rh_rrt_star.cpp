@@ -104,9 +104,10 @@ void RHRRTStar::executePlanningIteration() {
   }
 
   // Check whether a local minimum is reached and change to global planning.
-  if (config_.DEBUG_number_of_iterations > 0 &&
-      number_of_executed_waypoints_ >= config_.DEBUG_number_of_iterations) {
-    comm_->stateMachine()->signalGlobalPlanning();
+  if (config_.DEBUG_number_of_iterations > 0) {
+    if (number_of_executed_waypoints_ >= config_.DEBUG_number_of_iterations) {
+      comm_->stateMachine()->signalGlobalPlanning();
+    }
     return;
   }
   if (tree_data_.points.size() >= config_.terminaton_min_tree_size) {
