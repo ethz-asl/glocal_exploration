@@ -286,7 +286,7 @@ void RHRRTStar::updateCollision() {
         }
 
         // Remove colliding connections.
-        if (comm_->map()->isLineTraversableInActiveSubmap(
+        if (!comm_->map()->isLineTraversableInActiveSubmap(
                 connection->parent->pose.position,
                 connection->target->pose.position)) {
           ViewPoint* target = connection->target;

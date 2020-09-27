@@ -349,7 +349,7 @@ bool SkeletonPlanner::verifyNextWayPoints() {
   int waypoint_index = 0;
   Point goal;
   while (waypoint_index < way_points_.size()) {
-    if (comm_->map()->isLineTraversableInActiveSubmap(
+    if (!comm_->map()->isLineTraversableInActiveSubmap(
             comm_->currentPose().position, way_points_[waypoint_index].position,
             &goal)) {
       break;
@@ -436,17 +436,6 @@ bool SkeletonPlanner::findNearbyTraversablePoint(Point* position) {
   Point gradient;
   int step_idx = 1;
   for (; step_idx < kMaxNumSteps; ++step_idx) {
-    // Get the distance
-    if (!map_ptr->getDistanceAndGradientAtPositionInActiveSubmap(
-            *position, &distance, &gradient)) {
-      LOG(WARNING) << "Failed to look up distance and gradient "
-                      "information at: "
-                   << position->transpose();
-      return false;
-    }
-    // Take a step in the direction that maximizes the distance
-    const FloatingPoint step_size =
-        std::max(map_ptr->getVoxelSize(), traversability_radius - distance);
     // Determine if we found a solution
     if (map_ptr->isTraversableInActiveSubmap(*position)) {
       LOG(INFO) << "Skeleton planner: Succesfully moved point from "
@@ -458,6 +447,17 @@ bool SkeletonPlanner::findNearbyTraversablePoint(Point* position) {
                 << " gradient ascent steps.";
       return true;
     }
+    // Get the distance
+    if (!map_ptr->getDistanceAndGradientAtPositionInActiveSubmap(
+            *position, &distance, &gradient)) {
+      LOG(WARNING) << "Failed to look up distance and gradient "
+                      "information at: "
+                   << position->transpose();
+      return false;
+    }
+    // Take a step in the direction that maximizes the distance
+    const FloatingPoint step_size =
+        std::max(map_ptr->getVoxelSize(), traversability_radius - distance);
     *position += step_size * gradient;
   }
   return false;
