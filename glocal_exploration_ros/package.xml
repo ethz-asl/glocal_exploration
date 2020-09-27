@@ -34,8 +34,6 @@
   <depend>voxgraph</depend>
   <depend>voxgraph_msgs</depend>
 
-  <depend>voxblox_skeleton_planner</depend>
-
   <depend>glocal_exploration</depend>
 
   <export>

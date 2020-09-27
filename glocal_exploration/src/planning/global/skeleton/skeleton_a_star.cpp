@@ -1,4 +1,4 @@
-#include "glocal_exploration_ros/planning/global/skeleton_a_star.h"
+#include "glocal_exploration/planning/global/skeleton/skeleton_a_star.h"
 
 #include <limits>
 #include <list>
@@ -12,7 +12,7 @@ namespace glocal_exploration {
 
 bool SkeletonAStar::planPath(const Point& start_point, const Point& goal_point,
                              std::vector<WayPoint>* way_points) {
-  map_ = std::dynamic_pointer_cast<VoxgraphMap>(comm_->map());
+  map_ = comm_->map();
   if (!map_) {
     LOG(WARNING) << "Could not get pointer to VoxgraphMap from communicator";
     return false;
@@ -68,9 +68,7 @@ bool SkeletonAStar::planPath(const Point& start_point, const Point& goal_point,
   // Plan path along the skeleton
   std::vector<GlobalVertexId> vertex_path;
   if (!getPathBetweenVertices(start_vertex_candidates, end_vertex_candidates,
-                              start_point.cast<voxblox::FloatingPoint>(),
-                              goal_point.cast<voxblox::FloatingPoint>(),
-                              &vertex_path)) {
+                              start_point, goal_point, &vertex_path)) {
     LOG(INFO) << "Could not find global path from start point ("
               << start_point.x() << ", " << start_point.y() << ", "
               << start_point.z() << ") to goal point (" << goal_point.x()
@@ -112,8 +110,7 @@ bool SkeletonAStar::getPathBetweenVertices(
         current_graph.getVertex(current_vertex_id.vertex_id);
 
     const voxblox::Point t_odom_current_vertex =
-        current_submap.getPose().cast<voxblox::FloatingPoint>() *
-        current_vertex.point;
+        current_submap.getPose() * current_vertex.point;
     g_score_map[current_vertex_id] =
         (t_odom_current_vertex - start_point).norm();
     f_score_map[current_vertex_id] =
@@ -131,7 +128,7 @@ bool SkeletonAStar::getPathBetweenVertices(
 
   // Run the Astar search
   size_t iteration_counter = 0u;
-  voxgraph::SubmapID previous_submap_id = -1;
+  SubmapId previous_submap_id = -1;
   const SkeletonSubmap* current_submap = nullptr;
   const voxblox::SparseSkeletonGraph* current_graph = nullptr;
   while (!open_set.empty()) {
@@ -187,10 +184,10 @@ bool SkeletonAStar::getPathBetweenVertices(
     // Unless this vertex already has many neighbors, try to connect to a
     // neighboring skeleton submap
     const Point t_odom_current_vertex =
-        current_submap->getPose() * current_vertex.point.cast<FloatingPoint>();
+        current_submap->getPose() * current_vertex.point;
     if (current_vertex.edge_list.size() <= 3) {
-      for (const voxgraph::SubmapID submap_id :
-           map_->getSubmapsAtPosition(t_odom_current_vertex)) {
+      for (const SubmapId submap_id :
+           map_->getSubmapIdsAtPosition(t_odom_current_vertex)) {
         // Avoid linking the current vertex against vertices of its own submap
         if (submap_id == current_vertex_id.submap_id) {
           continue;
@@ -203,8 +200,7 @@ bool SkeletonAStar::getPathBetweenVertices(
         }
 
         voxblox::Point t_nearby_submap_current_vertex =
-            (nearby_submap->getPose().inverse() * t_odom_current_vertex)
-                .cast<voxblox::FloatingPoint>();
+            (nearby_submap->getPose().inverse() * t_odom_current_vertex);
         constexpr int kUseNNearestNeighbors = 3;
         constexpr float kMaxLinkingDistance = 2.f;
         std::vector<VertexIdElement> nearest_vertex_ids;
@@ -218,7 +214,7 @@ bool SkeletonAStar::getPathBetweenVertices(
           const Point t_odom_nearby_vertex =
               nearby_submap->getPose() * nearby_submap->getSkeletonGraph()
                                              .getVertex(nearby_vertex_id)
-                                             .point.cast<FloatingPoint>();
+                                             .point;
           const float distance_current_to_nearby_vertex =
               (t_odom_current_vertex - t_odom_nearby_vertex).norm();
           if (distance_current_to_nearby_vertex < kMaxLinkingDistance &&
@@ -239,9 +235,7 @@ bool SkeletonAStar::getPathBetweenVertices(
               g_score_map[nearby_vertex_global_id] = tentative_g_score;
               f_score_map[nearby_vertex_global_id] =
                   tentative_g_score +
-                  (goal_point -
-                   t_odom_nearby_vertex.cast<voxblox::FloatingPoint>())
-                      .norm();
+                  (goal_point - t_odom_nearby_vertex).norm();
               parent_map[nearby_vertex_global_id] = current_vertex_id;
             }
           }
@@ -268,11 +262,9 @@ bool SkeletonAStar::getPathBetweenVertices(
       const voxblox::SkeletonVertex& neighbor_vertex =
           current_graph->getVertex(neighbor_vertex_id.vertex_id);
       const voxblox::Point t_odom_neighbor_vertex =
-          current_submap->getPose().cast<voxblox::FloatingPoint>() *
-          neighbor_vertex.point;
-      if (!map_->isLineTraversableInGlobalMap(
-              t_odom_current_vertex.cast<FloatingPoint>(),
-              t_odom_neighbor_vertex.cast<FloatingPoint>())) {
+          current_submap->getPose() * neighbor_vertex.point;
+      if (!map_->isLineTraversableInGlobalMap(t_odom_current_vertex,
+                                              t_odom_neighbor_vertex)) {
         continue;
       }
 
@@ -320,15 +312,14 @@ void SkeletonAStar::convertVertexToWaypointPath(
   way_points->clear();
   for (const GlobalVertexId& global_vertex_id : vertex_path) {
     if (global_vertex_id == kGoalVertexId) {
-      way_points->emplace_back(WayPoint(goal_point, /* yaw */ 0.0));
+      way_points->emplace_back(WayPoint(goal_point, /* yaw */ 0.f));
     } else {
       const SkeletonSubmap& submap =
           skeleton_submap_collection_.getSubmapById(global_vertex_id.submap_id);
       const voxblox::SkeletonVertex& vertex =
           submap.getSkeletonGraph().getVertex(global_vertex_id.vertex_id);
-      const Point t_odom_vertex =
-          submap.getPose() * vertex.point.cast<FloatingPoint>();
-      way_points->emplace_back(WayPoint(t_odom_vertex, /* yaw */ 0.0));
+      const Point t_odom_vertex = submap.getPose() * vertex.point;
+      way_points->emplace_back(WayPoint(t_odom_vertex, /* yaw */ 0.f));
     }
   }
 }
@@ -365,7 +356,7 @@ SkeletonAStar::searchNClosestReachableSkeletonVertices(
     float distance = -1.f;
   };
   std::list<CandidateVertex> candidate_start_vertices;
-  for (const voxgraph::SubmapID submap_id : map_->getSubmapsAtPosition(point)) {
+  for (const SubmapId submap_id : map_->getSubmapIdsAtPosition(point)) {
     SkeletonSubmap::ConstPtr skeleton_submap =
         skeleton_submap_collection_.getSubmapConstPtrById(submap_id);
     if (!skeleton_submap) {
@@ -378,8 +369,8 @@ SkeletonAStar::searchNClosestReachableSkeletonVertices(
       CandidateVertex candidate_vertex;
       candidate_vertex.global_vertex_id.submap_id = submap_id;
       candidate_vertex.global_vertex_id.vertex_id = vertex_kv.second.vertex_id;
-      candidate_vertex.t_O_point = skeleton_submap->getPose() *
-                                   vertex_kv.second.point.cast<FloatingPoint>();
+      candidate_vertex.t_O_point =
+          skeleton_submap->getPose() * vertex_kv.second.point;
       candidate_vertex.distance = (candidate_vertex.t_O_point - point).norm();
       candidate_start_vertices.emplace_back(std::move(candidate_vertex));
     }

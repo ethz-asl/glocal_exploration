@@ -19,8 +19,8 @@ class VoxbloxMap : public MapBase {
   struct Config : public config_utilities::Config<Config> {
     // Since this is a ros-class anyways we make it easy and just get the nh.
     std::string nh_private_namespace = "~";
-    double traversability_radius = 0.3;  // m
-    double clearing_radius = 0.5;        // m
+    FloatingPoint traversability_radius = 0.3f;  // m
+    FloatingPoint clearing_radius = 0.5f;        // m
 
     Config();
     void checkParams() const override;
@@ -31,13 +31,13 @@ class VoxbloxMap : public MapBase {
                       const std::shared_ptr<Communicator>& communicator);
   ~VoxbloxMap() override = default;
 
-  double getVoxelSize() override;
+  FloatingPoint getVoxelSize() override;
   bool isTraversableInActiveSubmap(const Point& position) override;
   bool isLineTraversableInActiveSubmap(
       const Point& start_point, const Point& end_point,
       Point* last_traversable_point = nullptr) override;
   bool getDistanceAndGradientAtPositionInActiveSubmap(const Point& position,
-                                                      double* distance,
+                                                      FloatingPoint* distance,
                                                       Point* gradient) override;
   VoxelState getVoxelStateInLocalArea(const Point& position) override;
   Point getVoxelCenterInLocalArea(const Point& position) override;
@@ -46,6 +46,11 @@ class VoxbloxMap : public MapBase {
   bool isLineTraversableInGlobalMap(
       const Point& start_point, const Point& end_point,
       Point* last_traversable_point = nullptr) override;
+
+  std::vector<SubmapId> getSubmapIdsAtPosition(
+      const Point& position) const override {
+    return std::vector<SubmapId>({0u});
+  }
   std::vector<SubmapData> getAllSubmapData() override;
 
  protected:
@@ -53,8 +58,8 @@ class VoxbloxMap : public MapBase {
   std::unique_ptr<ThreadsafeVoxbloxServer> server_;
 
   // cached constants
-  double c_block_size_;
-  double c_voxel_size_;
+  FloatingPoint c_block_size_;
+  FloatingPoint c_voxel_size_;
 };
 
 }  // namespace glocal_exploration

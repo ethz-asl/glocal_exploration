@@ -8,10 +8,9 @@
 #include <vector>
 
 #include <glocal_exploration/common.h>
+#include <glocal_exploration/utils/frame_transformer.h>
+#include <glocal_exploration/utils/set_utils.h>
 #include <voxgraph/frontend/submap_collection/voxgraph_submap_collection.h>
-
-#include "glocal_exploration_ros/mapping/frame_transformer.h"
-#include "glocal_exploration_ros/mapping/set_utils.h"
 
 namespace glocal_exploration {
 class VoxgraphSpatialHash {

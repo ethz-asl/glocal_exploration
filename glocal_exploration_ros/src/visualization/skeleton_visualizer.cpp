@@ -124,17 +124,21 @@ void SkeletonVisualizer::visualizePlannedPath() {
     // Publish segments.
     msg.id = 0;
     geometry_msgs::Point pt;
-    tf::pointEigenToMsg(comm_->getRequestedWayPoint().position, pt);
+    tf::pointEigenToMsg(comm_->getRequestedWayPoint().position.cast<double>(),
+                        pt);
     msg.points.push_back(pt);
-    tf::pointEigenToMsg(planner_->getWayPoints()[0].position, pt);
+    tf::pointEigenToMsg(planner_->getWayPoints()[0].position.cast<double>(),
+                        pt);
     msg.points.push_back(pt);
     planned_path_pub_.publish(msg);
     for (int i = 1; i < planner_->getWayPoints().size(); ++i) {
       msg.id = i;
       msg.points.clear();
-      tf::pointEigenToMsg(planner_->getWayPoints()[i - 1].position, pt);
+      tf::pointEigenToMsg(
+          planner_->getWayPoints()[i - 1].position.cast<double>(), pt);
       msg.points.push_back(pt);
-      tf::pointEigenToMsg(planner_->getWayPoints()[i].position, pt);
+      tf::pointEigenToMsg(planner_->getWayPoints()[i].position.cast<double>(),
+                          pt);
       msg.points.push_back(pt);
       planned_path_pub_.publish(msg);
     }
@@ -161,9 +165,10 @@ void SkeletonVisualizer::visualizeExecutedPath() {
   msg.color.b = 0.8;
   msg.action = visualization_msgs::Marker::ADD;
   geometry_msgs::Point pt;
-  tf::pointEigenToMsg(comm_->getPreviousWayPoint().position, pt);
+  tf::pointEigenToMsg(comm_->getPreviousWayPoint().position.cast<double>(), pt);
   msg.points.push_back(pt);
-  tf::pointEigenToMsg(comm_->getRequestedWayPoint().position, pt);
+  tf::pointEigenToMsg(comm_->getRequestedWayPoint().position.cast<double>(),
+                      pt);
   msg.points.push_back(pt);
   executed_path_pub_.publish(msg);
 }
@@ -197,7 +202,7 @@ void SkeletonVisualizer::visualizeGoalPoints() {
       // Go through all goal points.
       int id = 0;
       for (const auto& goal : planner_->getFrontierSearchData()) {
-        tf::pointEigenToMsg(goal.centroid, msg.pose.position);
+        tf::pointEigenToMsg(goal.centroid.cast<double>(), msg.pose.position);
         msg.id = id++;
 
         switch (goal.reachability) {
@@ -392,8 +397,8 @@ void SkeletonVisualizer::visualizeSkeletonSubmaps() {
   skeleton_submaps_pub_.publish(marker_array);
 }
 
-std::string SkeletonVisualizer::frontierTextFormat(double value) const {
-  if (value == std::numeric_limits<double>::max()) {
+std::string SkeletonVisualizer::frontierTextFormat(FloatingPoint value) const {
+  if (value == std::numeric_limits<FloatingPoint>::max()) {
     return "-";
   }
   std::stringstream ss;

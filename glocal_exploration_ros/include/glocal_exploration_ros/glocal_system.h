@@ -19,10 +19,11 @@ class GlocalSystem {
  public:
   struct Config : public config_utilities::Config<Config> {
     int verbosity = 1;
-    double replan_position_threshold = 0.2;  // m
-    double replan_yaw_threshold = 10.0;      // deg
-    double replan_timeout_constant = 0.0;    // s, wait this long always
-    double replan_timeout_velocity = 0.0;    // add timeout time per distance
+    FloatingPoint replan_position_threshold = 0.2f;  // m
+    FloatingPoint replan_yaw_threshold = 10.f;       // deg
+    FloatingPoint replan_timeout_constant = 0.f;     // s, wait this long always
+    // add timeout time per distance
+    FloatingPoint replan_timeout_velocity = 0.f;
 
     Config();
     void checkParams() const override;
@@ -69,8 +70,8 @@ class GlocalSystem {
   Point current_position_;  // current/goal poses are in odom frame.
   Eigen::Quaterniond current_orientation_;
   Point target_position_;
-  double target_yaw_;             // rad
-  double last_waypoint_timeout_;  // s
+  FloatingPoint target_yaw_;             // rad
+  FloatingPoint last_waypoint_timeout_;  // s
   ros::Time last_waypoint_published_;
 };
 

@@ -75,7 +75,7 @@ void SubmapFrontierEvaluator::updateFrontiers(
   int num_candidate_points = 0;
   // NOTE: The submap origin is in free space since it corresponds
   //       to a robot pose by construction.
-  Point initial_point(0.0, 0.0, 0.0);
+  Point initial_point(0.f, 0.f, 0.f);
   for (const auto& datum : data) {
     computeFrontiersForSubmap(datum, initial_point);
     num_candidate_points += frontier_candidates_.find(datum.id)->second.size();
@@ -92,8 +92,8 @@ void SubmapFrontierEvaluator::updateFrontiers(
   IndexSet global_frontier_points;
   global_frontier_points.reserve(num_candidate_points);
   FloatingPoint voxel_size = comm_->map()->getVoxelSize();
-  CHECK_GT(voxel_size, 0.0);
-  FloatingPoint voxel_size_inv = 1.0 / voxel_size;
+  CHECK_GT(voxel_size, 0.f);
+  FloatingPoint voxel_size_inv = 1.f / voxel_size;
   for (const auto& datum : data) {
     auto it = frontier_candidates_.find(datum.id);
     for (const Point& candidate_S : it->second) {
@@ -206,8 +206,8 @@ void SubmapFrontierEvaluator::computeFrontierCandidates(
 
   // Cache submap data.
   FloatingPoint voxel_size = layer.voxel_size();
-  CHECK_GT(voxel_size, 0.0);
-  FloatingPoint voxel_size_inv = 1.0 / voxel_size;
+  CHECK_GT(voxel_size, 0.f);
+  FloatingPoint voxel_size_inv = 1.f / voxel_size;
 
   // Setup search.
   IndexSet closed_list;
@@ -256,15 +256,13 @@ void SubmapFrontierEvaluator::computeFrontierCandidates(
 }
 
 SubmapFrontierEvaluator::Index SubmapFrontierEvaluator::indexFromPoint(
-    const Point& point, double voxel_size_inv) const {
-  return voxblox::getGridIndexFromPoint<Index>(
-      point.cast<voxblox::FloatingPoint>(), voxel_size_inv);
+    const Point& point, FloatingPoint voxel_size_inv) const {
+  return voxblox::getGridIndexFromPoint<Index>(point, voxel_size_inv);
 }
 
-Point SubmapFrontierEvaluator::centerPointFromIndex(const Index& index,
-                                                    double voxel_size) const {
-  return voxblox::getCenterPointFromGridIndex(index, voxel_size)
-      .cast<FloatingPoint>();
+Point SubmapFrontierEvaluator::centerPointFromIndex(
+    const Index& index, FloatingPoint voxel_size) const {
+  return voxblox::getCenterPointFromGridIndex(index, voxel_size);
 }
 
 MapBase::VoxelState SubmapFrontierEvaluator::voxelState(

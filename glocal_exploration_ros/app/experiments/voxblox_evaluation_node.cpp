@@ -148,12 +148,12 @@ std::string EvaluationNode::evaluateSingle(const std::string& map_name) {
       target_directory_ + "/voxblox_maps/" + map_name + ".vxblx", &tsdf_layer);
 
   // Evaluate volume.
-  const double min_weight = 0.01;
+  const FloatingPoint min_weight = 0.f;
   const size_t vps = tsdf_layer->voxels_per_side();
   const size_t num_voxels_per_block = vps * vps * vps;
-  const double dv = std::pow(tsdf_layer->voxel_size(), 3);
+  const FloatingPoint dv = std::pow(tsdf_layer->voxel_size(), 3);
 
-  double volume = 0.0;
+  FloatingPoint volume = 0.f;
 
   voxblox::BlockIndexList blocks;
   tsdf_layer->getAllAllocatedBlocks(&blocks);
@@ -167,8 +167,7 @@ std::string EvaluationNode::evaluateSingle(const std::string& map_name) {
       // Voxel parsing.
       voxblox::Point voxel_center =
           block.computeCoordinatesFromLinearIndex(linear_index);
-      if (voxel.weight > min_weight &&
-          roi_->contains(voxel_center.cast<double>())) {
+      if (voxel.weight > min_weight && roi_->contains(voxel_center)) {
         volume += dv;
       }
     }

@@ -6,7 +6,7 @@
 #include <voxblox/utils/evaluation_utils.h>
 #include <voxblox_ros/ptcloud_vis.h>
 
-#include "glocal_exploration_ros/mapping/set_utils.h"
+#include <glocal_exploration/utils/set_utils.h>
 
 namespace glocal_exploration {
 
@@ -30,8 +30,7 @@ void VoxgraphLocalArea::update(
     const voxblox::Point t_O_block = voxblox::getCenterPointFromGridIndex(
         block_index, local_map.block_size());
     for (const voxgraph::SubmapID submap_id :
-         spatial_submap_id_hash.getSubmapsAtPosition(
-             t_O_block.cast<FloatingPoint>())) {
+         spatial_submap_id_hash.getSubmapsAtPosition(t_O_block)) {
       current_neighboring_submaps.insert(submap_id);
     }
   }
@@ -247,12 +246,10 @@ bool VoxgraphLocalArea::submapPoseChanged(
   const Transformation& T_F_submap_old = submap_old_it->second;
 
   const Transformation pose_delta = T_F_submap_old.inverse() * T_F_submap_new;
-  const voxblox::FloatingPoint angle_delta = pose_delta.log().tail<3>().norm();
-  const voxblox::FloatingPoint translation_delta =
-      pose_delta.log().head<3>().norm();
-  constexpr voxblox::FloatingPoint kAngleThresholdRad = 0.0523599;  // 3 degrees
-  const voxblox::FloatingPoint translation_threshold =
-      local_area_layer_.voxel_size();
+  const FloatingPoint angle_delta = pose_delta.log().tail<3>().norm();
+  const FloatingPoint translation_delta = pose_delta.log().head<3>().norm();
+  constexpr FloatingPoint kAngleThresholdRad = 0.0523599f;  // 3 degrees
+  const FloatingPoint translation_threshold = local_area_layer_.voxel_size();
 
   return (translation_threshold < translation_delta ||
           kAngleThresholdRad < angle_delta);

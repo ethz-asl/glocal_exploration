@@ -10,12 +10,11 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <ros/ros.h>
 
+#include <glocal_exploration/planning/global/skeleton/skeleton_a_star.h>
+#include <glocal_exploration/planning/global/skeleton/skeleton_submap_collection.h>
 #include <glocal_exploration/planning/global/submap_frontier_evaluator.h>
 #include <glocal_exploration/state/communicator.h>
 #include <glocal_exploration/3rd_party/config_utilities.hpp>
-
-#include "glocal_exploration_ros/planning/global/skeleton_a_star.h"
-#include "glocal_exploration_ros/planning/global/skeleton_submap_collection.h"
 
 namespace glocal_exploration {
 /**
@@ -27,11 +26,11 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
     int verbosity = 1;
     std::string nh_private_namespace = "~/SkeletonPlanner";
     bool use_centroid_clustering = false;
-    double centroid_clustering_radius = 1.0;  // m
+    FloatingPoint centroid_clustering_radius = 1.f;  // m
     bool use_path_verification = true;  // Check traversability in temporal map.
-    double path_verification_min_distance = 1.0;  // m
+    FloatingPoint path_verification_min_distance = 1.f;  // m
     int goal_search_steps = 5;  // number of grid elements per side of cube.
-    double goal_search_step_size = 1.0;  // m, grid element length.
+    FloatingPoint goal_search_step_size = 1.f;  // m, grid element length.
 
     // Frontier evaluator.
     SubmapFrontierEvaluator::Config submap_frontier_config;
@@ -44,9 +43,9 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
 
   // Frontier search data collection.
   struct FrontierSearchData {
-    Point centroid = Point(0.0, 0.0, 0.0);
-    double euclidean_distance = 0;
-    double path_distance = 0;
+    Point centroid = Point(0.f, 0.f, 0.f);
+    FloatingPoint euclidean_distance = 0.f;
+    FloatingPoint path_distance = 0.f;
     int num_points = 0;
     int clusters = 1;
     std::vector<WayPoint> way_points;
@@ -78,7 +77,7 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   const std::vector<WayPoint>& getWayPoints() const { return way_points_; }
   VisualizationData& visualizationData() { return vis_data_; }  // mutable
 
-  void addSubmap(voxgraph::VoxgraphSubmap::ConstPtr submap_ptr,
+  void addSubmap(cblox::TsdfEsdfSubmap::ConstPtr submap_ptr,
                  const float traversability_radius) {
     skeleton_a_star_.addSubmap(std::move(submap_ptr), traversability_radius);
   }

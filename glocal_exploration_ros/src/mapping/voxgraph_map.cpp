@@ -20,7 +20,7 @@ namespace glocal_exploration {
 VoxgraphMap::Config::Config() { setConfigName("VoxgraphMap"); }
 
 void VoxgraphMap::Config::checkParams() const {
-  checkParamGT(traversability_radius, 0.0, "traversability_radius");
+  checkParamGT(traversability_radius, 0.f, "traversability_radius");
 }
 
 void VoxgraphMap::Config::fromRosParam() {
@@ -118,8 +118,8 @@ bool VoxgraphMap::isTraversableInActiveSubmap(const Point& position) {
     return false;
   }
   double distance = 0.0;
-  if (voxblox_server_->getEsdfMapPtr()->getDistanceAtPosition(position,
-                                                              &distance)) {
+  if (voxblox_server_->getEsdfMapPtr()->getDistanceAtPosition(
+          position.cast<double>(), &distance)) {
     // This means the voxel is observed.
     return (distance > config_.traversability_radius);
   }
@@ -142,8 +142,8 @@ MapBase::VoxelState VoxgraphMap::getVoxelStateInLocalArea(
 
   // Start by checking the state in active submap
   double distance;
-  if (voxblox_server_->getEsdfMapPtr()->getDistanceAtPosition(position,
-                                                              &distance)) {
+  if (voxblox_server_->getEsdfMapPtr()->getDistanceAtPosition(
+          position.cast<double>(), &distance)) {
     // If getDistanceAtPosition(...) returns true, the voxel is observed
     if (distance > c_voxel_size_) {
       return VoxelState::kFree;
@@ -152,8 +152,7 @@ MapBase::VoxelState VoxgraphMap::getVoxelStateInLocalArea(
   }
 
   updateLocalAreaIfNeeded();
-  return local_area_->getVoxelStateAtPosition(
-      position.cast<voxblox::FloatingPoint>());
+  return local_area_->getVoxelStateAtPosition(position);
 }
 
 Point VoxgraphMap::getVoxelCenterInLocalArea(const Point& position) {
@@ -177,13 +176,13 @@ void VoxgraphMap::updateLocalAreaIfNeeded() {
 
 bool VoxgraphMap::isObservedInGlobalMap(const Point& position) {
   // Start by checking the state in active submap
-  if (voxblox_server_->getEsdfMapPtr()->isObserved(position)) {
+  if (voxblox_server_->getEsdfMapPtr()->isObserved(position.cast<double>())) {
     return true;
   }
 
   // Then fall back to local area
   updateLocalAreaIfNeeded();
-  if (local_area_->isObserved(position.cast<voxblox::FloatingPoint>())) {
+  if (local_area_->isObserved(position)) {
     return true;
   }
 
@@ -194,9 +193,8 @@ bool VoxgraphMap::isObservedInGlobalMap(const Point& position) {
     voxgraph::VoxgraphSubmap::ConstPtr submap_ptr =
         voxgraph_server_->getSubmapCollection().getSubmapConstPtr(submap_id);
     if (submap_ptr) {
-      Point local_position =
-          submap_ptr->getPose().inverse().cast<FloatingPoint>() * position;
-      if (submap_ptr->getEsdfMap().isObserved(local_position)) {
+      Point local_position = submap_ptr->getPose().inverse() * position;
+      if (submap_ptr->getEsdfMap().isObserved(local_position.cast<double>())) {
         return true;
       }
     }
@@ -214,8 +212,7 @@ bool VoxgraphMap::isTraversableInGlobalMap(const Point& position) {
   // NOTE: We can only check whether the local area is not occupied. Since the
   //       local area only consists of a TSDF (no ESDF) and the traversability
   //       radius generally exceeds the TSDF truncation distance.
-  if (local_area_->getVoxelStateAtPosition(
-          position.cast<voxblox::FloatingPoint>()) == VoxelState::kOccupied) {
+  if (local_area_->getVoxelStateAtPosition(position) == VoxelState::kOccupied) {
     return false;
   }
 
@@ -227,10 +224,9 @@ bool VoxgraphMap::isTraversableInGlobalMap(const Point& position) {
     voxgraph::VoxgraphSubmap::ConstPtr submap_ptr =
         voxgraph_server_->getSubmapCollection().getSubmapConstPtr(submap_id);
     if (submap_ptr) {
-      Point local_position =
-          submap_ptr->getPose().inverse().cast<FloatingPoint>() * position;
-      if (submap_ptr->getEsdfMap().getDistanceAtPosition(local_position,
-                                                         &distance)) {
+      Point local_position = submap_ptr->getPose().inverse() * position;
+      if (submap_ptr->getEsdfMap().getDistanceAtPosition(
+              local_position.cast<double>(), &distance)) {
         // This means the voxel is observed.
         if (distance <= config_.traversability_radius) {
           return false;
@@ -254,7 +250,7 @@ std::vector<MapBase::SubmapData> VoxgraphMap::getAllSubmapData() {
   for (const auto& submap : submaps) {
     SubmapData datum;
     datum.id = submap->getID();
-    datum.T_M_S = submap->getPose().cast<FloatingPoint>();
+    datum.T_M_S = submap->getPose();
     datum.tsdf_layer = std::make_shared<voxblox::Layer<voxblox::TsdfVoxel>>(
         submap->getTsdfMap().getTsdfLayer());
     data.push_back(datum);
@@ -265,9 +261,9 @@ std::vector<MapBase::SubmapData> VoxgraphMap::getAllSubmapData() {
 bool VoxgraphMap::isLineTraversableInActiveSubmap(
     const Point& start_point, const Point& end_point,
     Point* last_traversable_point) {
-  const double line_length = (end_point - start_point).norm();
+  const FloatingPoint line_length = (end_point - start_point).norm();
   const Point line_direction = (end_point - start_point) / line_length;
-  double traveled_distance = 0.0;
+  FloatingPoint traveled_distance = 0.f;
   Point current_position = start_point;
   Point previous_position = start_point;
 
@@ -276,7 +272,7 @@ bool VoxgraphMap::isLineTraversableInActiveSubmap(
     double esdf_distance;
     bool collided;
     if (voxblox_server_->getEsdfMapPtr()->getDistanceAtPosition(
-            current_position, &esdf_distance)) {
+            current_position.cast<double>(), &esdf_distance)) {
       collided = esdf_distance <= config_.traversability_radius;
     } else {
       collided = (current_position - comm_->currentPose().position).norm() >=
@@ -289,38 +285,47 @@ bool VoxgraphMap::isLineTraversableInActiveSubmap(
       return false;
     }
     previous_position = current_position;
-    const double step_size =
-        std::max(c_voxel_size_, esdf_distance - config_.traversability_radius);
+    const FloatingPoint step_size =
+        std::max(c_voxel_size_, static_cast<FloatingPoint>(esdf_distance) -
+                                    config_.traversability_radius);
     current_position += step_size * line_direction;
     traveled_distance += step_size;
   }
 
   if (last_traversable_point) {
-    *last_traversable_point = end_point;
+    *last_traversable_point = end_point.cast<FloatingPoint>();
   }
   return true;
 }
 
 bool VoxgraphMap::getDistanceAndGradientAtPositionInActiveSubmap(
-    const Point& position, double* distance, Point* gradient) {
+    const Point& position, FloatingPoint* distance, Point* gradient) {
   CHECK_NOTNULL(distance);
   CHECK_NOTNULL(gradient);
-  return voxblox_server_->getEsdfMapPtr()->getDistanceAndGradientAtPosition(
-      position, distance, gradient);
+  double distance_tmp;
+  Eigen::Vector3d gradient_tmp;
+  if (voxblox_server_->getEsdfMapPtr()->getDistanceAndGradientAtPosition(
+          position.cast<double>(), &distance_tmp, &gradient_tmp)) {
+    *distance = static_cast<FloatingPoint>(distance_tmp);
+    *gradient = gradient_tmp.cast<FloatingPoint>();
+    return true;
+  } else {
+    return false;
+  }
 }
 
 bool VoxgraphMap::isLineTraversableInGlobalMap(const Point& start_point,
                                                const Point& end_point,
                                                Point* last_traversable_point) {
-  const double line_length = (end_point - start_point).norm();
+  const FloatingPoint line_length = (end_point - start_point).norm();
   const Point line_direction = (end_point - start_point) / line_length;
-  double traveled_distance = 0.0;
+  FloatingPoint traveled_distance = 0.f;
   Point current_position = start_point;
   Point previous_position = start_point;
 
   CHECK(c_voxel_size_ < config_.traversability_radius);
   while (traveled_distance <= line_length) {
-    double esdf_distance;
+    FloatingPoint esdf_distance;
     if (!getDistanceInGlobalMapAtPosition(current_position, &esdf_distance) ||
         esdf_distance < config_.traversability_radius) {
       if (last_traversable_point) {
@@ -329,7 +334,7 @@ bool VoxgraphMap::isLineTraversableInGlobalMap(const Point& start_point,
       return false;
     }
     previous_position = current_position;
-    const double step_size =
+    const FloatingPoint step_size =
         std::max(c_voxel_size_, esdf_distance - config_.traversability_radius);
     current_position += step_size * line_direction;
     traveled_distance += step_size;
@@ -341,8 +346,8 @@ bool VoxgraphMap::isLineTraversableInGlobalMap(const Point& start_point,
   return true;
 }
 
-bool VoxgraphMap::getDistanceInGlobalMapAtPosition(const Point& position,
-                                                   double* min_esdf_distance) {
+bool VoxgraphMap::getDistanceInGlobalMapAtPosition(
+    const Point& position, FloatingPoint* min_esdf_distance) {
   CHECK_NOTNULL(min_esdf_distance);
 
   if (!comm_->regionOfInterest()->contains(position)) {
@@ -351,19 +356,20 @@ bool VoxgraphMap::getDistanceInGlobalMapAtPosition(const Point& position,
 
   // Check the submaps that overlap with the queried position
   bool distance_available_anywhere = false;
-  *min_esdf_distance = std::numeric_limits<double>::max();
+  *min_esdf_distance = std::numeric_limits<FloatingPoint>::max();
   for (const voxgraph::SubmapID submap_id :
        voxgraph_spatial_hash_.getSubmapsAtPosition(position)) {
     voxgraph::VoxgraphSubmap::ConstPtr submap_ptr =
         voxgraph_server_->getSubmapCollection().getSubmapConstPtr(submap_id);
     if (submap_ptr) {
-      Point local_position =
-          submap_ptr->getPose().inverse().cast<FloatingPoint>() * position;
+      Point local_position = submap_ptr->getPose().inverse() * position;
       double submap_esdf_distance = 0.0;
       if (submap_ptr->getEsdfMap().getDistanceAtPosition(
-              local_position, &submap_esdf_distance)) {
+              local_position.cast<double>(), &submap_esdf_distance)) {
         // This means the voxel is observed.
-        *min_esdf_distance = std::min(*min_esdf_distance, submap_esdf_distance);
+        *min_esdf_distance =
+            std::min(*min_esdf_distance,
+                     static_cast<FloatingPoint>(submap_esdf_distance));
         distance_available_anywhere = true;
       }
     }

@@ -21,23 +21,24 @@ class RHRRTStar : public LocalPlannerBase {
     int verbosity = 1;
 
     // path
-    double min_path_length = 0.5;  // m, determines the length of connections
-    double min_sampling_distance =
-        0.5;  // m, determines the minimum path length when sampling
-    double max_path_length = 2.0;  // m
-    double path_cropping_length =
-        0.2;  // m, distance until cropped paths become infeasible
+    // determines the length of connections
+    FloatingPoint min_path_length = 0.5f;  // m
+    // determines the minimum path length when sampling
+    FloatingPoint min_sampling_distance = 0.5f;  // m
+    FloatingPoint max_path_length = 2.f;         // m
+    // distance until cropped paths become infeasible
+    FloatingPoint path_cropping_length = 0.2f;  // m
     int max_number_of_neighbors = 20;
 
     // behavior
     int maximum_rewiring_iterations = 100;
-    double sampling_range = 10;  // m
+    FloatingPoint sampling_range = 10.f;  // m
 
     // termination
     int terminaton_min_tree_size = 5;
-    double termination_max_gain = 100.0;
-    double termination_min_time = 3;  // s, try to find paths breaking the exit
-                                      // condition for this amount of time.
+    FloatingPoint termination_max_gain = 100.f;
+    // try to find paths breaking the exit condition for this amount of time.
+    FloatingPoint termination_min_time = 3.f;  // s
     int DEBUG_number_of_iterations =
         -1;  // Only used if > 0, use for debugging.
 
@@ -61,8 +62,8 @@ class RHRRTStar : public LocalPlannerBase {
   // View points are the vertices in the tree.
   struct ViewPoint {
     WayPoint pose;
-    double gain = 0;
-    double value = 0;
+    FloatingPoint gain = 0.f;
+    FloatingPoint value = 0.f;
     bool is_root = false;
     bool is_connected_to_root = false;
     std::vector<std::pair<bool, std::shared_ptr<Connection>>>
@@ -81,7 +82,7 @@ class RHRRTStar : public LocalPlannerBase {
     ViewPoint* parent;
     ViewPoint* target;
     std::vector<Point> path_points;
-    double cost;
+    FloatingPoint cost;
   };
 
   // Nanoflann KD-tree implementation
@@ -106,14 +107,14 @@ class RHRRTStar : public LocalPlannerBase {
     }
   };
   typedef nanoflann::KDTreeSingleIndexDynamicAdaptor<
-      nanoflann::L2_Simple_Adaptor<double, TreeData>, TreeData, 3>
+      nanoflann::L2_Simple_Adaptor<FloatingPoint, TreeData>, TreeData, 3>
       KDTree;
 
   // accessors for visualization
   const Config& getConfig() const { return config_; }
   const TreeData& getTreeData() const { return tree_data_; }
   void visualizeGain(const WayPoint& pose, std::vector<Point>* voxels,
-                     std::vector<Point>* colors, double* scale) const;
+                     std::vector<Point>* colors, FloatingPoint* scale) const;
 
  protected:
   /* components */
@@ -135,13 +136,14 @@ class RHRRTStar : public LocalPlannerBase {
 
   // compute gains.
   void evaluateViewPoint(ViewPoint* view_point);
-  double computeCost(const Connection& connection);
+  FloatingPoint computeCost(const Connection& connection);
 
   // extract best viewpoint.
   bool selectNextBestWayPoint(WayPoint* next_waypoint);
   bool selectBestConnection(ViewPoint* view_point);
   void computeValue(ViewPoint* view_point);
-  static double computeGNVStep(ViewPoint* view_point, double gain, double cost);
+  static FloatingPoint computeGNVStep(ViewPoint* view_point, FloatingPoint gain,
+                                      FloatingPoint cost);
 
   // updating.
   void updateCollision();

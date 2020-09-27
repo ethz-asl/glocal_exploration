@@ -15,13 +15,13 @@ namespace glocal_exploration {
 LidarModel::Config::Config() { setConfigName("LidarModel"); }
 
 void LidarModel::Config::checkParams() const {
-  checkParamGT(vertical_fov, 0.0, "vertical_fov");
-  checkParamGT(horizontal_fov, 0.0, "horizontal_fov");
+  checkParamGT(vertical_fov, 0.f, "vertical_fov");
+  checkParamGT(horizontal_fov, 0.f, "horizontal_fov");
   checkParamGT(vertical_resolution, 0, "vertical_resolution");
   checkParamGT(horizontal_resolution, 0, "horizontal_resolution");
-  checkParamGT(ray_length, 0.0, "ray_length");
-  checkParamGT(ray_step, 0.0, "ray_step");
-  checkParamGT(downsampling_factor, 0.0, "downsampling_factor");
+  checkParamGT(ray_length, 0.f, "ray_length");
+  checkParamGT(ray_step, 0.f, "ray_step");
+  checkParamGT(downsampling_factor, 0.f, "downsampling_factor");
 }
 
 void LidarModel::Config::fromRosParam() {
@@ -50,8 +50,8 @@ LidarModel::LidarModel(const Config& config,
                        std::shared_ptr<Communicator> communicator)
     : SensorModel(std::move(communicator)),
       config_(config.checkValid()),
-      kFovX_(config_.horizontal_fov / 180.0 * M_PI),
-      kFovY_(config_.vertical_fov / 180.0 * M_PI),
+      kFovX_(config_.horizontal_fov / 180.f * M_PI),
+      kFovY_(config_.vertical_fov / 180.f * M_PI),
       kResolutionX_(std::min(
           static_cast<int>(std::ceil(
               config_.ray_length * kFovX_ /
@@ -63,9 +63,9 @@ LidarModel::LidarModel(const Config& config,
               (comm_->map()->getVoxelSize() * config_.downsampling_factor))),
           config_.horizontal_resolution)) {
   // Determine number of splits + split distances
-  c_n_sections_ = static_cast<int>(
-      std::floor(std::log2(std::min(static_cast<double>(kResolutionX_),
-                                    static_cast<double>(kResolutionY_)))));
+  c_n_sections_ = static_cast<int>(std::floor(
+      std::log2(std::min(static_cast<FloatingPoint>(kResolutionX_),
+                         static_cast<FloatingPoint>(kResolutionY_)))));
 
   // Precompute the splits and ray table
   ray_table_ = Eigen::ArrayXXi::Zero(kResolutionX_, kResolutionY_);
@@ -73,12 +73,12 @@ LidarModel::LidarModel(const Config& config,
   for (int i = 0; i < c_n_sections_; ++i) {
     c_split_widths_.push_back(std::pow(2, i));
     c_split_distances_.push_back(config_.ray_length /
-                                 std::pow(2.0, static_cast<double>(i)));
+                                 std::pow(2.f, static_cast<FloatingPoint>(i)));
   }
-  c_split_distances_.push_back(0.0);
+  c_split_distances_.push_back(0.f);
   std::reverse(c_split_distances_.begin(), c_split_distances_.end());
   std::reverse(c_split_widths_.begin(), c_split_widths_.end());
-  c_voxel_size_inv_ = 1.0 / comm_->map()->getVoxelSize();
+  c_voxel_size_inv_ = 1.f / comm_->map()->getVoxelSize();
 }
 
 bool LidarModel::getVisibleVoxels(const WayPoint& waypoint,
@@ -90,14 +90,14 @@ bool LidarModel::getVisibleVoxels(const WayPoint& waypoint,
   ray_table_.setZero();
 
   // Ray-casting
-  Eigen::Quaterniond orientation =
-      Eigen::AngleAxisd(waypoint.yaw, Point::UnitZ()) *
+  Eigen::Quaternionf orientation =
+      Eigen::AngleAxisf(waypoint.yaw, Point::UnitZ()) *
       config_.T_baselink_sensor.getEigenQuaternion();
   Point position = waypoint.position + config_.T_baselink_sensor.getPosition();
   Point camera_direction;
   Point direction;
   Point current_position;
-  double distance;
+  FloatingPoint distance;
   bool cast_ray;
   for (int i = 0; i < kResolutionX_; ++i) {
     for (int j = 0; j < kResolutionY_; ++j) {
@@ -107,8 +107,10 @@ bool LidarModel::getVisibleVoxels(const WayPoint& waypoint,
       }
       LidarModel::getDirectionVector(
           &camera_direction,
-          static_cast<double>(i) / (static_cast<double>(kResolutionX_) - 1.0),
-          static_cast<double>(j) / (static_cast<double>(kResolutionY_) - 1.0));
+          static_cast<FloatingPoint>(i) /
+              (static_cast<FloatingPoint>(kResolutionX_) - 1.f),
+          static_cast<FloatingPoint>(j) /
+              (static_cast<FloatingPoint>(kResolutionY_) - 1.f));
       direction = orientation * camera_direction;
       distance = c_split_distances_[current_segment];
       cast_ray = true;
@@ -159,14 +161,14 @@ void LidarModel::getVisibleUnknownVoxels(const WayPoint& waypoint,
   ray_table_.setZero();
 
   // Ray-casting
-  Eigen::Quaterniond orientation =
-      Eigen::AngleAxisd(waypoint.yaw, Point::UnitZ()) *
+  Eigen::Quaternionf orientation =
+      Eigen::AngleAxisf(waypoint.yaw, Point::UnitZ()) *
       config_.T_baselink_sensor.getEigenQuaternion();
   Point position = waypoint.position + config_.T_baselink_sensor.getPosition();
   Point camera_direction;
   Point direction;
   Point current_position;
-  double distance;
+  FloatingPoint distance;
   bool cast_ray;
   for (int i = 0; i < kResolutionX_; ++i) {
     for (int j = 0; j < kResolutionY_; ++j) {
@@ -176,8 +178,10 @@ void LidarModel::getVisibleUnknownVoxels(const WayPoint& waypoint,
       }
       LidarModel::getDirectionVector(
           &camera_direction,
-          static_cast<double>(i) / (static_cast<double>(kResolutionX_) - 1.0),
-          static_cast<double>(j) / (static_cast<double>(kResolutionY_) - 1.0));
+          static_cast<FloatingPoint>(i) /
+              (static_cast<FloatingPoint>(kResolutionX_) - 1.f),
+          static_cast<FloatingPoint>(j) /
+              (static_cast<FloatingPoint>(kResolutionY_) - 1.f));
       direction = orientation * camera_direction;
       distance = c_split_distances_[current_segment];
       cast_ray = true;
@@ -199,8 +203,7 @@ void LidarModel::getVisibleUnknownVoxels(const WayPoint& waypoint,
           } else if (state == MapBase::VoxelState::kUnknown) {
             // This should handle duplicates.
             auto idx = voxblox::getGridIndexFromPoint<voxblox::GlobalIndex>(
-                (current_position).cast<voxblox::FloatingPoint>(),
-                c_voxel_size_inv_);
+                (current_position), c_voxel_size_inv_);
             voxels->insert(idx);
           }
         }
@@ -230,10 +233,10 @@ void LidarModel::markNeighboringRays(int x, int y, int segment, int value) {
   }
 }
 
-void LidarModel::getDirectionVector(Point* result, double relative_x,
-                                    double relative_y) const {
-  double polar_angle = (0.5 - relative_x) * kFovX_;
-  double azimuth_angle = M_PI / 2.0 + (relative_y - 0.5) * kFovY_;
+void LidarModel::getDirectionVector(Point* result, FloatingPoint relative_x,
+                                    FloatingPoint relative_y) const {
+  FloatingPoint polar_angle = (0.5 - relative_x) * kFovX_;
+  FloatingPoint azimuth_angle = M_PI / 2.f + (relative_y - 0.5) * kFovY_;
   *result = Point(sin(azimuth_angle) * cos(polar_angle),
                   sin(azimuth_angle) * sin(polar_angle), cos(azimuth_angle));
 }

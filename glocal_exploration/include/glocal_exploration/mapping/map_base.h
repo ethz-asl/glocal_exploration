@@ -31,7 +31,7 @@ class MapBase {
   virtual ~MapBase() = default;
 
   /* General and Accessors */
-  virtual double getVoxelSize() = 0;
+  virtual FloatingPoint getVoxelSize() = 0;
 
   /* Local planner */
   virtual bool isTraversableInActiveSubmap(const Point& position) = 0;
@@ -39,7 +39,7 @@ class MapBase {
       const Point& start_point, const Point& end_point,
       Point* last_traversable_point = nullptr) = 0;
   virtual bool getDistanceAndGradientAtPositionInActiveSubmap(
-      const Point& position, double* distance, Point* gradient) = 0;
+      const Point& position, FloatingPoint* distance, Point* gradient) = 0;
 
   // Voxels are referred in the planner by their center points.
   virtual Point getVoxelCenterInLocalArea(const Point& position) = 0;
@@ -54,6 +54,8 @@ class MapBase {
       const Point& start_point, const Point& end_point,
       Point* last_traversable_point = nullptr) = 0;
 
+  virtual std::vector<SubmapId> getSubmapIdsAtPosition(
+      const Point& position) const = 0;
   virtual std::vector<SubmapData> getAllSubmapData() = 0;
 
  protected:
