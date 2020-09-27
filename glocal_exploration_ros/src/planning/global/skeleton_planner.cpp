@@ -94,17 +94,17 @@ void SkeletonPlanner::executePlanningIteration() {
     if (computeFrontiers()) {
       stage_ = Stage::k2ComputeGoalAndPath;
     }
+  }
+  if (stage_ == Stage::k2ComputeGoalAndPath) {
+    // Select a frontier to move towards, including path generation.
+    if (computeGoalPoint()) {
+      stage_ = Stage::k3ExecutePath;
     }
-    if (stage_ == Stage::k2ComputeGoalAndPath) {
-      // Select a frontier to move towards, including path generation.
-      if (computeGoalPoint()) {
-        stage_ = Stage::k3ExecutePath;
-      }
-    }
-    if (stage_ == Stage::k3ExecutePath) {
-      // Execute way points until finished, then switch back to local.
-      executeWayPoint();
-    }
+  }
+  if (stage_ == Stage::k3ExecutePath) {
+    // Execute way points until finished, then switch back to local.
+    executeWayPoint();
+  }
 }
 
 void SkeletonPlanner::resetPlanner() {

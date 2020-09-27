@@ -7,6 +7,7 @@
 #include <memory>
 #include <queue>
 #include <random>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -29,7 +30,7 @@ void RHRRTStar::Config::checkParams() const {
   checkParamGE(min_sampling_distance, 0.f, "min_sampling_distance");
   checkParamGE(terminaton_min_tree_size, 0, "terminaton_min_tree_size");
   checkParamGE(termination_max_gain, 0.f, "termination_max_gain");
-  checkParamGE(termination_min_time, 0.f, "termination_min_time");
+  checkParamGE(reconsideration_time, 0.f, "reconsideration_time");
   checkParamConfig(lidar_config);
 }
 
@@ -44,7 +45,7 @@ void RHRRTStar::Config::fromRosParam() {
   rosParam("maximum_rewiring_iterations", &maximum_rewiring_iterations);
   rosParam("terminaton_min_tree_size", &terminaton_min_tree_size);
   rosParam("termination_max_gain", &termination_max_gain);
-  rosParam("termination_min_time", &termination_min_time);
+  rosParam("reconsideration_time", &reconsideration_time);
   rosParam("DEBUG_number_of_iterations", &DEBUG_number_of_iterations);
   rosParam(&lidar_config);
 }
@@ -60,7 +61,7 @@ void RHRRTStar::Config::printFields() const {
   printField("maximum_rewiring_iterations", maximum_rewiring_iterations);
   printField("terminaton_min_tree_size", terminaton_min_tree_size);
   printField("termination_max_gain", termination_max_gain);
-  printField("termination_min_time", termination_min_time);
+  printField("reconsideration_time", reconsideration_time);
   printField("DEBUG_number_of_iterations", DEBUG_number_of_iterations);
   printField("lidar_config", lidar_config);
 }
@@ -91,47 +92,63 @@ void RHRRTStar::executePlanningIteration() {
   expandTree();
 
   // Goal reached: request next point if there is a valid candidate
-  if (comm_->targetIsReached() && !termination_time_is_active_) {
-    WayPoint next_waypoint;
-    updateCollision();
-    if (selectNextBestWayPoint(&next_waypoint)) {
-      comm_->requestWayPoint(next_waypoint);
-      gain_update_needed_ = true;
-      if (config_.DEBUG_number_of_iterations > 0) {
-        number_of_executed_waypoints_++;
+  if (comm_->targetIsReached()) {
+    // If this param is set exactly this number of steps are executed before
+    // switching to global.
+    if (config_.DEBUG_number_of_iterations > 0) {
+      number_of_executed_waypoints_++;
+      if (number_of_executed_waypoints_ >= config_.DEBUG_number_of_iterations) {
+        comm_->stateMachine()->signalGlobalPlanning();
+        return;
       }
-    }
-  }
-
-  // Check whether a local minimum is reached and change to global planning.
-  if (config_.DEBUG_number_of_iterations > 0) {
-    if (number_of_executed_waypoints_ >= config_.DEBUG_number_of_iterations) {
-      comm_->stateMachine()->signalGlobalPlanning();
-    }
-    return;
-  }
-  if (tree_data_.points.size() >= config_.terminaton_min_tree_size) {
-    for (const auto& point : tree_data_.points) {
-      if (point->gain > config_.termination_max_gain) {
-        termination_time_is_active_ = false;
+    } else if (isTerminationCriterionMet()) {
+      // Check whether a local minimum is reached and change to global planning.
+      if (config_.reconsideration_time > 0.f) {
+        LOG_IF(INFO, config_.verbosity >= 3)
+            << "Termination criterion is met, trying to overcome it for "
+            << config_.reconsideration_time
+            << "s before moving to global planning.";
+        sampleReconsideration();
+      }
+      if (isTerminationCriterionMet()) {
+        comm_->stateMachine()->signalGlobalPlanning();
         return;
       }
     }
-    if (termination_time_is_active_) {
-      if (std::chrono::duration_cast<std::chrono::seconds>(
-              std::chrono::high_resolution_clock::now() - termination_time_)
-              .count() >= config_.termination_min_time) {
-        comm_->stateMachine()->signalGlobalPlanning();
-      }
-    } else {
-      LOG_IF(INFO, config_.verbosity >= 3)
-          << "Termination criterion is met, trying to overcome it for "
-          << config_.termination_min_time
-          << "s before moving to global planning.";
-      termination_time_ = std::chrono::high_resolution_clock::now();
-      termination_time_is_active_ = true;
+
+    // Select the next point to go to from local planning.
+    updateCollision();
+    WayPoint next_waypoint;
+    if (selectNextBestWayPoint(&next_waypoint)) {
+      comm_->requestWayPoint(next_waypoint);
+      gain_update_needed_ = true;
     }
   }
+}
+
+void RHRRTStar::sampleReconsideration() {
+  // Just try to expand the tree for that amount of time.
+  auto t_start = std::chrono::high_resolution_clock::now();
+  while (std::chrono::duration_cast<std::chrono::milliseconds>(
+             std::chrono::high_resolution_clock::now() - t_start)
+             .count() <= config_.reconsideration_time * 1000.f) {
+    expandTree();
+  }
+}
+
+bool RHRRTStar::isTerminationCriterionMet() {
+  // Check min tree size.
+  if (tree_data_.points.size() < config_.terminaton_min_tree_size) {
+    return false;
+  }
+
+  // Check minimum gain (not value!)
+  for (const auto& point : tree_data_.points) {
+    if (point->gain > config_.termination_max_gain) {
+      return false;
+    }
+  }
+  return true;
 }
 
 void RHRRTStar::resetPlanner(const WayPoint& origin) {
@@ -146,11 +163,12 @@ void RHRRTStar::resetPlanner(const WayPoint& origin) {
 
   // reset counters
   root_ = tree_data_.points[0].get();
+  previous_view_point_ = nullptr;
   current_connection_ = nullptr;
   gain_update_needed_ = false;
   pruned_points_ = 0;
   new_points_ = 0;
-  termination_time_is_active_ = false;
+  reconsidered_ = false;
   number_of_executed_waypoints_ = 0;
 
   // Logging.
@@ -186,7 +204,48 @@ bool RHRRTStar::selectNextBestWayPoint(WayPoint* next_waypoint) {
     return false;
   }
 
+  // Optimize the tree.
+  size_t next_point_index;
+  optimizeTreeAndFindBestGoal(&next_point_index);
+
+  // Check whether we're about to reverse unforced (in intraversable areas the
+  // tree size will be =2, always reverse then).
+  if (config_.reconsideration_time > 0.f &&
+      root_->getConnectedViewPoint(next_point_index) == previous_view_point_ &&
+      tree_data_.points.size() > 2) {
+    LOG_IF(INFO, config_.verbosity >= 3)
+        << "Planner is about to reverse, trying to overcome it for "
+        << config_.reconsideration_time << "s before moving backwards.";
+    sampleReconsideration();
+    optimizeTreeAndFindBestGoal(&next_point_index);
+  }
+
+  // result
+  *next_waypoint = root_->getConnectedViewPoint(next_point_index)->pose;
+  previous_view_point_ = root_;
+
+  // update the roots
+  ViewPoint* new_root = root_->getConnectedViewPoint(next_point_index);
+  root_->is_root = false;
+  new_root->is_root = true;
+  root_->active_connection =
+      next_point_index;  // make the old root connect to the new root
+  current_connection_ = root_->connections[next_point_index].second.get();
+  root_ = new_root;
+
+  // logging
+  LOG_IF(INFO, config_.verbosity >= 2)
+      << "Published next segment: " << new_points_ << " new, " << pruned_points_
+      << " killed, " << tree_data_.points.size() << " total.";
+  pruned_points_ = 0;
+  new_points_ = 0;
+
+  return true;
+}
+
+bool RHRRTStar::optimizeTreeAndFindBestGoal(size_t* next_root_idx) {
   // set up
+  CHECK_NOTNULL(next_root_idx);
   int iterations = 0;
   auto t_start = std::chrono::high_resolution_clock::now();
 
@@ -199,6 +258,7 @@ bool RHRRTStar::selectNextBestWayPoint(WayPoint* next_waypoint) {
       not_connected.push(vp.get());
     }
   }
+
   while (!not_connected.empty()) {
     ViewPoint* current = not_connected.front();
     not_connected.pop();
@@ -254,28 +314,10 @@ bool RHRRTStar::selectNextBestWayPoint(WayPoint* next_waypoint) {
   if (next_point_idx < 0) {
     // This should never happen as the previous segment should remain active.
     return false;
+  } else {
+    *next_root_idx = next_point_idx;
+    return true;
   }
-
-  // result
-  *next_waypoint = root_->getConnectedViewPoint(next_point_idx)->pose;
-
-  // update the roots
-  ViewPoint* new_root = root_->getConnectedViewPoint(next_point_idx);
-  root_->is_root = false;
-  new_root->is_root = true;
-  root_->active_connection =
-      next_point_idx;  // make the old root connect to the new root
-  current_connection_ = root_->connections[next_point_idx].second.get();
-  root_ = new_root;
-
-  // logging
-  LOG_IF(INFO, config_.verbosity >= 2)
-      << "Published next segment: " << new_points_ << " new, " << pruned_points_
-      << " killed, " << tree_data_.points.size() << " total.";
-  pruned_points_ = 0;
-  new_points_ = 0;
-
-  return true;
 }
 
 void RHRRTStar::updateCollision() {
@@ -295,8 +337,13 @@ void RHRRTStar::updateCollision() {
           continue;
         }
 
-        // Remove colliding connections.
-        if (!comm_->map()->isLineTraversableInActiveSubmap(
+        // Remove far away and colliding connections.
+        Point position = comm_->currentPose().position;
+        if ((connection->target->pose.position - position).norm() >=
+                config_.sampling_range ||
+            (connection->parent->pose.position - position).norm() >=
+                config_.sampling_range ||
+            !comm_->map()->isLineTraversableInActiveSubmap(
                 connection->parent->pose.position,
                 connection->target->pose.position)) {
           ViewPoint* target = connection->target;
@@ -311,8 +358,8 @@ void RHRRTStar::updateCollision() {
           offset--;
         }
       }
+      }
     }
-  }
 
   // Remove view_points that don't have a connection to the root anymore.
   computePointsConnectedToRoot(false);
@@ -413,7 +460,7 @@ bool RHRRTStar::connectViewPoint(ViewPoint* view_point) {
     if (view_point->tryAddConnection(tree_data_.points[index].get(),
                                      comm_->map().get())) {
       view_point->connections.back().second->cost =
-          computeCost(*view_point->connections.back().second);
+          computeCost(*(view_point->connections.back().second));
       connection_found = true;
     }
   }
@@ -425,19 +472,26 @@ bool RHRRTStar::selectBestConnection(ViewPoint* view_point) {
   if (view_point->connections.empty() || view_point->is_root) {
     return false;
   }
-  FloatingPoint best_value = -std::numeric_limits<FloatingPoint>::max();
+  FloatingPoint best_value = std::numeric_limits<FloatingPoint>::min();
   size_t best_connection = -1;
   for (size_t i = 0; i < view_point->connections.size(); ++i) {
     // make sure there are no loops in the tree
     view_point->active_connection = i;
     bool is_loop = false;
     ViewPoint* current = view_point;
-    int iterations = 0;
+    int it = tree_data_.points.size();
+    // TODO(schmluk): Iteration counting is currently back up code to detect
+    // detached segments and prevent the system from getting stuck.
     while (!current->is_root) {
-      iterations++;
+      it--;
       current = current->getConnectedViewPoint(current->active_connection);
       if (current == view_point) {
         is_loop = true;
+        break;
+      }
+      if (it < 0) {
+        is_loop = true;
+        LOG(WARNING) << "Found a loop searching the tree root!";
         break;
       }
     }
@@ -493,29 +547,35 @@ void RHRRTStar::computeValue(ViewPoint* view_point) {
     }
   }
   // propagate recursively to the leaves
-  view_point->value = computeGNVStep(view_point, gain, cost);
+  std::set<ViewPoint*> visited;
+  view_point->value = computeGNVStep(view_point, gain, cost, &visited);
 }
 
 FloatingPoint RHRRTStar::computeGNVStep(ViewPoint* view_point,
-                                        FloatingPoint gain,
-                                        FloatingPoint cost) {
+                                        FloatingPoint gain, FloatingPoint cost,
+                                        std::set<ViewPoint*>* visited) {
   // recursively iterate towards leaf, then iterate backwards and select best
-  // value of children
+  // value of children.
   FloatingPoint value = 0.f;
   gain += view_point->gain;
   cost += view_point->getActiveConnection()->cost;
-  if (cost > 0) {
+  if (cost > 0.f) {
     value = gain / cost;
-    // TEST: foucs more on local expl
-    // value = gain / cost / cost;
   }
+
+  // If we find a loop it cannot be more effective.
+  if (visited.find(view_point) != visited.end()) {
+    return value;
+  }
+  visited.insert(view_point);
+
   for (size_t i = 0; i < view_point->connections.size(); ++i) {
     ViewPoint* target = view_point->getConnectedViewPoint(i);
     if (!target->is_root) {
       if (target->getConnectedViewPoint(target->active_connection) ==
           view_point) {
         // this means target is a child of view_point
-        value = std::max(value, computeGNVStep(target, gain, cost));
+        value = std::max(value, computeGNVStep(target, gain, cost, visited));
       }
     }
   }
@@ -619,8 +679,15 @@ void RHRRTStar::visualizeGain(const WayPoint& pose, std::vector<Point>* voxels,
 }
 
 bool RHRRTStar::ViewPoint::tryAddConnection(ViewPoint* target, MapBase* map) {
+  // Check for duplicates.
+  for (size_t i = 0; i < connections.size(); ++i) {
+    if (getConnectedViewPoint(i) == this) {
+      return false;
+      LOG(WARNING) << "Tried to add a duplicate to the tree!";
+    }
+  }
+
   // Check traversability.
-  Point origin = pose.position;
   if (!map->isLineTraversableInActiveSubmap(pose.position,
                                             target->pose.position)) {
     return false;

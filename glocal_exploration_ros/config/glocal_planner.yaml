@@ -107,7 +107,7 @@ mapping:
     height:
       enabled: false
       information_zz: 2500.0
-  mesh_min_weight: 2.0
+  mesh_min_weight: 1.0
   submap_mesh_color_mode: lambert_color
   combined_mesh_color_mode: normals
 
@@ -115,7 +115,7 @@ local_planner:
   type: rh_rrt_star
   verbosity: 4
   # RH-RRT-Star params
-  sampling_range: 10 # m
+  sampling_range: 8 # m
   min_path_length: 1.0  # m
   min_sampling_distance: 1.0 # m
   max_path_length: 3.0  # m
@@ -124,10 +124,10 @@ local_planner:
   maximum_rewiring_iterations: 100
   
   # Termination
-  terminaton_min_tree_size: 3
+  reconsideration_time: 2
   termination_max_gain: 100
   termination_min_time: 2  # s
-  DEBUG_number_of_iterations: 3  # -1 to turn off
+  DEBUG_number_of_iterations: -1  # -1 to turn off
   
   # Lidar Model
   ray_length: *max_ray_length  # m

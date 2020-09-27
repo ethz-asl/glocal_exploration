@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <memory>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -20,27 +21,27 @@ class RHRRTStar : public LocalPlannerBase {
   struct Config : public config_utilities::Config<Config> {
     int verbosity = 1;
 
-    // path
-    // determines the length of connections
-    FloatingPoint min_path_length = 0.5f;  // m
-    // determines the minimum path length when sampling
-    FloatingPoint min_sampling_distance = 0.5f;  // m
+    // Pathing.
+    FloatingPoint min_path_length = 0.5f;        // m, min length of connections
     FloatingPoint max_path_length = 2.f;         // m
-    // distance until cropped paths become infeasible
-    FloatingPoint path_cropping_length = 0.2f;  // m
-    int max_number_of_neighbors = 20;
+    FloatingPoint min_sampling_distance = 0.5f;  // m, minimum distance between
+                                                 // viewpoints
+    FloatingPoint path_cropping_length = 0.2f;   // m, distance until cropped
+                                                 // paths become infeasible
 
-    // behavior
+    // Behavior.
     int maximum_rewiring_iterations = 100;
     FloatingPoint sampling_range = 10.f;  // m
+    int max_number_of_neighbors = 20;
+    FloatingPoint reconsideration_time = 2.f;  // s, extra time taken before
+                                               // switching to global or
+                                               // reversing a path.
 
-    // termination
+    // Termination.
     int terminaton_min_tree_size = 5;
     FloatingPoint termination_max_gain = 100.f;
-    // try to find paths breaking the exit condition for this amount of time.
-    FloatingPoint termination_min_time = 3.f;  // s
-    int DEBUG_number_of_iterations =
-        -1;  // Only used if > 0, use for debugging.
+
+    int DEBUG_number_of_iterations = -1;  // Only used if>0, use for debugging.
 
     // sensor model (currently just use lidar)
     LidarModel::Config lidar_config;
@@ -140,23 +141,29 @@ class RHRRTStar : public LocalPlannerBase {
 
   // extract best viewpoint.
   bool selectNextBestWayPoint(WayPoint* next_waypoint);
+  bool optimizeTreeAndFindBestGoal(size_t* next_root_idx);
   bool selectBestConnection(ViewPoint* view_point);
   void computeValue(ViewPoint* view_point);
   static FloatingPoint computeGNVStep(ViewPoint* view_point, FloatingPoint gain,
-                                      FloatingPoint cost);
+                                      FloatingPoint cost,
+                                      std::set<ViewPoint*>* visited);
 
   // updating.
   void updateCollision();
   void updateGains();
   void computePointsConnectedToRoot(bool count_only_active_connections);
 
+  // termination
+  void sampleReconsideration();
+  bool isTerminationCriterionMet();
+
   /* variables */
   bool gain_update_needed_;
   ViewPoint* root_;  // root pointer so it does not need to be searched for all
   // the time.
+  ViewPoint* previous_view_point_;  // Track this to detect for reversing.
   Connection* current_connection_;  // the connection currently being executed.
-  std::chrono::time_point<std::chrono::high_resolution_clock> termination_time_;
-  bool termination_time_is_active_;
+  bool reconsidered_;               // true: reverse/switch to global anyways.
   int number_of_executed_waypoints_;
 
   // stats
