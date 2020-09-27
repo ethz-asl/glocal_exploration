@@ -27,6 +27,7 @@ class SkeletonVisualizer : public GlobalPlannerVisualizerBase {
     bool visualize_planned_path = true;
     bool visualize_inactive_frontiers = true;
     bool visualize_skeleton_submaps = true;
+    bool keep_visualizations = false;  // Keep even after finishing paths.
 
     Config();
     void checkParams() const override;

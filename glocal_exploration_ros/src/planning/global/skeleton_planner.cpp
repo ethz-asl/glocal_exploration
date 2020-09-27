@@ -91,27 +91,22 @@ void SkeletonPlanner::executePlanningIteration() {
     comm_->stateMachine()->signalGlobalPlanning();
   }
 
-  switch (stage_) {
-    case Stage::k1ComputeFrontiers: {
-      // Compute and update all frontiers to current state.
-      if (computeFrontiers()) {
-        stage_ = Stage::k2ComputeGoalAndPath;
-      }
-      break;
+  if (stage_ == Stage::k1ComputeFrontiers) {
+    // Compute and update all frontiers to current state.
+    if (computeFrontiers()) {
+      stage_ = Stage::k2ComputeGoalAndPath;
     }
-    case Stage::k2ComputeGoalAndPath: {
+    }
+    if (stage_ == Stage::k2ComputeGoalAndPath) {
       // Select a frontier to move towards, including path generation.
       if (computeGoalPoint()) {
         stage_ = Stage::k3ExecutePath;
       }
-      break;
     }
-    case Stage::k3ExecutePath: {
+    if (stage_ == Stage::k3ExecutePath) {
       // Execute way points until finished, then switch back to local.
       executeWayPoint();
-      break;
     }
-  }
 }
 
 void SkeletonPlanner::resetPlanner() {

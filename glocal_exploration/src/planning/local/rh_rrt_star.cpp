@@ -97,10 +97,18 @@ void RHRRTStar::executePlanningIteration() {
     if (selectNextBestWayPoint(&next_waypoint)) {
       comm_->requestWayPoint(next_waypoint);
       gain_update_needed_ = true;
+      if (config_.DEBUG_number_of_iterations > 0) {
+        number_of_executed_waypoints_++;
+      }
     }
   }
 
   // Check whether a local minimum is reached and change to global planning.
+  if (config_.DEBUG_number_of_iterations > 0 &&
+      number_of_executed_waypoints_ >= config_.DEBUG_number_of_iterations) {
+    comm_->stateMachine()->signalGlobalPlanning();
+    return;
+  }
   if (tree_data_.points.size() >= config_.terminaton_min_tree_size) {
     for (const auto& point : tree_data_.points) {
       if (point->gain > config_.termination_max_gain) {
@@ -142,6 +150,7 @@ void RHRRTStar::resetPlanner(const WayPoint& origin) {
   pruned_points_ = 0;
   new_points_ = 0;
   termination_time_is_active_ = false;
+  number_of_executed_waypoints_ = 0;
 
   // Logging.
   LOG_IF(INFO, config_.verbosity >= 4) << "Reset the RH-RRT* planner.";

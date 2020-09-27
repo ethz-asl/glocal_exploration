@@ -25,6 +25,7 @@ void SkeletonVisualizer::Config::fromRosParam() {
   rosParam("visualize_planned_path", &visualize_planned_path);
   rosParam("visualize_frontier_text", &visualize_frontier_text);
   rosParam("visualize_inactive_frontiers", &visualize_inactive_frontiers);
+  rosParam("keep_visualizations", &keep_visualizations);
   nh_namespace = rosParamNameSpace();
 }
 
@@ -67,17 +68,6 @@ void SkeletonVisualizer::visualize() {
     visualizePlannedPath();
   }
 
-  std::cout << "======================================\n"
-               "frontiers changed: "
-            << planner_->visualizationData().frontiers_have_changed
-            << "\nexecution finished: "
-            << planner_->visualizationData().execution_finished
-            << "\nfinished successfully: "
-            << planner_->visualizationData().finished_successfully
-            << "\nis still global: "
-            << (comm_->stateMachine()->currentState() ==
-                StateMachine::State::kGlobalPlanning)
-            << "\n======================================" << std::endl;
   // Frontiers.
   if (config_.visualize_frontiers && frontier_pub_.getNumSubscribers() > 0) {
     visualizeFrontiers();
@@ -188,7 +178,7 @@ void SkeletonVisualizer::visualizeGoalPoints() {
     msg.header.stamp = ros::Time::now();
     goals_pub_.publish(msg);
 
-    if (!planner_->visualizationData().finished_successfully) {
+    if (!planner_->visualizationData().finished) {
       // Common data.
       msg = visualization_msgs::Marker();
       msg.header.frame_id = frame_id_;
@@ -252,7 +242,7 @@ void SkeletonVisualizer::visualizeFrontierText() {
     msg.header.stamp = ros::Time::now();
     frontier_text_pub_.publish(msg);
 
-    if (!planner_->visualizationData().finished_successfully) {
+    if (!planner_->visualizationData().execution_finished) {
       // Common data.
       msg.header.stamp = ros::Time::now();
       msg.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
@@ -308,8 +298,7 @@ void SkeletonVisualizer::visualizeFrontiers() {
   if (planner_->visualizationData().frontiers_have_changed ||
       planner_->visualizationData().execution_finished) {
     pcl::PointCloud<pcl::PointXYZRGB> frontier_points;
-    if (!planner_->visualizationData().finished_successfully) {
-      // Visualize all active frontiers.
+    if (!planner_->visualizationData().execution_finished) {
       int color_id = 0;
       voxblox::ExponentialOffsetIdColorMap color_map;
       for (const auto& frontier : planner_->getActiveFrontiers()) {
@@ -328,24 +317,22 @@ void SkeletonVisualizer::visualizeFrontiers() {
           frontier_points.push_back(frontier_point_msg);
         }
       }
-      // NOTE: In case the planner did not finish successfully, an empty
-      //       pointcloud will still be published to overwrite the previous one
-
-      sensor_msgs::PointCloud2 frontier_points_msg;
-      pcl::toROSMsg(frontier_points, frontier_points_msg);
-      frontier_points_msg.header.frame_id = frame_id_;
-      frontier_points_msg.header.stamp = ros::Time::now();
-
-      frontier_pub_.publish(frontier_points_msg);
     }
-  }
+    // NOTE: In case the planner did not finish successfully, an empty
+    //       pointcloud will still be published to overwrite the previous one
+    sensor_msgs::PointCloud2 frontier_points_msg;
+    pcl::toROSMsg(frontier_points, frontier_points_msg);
+    frontier_points_msg.header.frame_id = frame_id_;
+    frontier_points_msg.header.stamp = ros::Time::now();
+    frontier_pub_.publish(frontier_points_msg);
+    }
 }
 
 void SkeletonVisualizer::visualizeInactiveFrontiers() {
   if (planner_->visualizationData().frontiers_have_changed ||
       planner_->visualizationData().execution_finished) {
     pcl::PointCloud<pcl::PointXYZRGB> frontier_points;
-    if (!planner_->visualizationData().finished_successfully) {
+    if (!planner_->visualizationData().execution_finished) {
       // Visualize all inactive frontiers.
       const voxblox::Color inactive_color(50, 50, 50);
 
@@ -359,16 +346,14 @@ void SkeletonVisualizer::visualizeInactiveFrontiers() {
         frontier_point_msg.b = inactive_color.b;
         frontier_points.push_back(frontier_point_msg);
       }
-
-      // NOTE: In case the planner did not finish successfully, an empty
-      //       pointcloud will still be published to overwrite the previous one.
-      sensor_msgs::PointCloud2 frontier_points_msg;
-      pcl::toROSMsg(frontier_points, frontier_points_msg);
-      frontier_points_msg.header.frame_id = frame_id_;
-      frontier_points_msg.header.stamp = ros::Time::now();
-
-      inactive_frontiers_pub_.publish(frontier_points_msg);
     }
+    // NOTE: In case the planner did not finish successfully, an empty
+    //       pointcloud will still be published to overwrite the previous one.
+    sensor_msgs::PointCloud2 frontier_points_msg;
+    pcl::toROSMsg(frontier_points, frontier_points_msg);
+    frontier_points_msg.header.frame_id = frame_id_;
+    frontier_points_msg.header.stamp = ros::Time::now();
+    inactive_frontiers_pub_.publish(frontier_points_msg);
   }
 }
 

@@ -127,7 +127,7 @@ local_planner:
   terminaton_min_tree_size: 3
   termination_max_gain: 100
   termination_min_time: 2  # s
-  DEBUG_number_of_iterations: -1  # -1 to turn off
+  DEBUG_number_of_iterations: 3  # -1 to turn off
   
   # Lidar Model
   ray_length: *max_ray_length  # m

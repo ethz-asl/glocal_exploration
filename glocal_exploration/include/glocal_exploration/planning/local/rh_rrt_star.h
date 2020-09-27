@@ -155,6 +155,7 @@ class RHRRTStar : public LocalPlannerBase {
   Connection* current_connection_;  // the connection currently being executed.
   std::chrono::time_point<std::chrono::high_resolution_clock> termination_time_;
   bool termination_time_is_active_;
+  int number_of_executed_waypoints_;
 
   // stats
   int pruned_points_;
