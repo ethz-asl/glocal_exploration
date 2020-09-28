@@ -208,8 +208,7 @@ void RHRRTStarVisualizer::visualizeValue(const RHRRTStar::ViewPoint& point,
     pt.y = point.pose.position.y();
     pt.z = point.pose.position.z();
     msg.points.push_back(pt);
-    RHRRTStar::ViewPoint* viewpoint_end =
-        point.getConnectedViewPoint(point.active_connection);
+    RHRRTStar::ViewPoint* viewpoint_end = point.getActiveViewPoint();
     if (viewpoint_end) {
       tf::pointEigenToMsg(viewpoint_end->pose.position.cast<double>(), pt);
     } else {

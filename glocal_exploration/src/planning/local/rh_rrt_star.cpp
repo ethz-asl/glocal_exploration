@@ -228,9 +228,9 @@ bool RHRRTStar::selectNextBestWayPoint(WayPoint* next_waypoint) {
   ViewPoint* new_root = root_->getConnectedViewPoint(next_point_index);
   root_->is_root = false;
   new_root->is_root = true;
-  root_->active_connection =
-      next_point_index;  // make the old root connect to the new root
-  current_connection_ = root_->connections[next_point_index].second.get();
+  root_->setActiveConnection(next_point_index);  // make the old root connect
+                                                 // to the new root
+  current_connection_ = root_->getConnections()[next_point_index].second.get();
   root_ = new_root;
 
   // logging
@@ -249,40 +249,15 @@ bool RHRRTStar::optimizeTreeAndFindBestGoal(size_t* next_root_idx) {
   int iterations = 0;
   auto t_start = std::chrono::high_resolution_clock::now();
 
-  // Connect every viewpoint to form a tree (this is needed for the value
-  // computation)
-  computePointsConnectedToRoot(true);
-  std::queue<ViewPoint*> not_connected;
-  for (auto& vp : tree_data_.points) {
-    if (!vp->is_connected_to_root) {
-      not_connected.push(vp.get());
-    }
-  }
-
-  while (!not_connected.empty()) {
-    ViewPoint* current = not_connected.front();
-    not_connected.pop();
-    for (size_t i = 0; i < current->connections.size(); ++i) {
-      if (current->getConnectedViewPoint(i)->is_connected_to_root) {
-        current->active_connection = i;
-        current->is_connected_to_root = true;
-        break;
-      }
-    }
-    if (!current->is_connected_to_root) {
-      not_connected.push(current);
-    }
-  }
-
   // Optimize the tree structure
   while (iterations++ < config_.maximum_rewiring_iterations) {
     bool something_changed = false;
     for (auto& view_point : tree_data_.points) {
       if (!view_point->is_root) {
         // optimize local connections
-        size_t previous_connection = view_point->active_connection;
+        size_t previous_index = view_point->getActiveConnectionIndex();
         selectBestConnection(view_point.get());
-        if (view_point->active_connection != previous_connection) {
+        if (view_point->getActiveConnectionIndex() != previous_index) {
           something_changed = true;
         }
       }
@@ -301,9 +276,9 @@ bool RHRRTStar::optimizeTreeAndFindBestGoal(size_t* next_root_idx) {
   // select the best node from the current root
   int next_point_idx = -1;
   FloatingPoint best_value = -std::numeric_limits<FloatingPoint>::max();
-  for (size_t i = 0; i < root_->connections.size(); ++i) {
-    ViewPoint* target = root_->getConnectedViewPoint(i);
-    if (target->getConnectedViewPoint(target->active_connection) == root_) {
+  for (size_t i = 0; i < root_->getConnections().size(); ++i) {
+    const ViewPoint* target = root_->getConnectedViewPoint(i);
+    if (target->getActiveViewPoint() == root_) {
       // the candidate is wired to the root
       if (target->value > best_value) {
         best_value = target->value;
@@ -325,12 +300,12 @@ void RHRRTStar::updateCollision() {
   // update all connections
   for (auto& viewpoint : tree_data_.points) {
     int offset = 0;
-    for (int _i = 0; _i < viewpoint->connections.size(); ++_i) {
+    for (int _i = 0; _i < viewpoint->getConnections().size(); ++_i) {
       int i = _i + offset;
 
       // Update every connection only once (by the parent).
-      if (viewpoint->connections[i].first) {
-        Connection* connection = viewpoint->connections[i].second.get();
+      if (viewpoint->getConnections()[i].first) {
+        Connection* connection = viewpoint->getConnection(i);
         if (connection == current_connection_) {
           // don't update the currently executed connection, this always allows
           // backtracking as well.
@@ -339,27 +314,19 @@ void RHRRTStar::updateCollision() {
 
         // Remove far away and colliding connections.
         Point position = comm_->currentPose().position;
-        if ((connection->target->pose.position - position).norm() >=
+        if ((connection->getTarget()->pose.position - position).norm() >=
                 config_.sampling_range ||
-            (connection->parent->pose.position - position).norm() >=
+            (connection->getParent()->pose.position - position).norm() >=
                 config_.sampling_range ||
             !comm_->map()->isLineTraversableInActiveSubmap(
-                connection->parent->pose.position,
-                connection->target->pose.position)) {
-          ViewPoint* target = connection->target;
-          target->connections.erase(std::remove_if(target->connections.begin(),
-                                                   target->connections.end(),
-                                                   [connection](auto& c) {
-                                                     return c.second.get() ==
-                                                            connection;
-                                                   }),
-                                    target->connections.end());
-          viewpoint->connections.erase(viewpoint->connections.begin() + i);
+                connection->getParent()->pose.position,
+                connection->getTarget()->pose.position)) {
+          viewpoint->removeConnection(connection);
           offset--;
         }
       }
-      }
     }
+  }
 
   // Remove view_points that don't have a connection to the root anymore.
   computePointsConnectedToRoot(false);
@@ -373,6 +340,29 @@ void RHRRTStar::updateCollision() {
   // reset the kdtree
   kdtree_ = std::make_unique<KDTree>(3, tree_data_);
   kdtree_->addPoints(0, tree_data_.points.size() - 1);
+
+  // Set active connections to form a tree again.
+  computePointsConnectedToRoot(true);
+  std::queue<ViewPoint*> not_connected;
+  for (auto& vp : tree_data_.points) {
+    if (!vp->is_connected_to_root) {
+      not_connected.push(vp.get());
+    }
+  }
+  while (!not_connected.empty()) {
+    ViewPoint* current = not_connected.front();
+    not_connected.pop();
+    for (size_t i = 0; i < current->getConnections().size(); ++i) {
+      if (current->getConnectedViewPoint(i)->is_connected_to_root) {
+        current->setActiveConnection(i);
+        current->is_connected_to_root = true;
+        break;
+      }
+    }
+    if (!current->is_connected_to_root) {
+      not_connected.push(current);
+    }
+  }
 
   // track stats
   pruned_points_ += num_previous_points - tree_data_.points.size();
@@ -395,23 +385,24 @@ void RHRRTStar::computePointsConnectedToRoot(
 
   // breadth first search
   while (!points_to_check.empty()) {
-    for (size_t i = 0; i < points_to_check.front()->connections.size(); ++i) {
-      ViewPoint* connected_vp =
-          points_to_check.front()->getConnectedViewPoint(i);
-      if (count_only_active_connections) {
-        if (connected_vp->active_connection >=
-                connected_vp->connections.size() ||
-            connected_vp->active_connection < 0) {
-          continue;
-        } else if (connected_vp->getConnectedViewPoint(
-                       connected_vp->active_connection) !=
-                   points_to_check.front()) {
-          continue;
+    if (count_only_active_connections) {
+      // label all children (active connection) as connected.
+      for (auto& child : points_to_check.front()->getChildViewPoints()) {
+        if (!child->is_connected_to_root) {
+          points_to_check.push(child);
+          child->is_connected_to_root = true;
         }
       }
-      if (!connected_vp->is_connected_to_root) {
-        points_to_check.push(connected_vp);
-        connected_vp->is_connected_to_root = true;
+    } else {
+      // Label all connected points as connected.
+      for (size_t i = 0; i < points_to_check.front()->getConnections().size();
+           ++i) {
+        ViewPoint* connected_vp =
+            points_to_check.front()->getConnectedViewPoint(i);
+        if (!connected_vp->is_connected_to_root) {
+          points_to_check.push(connected_vp);
+          connected_vp->is_connected_to_root = true;
+        }
       }
     }
     points_to_check.pop();
@@ -457,10 +448,10 @@ bool RHRRTStar::connectViewPoint(ViewPoint* view_point) {
         distance < config_.min_path_length) {
       continue;
     }
-    if (view_point->tryAddConnection(tree_data_.points[index].get(),
-                                     comm_->map().get())) {
-      view_point->connections.back().second->cost =
-          computeCost(*(view_point->connections.back().second));
+    Connection* new_connection = view_point->addConnection(
+        tree_data_.points[index].get(), comm_->map().get());
+    if (new_connection) {
+      new_connection->cost = computeCost(*new_connection);
       connection_found = true;
     }
   }
@@ -469,29 +460,31 @@ bool RHRRTStar::connectViewPoint(ViewPoint* view_point) {
 
 bool RHRRTStar::selectBestConnection(ViewPoint* view_point) {
   // This operation is an iteration step to optimize the tree structure.
-  if (view_point->connections.empty() || view_point->is_root) {
+  if (view_point->getConnections().empty() || view_point->is_root) {
     return false;
   }
   FloatingPoint best_value = std::numeric_limits<FloatingPoint>::min();
-  size_t best_connection = -1;
-  for (size_t i = 0; i < view_point->connections.size(); ++i) {
-    // make sure there are no loops in the tree
-    view_point->active_connection = i;
+  int best_connection = -1;
+  for (size_t i = 0; i < view_point->getConnections().size(); ++i) {
+    // Make sure there are no loops in the tree.
     bool is_loop = false;
-    ViewPoint* current = view_point;
-    int it = tree_data_.points.size();
+    ViewPoint* current = view_point->getConnectedViewPoint(i);
     // TODO(schmluk): Iteration counting is currently back up code to detect
     // detached segments and prevent the system from getting stuck.
+    int it = tree_data_.points.size();
     while (!current->is_root) {
       it--;
-      current = current->getConnectedViewPoint(current->active_connection);
+      current = current->getActiveViewPoint();
       if (current == view_point) {
+        // This is a loop of candidates, which is valid but cannot be activated.
         is_loop = true;
         break;
       }
       if (it < 0) {
+        // Found a loop of active connections, which invalid.
         is_loop = true;
-        LOG(WARNING) << "Found a loop searching the tree root: " << current;
+        LOG(WARNING) << "Found a infinite loop searching the tree root: "
+                     << current;
         break;
       }
     }
@@ -500,19 +493,20 @@ bool RHRRTStar::selectBestConnection(ViewPoint* view_point) {
     }
 
     // compute the value
+    view_point->setActiveConnection(i);
     computeValue(view_point);
     if (view_point->value > best_value) {
       best_value = view_point->value;
       best_connection = i;
     }
   }
-  if (best_connection == -1) {
+  if (best_connection < 0) {
     return false;
   }
 
   // apply the result
   view_point->value = best_value;
-  view_point->active_connection = best_connection;
+  view_point->setActiveConnection(best_connection);
   return true;
 }
 
@@ -524,7 +518,8 @@ void RHRRTStar::evaluateViewPoint(ViewPoint* view_point) {
 
 FloatingPoint RHRRTStar::computeCost(const Connection& connection) {
   // just use distance
-  return (connection.parent->pose.position - connection.target->pose.position)
+  return (connection.getParent()->pose.position -
+          connection.getTarget()->pose.position)
       .norm();
 }
 
@@ -538,7 +533,7 @@ void RHRRTStar::computeValue(ViewPoint* view_point) {
   ViewPoint* current = view_point;
   while (true) {
     // propagate the new value up to the root
-    current = current->getConnectedViewPoint(current->active_connection);
+    current = current->getActiveViewPoint();
     if (current->is_root) {
       break;
     } else {
@@ -569,14 +564,9 @@ FloatingPoint RHRRTStar::computeGNVStep(
   }
   visited->insert(view_point);
 
-  for (size_t i = 0; i < view_point->connections.size(); ++i) {
-    ViewPoint* target = view_point->getConnectedViewPoint(i);
-    if (!target->is_root) {
-      if (target->getConnectedViewPoint(target->active_connection) ==
-          view_point) {
-        // this means target is a child of view_point
-        value = std::max(value, computeGNVStep(target, gain, cost, visited));
-      }
+  for (ViewPoint* child : view_point->getChildViewPoints()) {
+    if (!child->is_root) {
+      value = std::max(value, computeGNVStep(child, gain, cost, visited));
     }
   }
   return value;
@@ -678,11 +668,13 @@ void RHRRTStar::visualizeGain(const WayPoint& pose, std::vector<Point>* voxels,
   colors->assign(voxels->size(), Point(1, 0.8, 0));
 }
 
-bool RHRRTStar::ViewPoint::tryAddConnection(ViewPoint* target, MapBase* map) {
+RHRRTStar::Connection* RHRRTStar::ViewPoint::addConnection(ViewPoint* target,
+                                                           MapBase* map) {
   // Check for duplicates.
   for (size_t i = 0; i < connections.size(); ++i) {
-    if (getConnectedViewPoint(i) == this) {
-      return false;
+    if (getConnectedViewPoint(i) == this ||
+        getConnectedViewPoint(i) == target) {
+      return nullptr;
       LOG(WARNING) << "Tried to add a duplicate to the tree!";
     }
   }
@@ -690,7 +682,7 @@ bool RHRRTStar::ViewPoint::tryAddConnection(ViewPoint* target, MapBase* map) {
   // Check traversability.
   if (!map->isLineTraversableInActiveSubmap(pose.position,
                                             target->pose.position)) {
-    return false;
+    return nullptr;
   }
 
   // Add the connection.
@@ -699,7 +691,7 @@ bool RHRRTStar::ViewPoint::tryAddConnection(ViewPoint* target, MapBase* map) {
   connection->target = target;
   connections.emplace_back(std::make_pair(true, connection));
   target->connections.emplace_back(std::make_pair(false, connection));
-  return true;
+  return connection.get();
 }
 
 RHRRTStar::Connection* RHRRTStar::ViewPoint::getActiveConnection() {
@@ -709,7 +701,7 @@ RHRRTStar::Connection* RHRRTStar::ViewPoint::getActiveConnection() {
   return connections[active_connection].second.get();
 }
 
-RHRRTStar::Connection const* RHRRTStar::ViewPoint::getActiveConnection() const {
+const RHRRTStar::Connection* RHRRTStar::ViewPoint::getActiveConnection() const {
   if (active_connection < 0 || active_connection >= connections.size()) {
     return nullptr;
   }
@@ -718,15 +710,86 @@ RHRRTStar::Connection const* RHRRTStar::ViewPoint::getActiveConnection() const {
 
 RHRRTStar::ViewPoint* RHRRTStar::ViewPoint::getConnectedViewPoint(
     size_t index) const {
-  if (index < 0 || index >= connections.size()) {
-    LOG(WARNING) << "Tried to access a connection out of range (" << index
-                 << "/" << connections.size() << ").";
+  if (index >= connections.size()) {
+    LOG(WARNING) << "Tried to access a viewpoint out of range (" << index << "/"
+                 << connections.size() << ").";
     return nullptr;
   }
   if (connections[index].first) {
     return connections[index].second->target;
   }
   return connections[index].second->parent;
+}
+
+RHRRTStar::Connection* RHRRTStar::ViewPoint::getConnection(size_t index) const {
+  if (index >= connections.size()) {
+    LOG(WARNING) << "Tried to access a connection out of range (" << index
+                 << "/" << connections.size() << ").";
+    return nullptr;
+  }
+  return connections[index].second.get();
+}
+
+RHRRTStar::ViewPoint* RHRRTStar::ViewPoint::getActiveViewPoint() const {
+  return getConnectedViewPoint(active_connection);
+}
+
+std::vector<RHRRTStar::ViewPoint*> RHRRTStar::ViewPoint::getChildViewPoints()
+    const {
+  std::vector<RHRRTStar::ViewPoint*> result;
+  for (size_t i = 0; i < connections.size(); ++i) {
+    ViewPoint* candidate = getConnectedViewPoint(i);
+    if (!candidate->is_root) {
+      if (candidate->getActiveViewPoint() == this) {
+        result.push_back(candidate);
+      }
+    }
+  }
+  return result;
+}
+
+void RHRRTStar::ViewPoint::removeConnection(const Connection* connection) {
+  ViewPoint* other;
+  if (connection->target == this) {
+    other = connection->parent;
+  } else if (connection->parent == this) {
+    other = connection->target;
+  } else {
+    // Tried to remove a connection that is not attached to this viewpoint.
+    return;
+  }
+
+  // Remove both shared pointers .
+  // NOTE: This does not yet remove inaccessible points. These need to be
+  // separately pruned.
+  connections.erase(std::remove_if(connections.begin(), connections.end(),
+                                   [connection](auto& c) {
+                                     return c.second.get() == connection;
+                                   }),
+                    connections.end());
+  other->connections.erase(
+      std::remove_if(
+          other->connections.begin(), other->connections.end(),
+          [connection](auto& c) { return c.second.get() == connection; }),
+      other->connections.end());
+
+  // Keep active connections within bounds. These will be corrected by the
+  // collision update to form a proper tree.
+  if (active_connection >= connections.size()) {
+    active_connection = 0;
+  }
+  if (other->active_connection >= other->connections.size()) {
+    other->active_connection = 0;
+  }
+}
+
+void RHRRTStar::ViewPoint::setActiveConnection(size_t index) {
+  if (index >= connections.size()) {
+    LOG(WARNING) << "Tried to set an invalid active connection (" << index
+                 << "/" << connections.size() << ")";
+    return;
+  }
+  active_connection = index;
 }
 
 }  // namespace glocal_exploration

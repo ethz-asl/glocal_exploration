@@ -17,12 +17,12 @@ replan_timeout_velocity: 1.0
 
 region_of_interest:
   type: bounding_box
-  x_min: -100 #-20
-  x_max: 100 #20
-  y_min: -100 #-20
-  y_max: 100 #20
-  z_min: -100 #-1.5
-  z_max: 100 #1.5
+  x_min: -20
+  x_max: 20
+  y_min: -20
+  y_max: 20
+  z_min: -1.5
+  z_max: 1.5
 
 mapping:
   type: voxgraph
@@ -116,17 +116,17 @@ local_planner:
   verbosity: 4
   # RH-RRT-Star params
   sampling_range: 8 # m
-  min_path_length: 1.0  # m
-  min_sampling_distance: 1.0 # m
+  min_path_length: 1.2 # m
+  min_sampling_distance: 1.2 # m
   max_path_length: 3.0  # m
-  path_cropping_length: 0.5 # m
+  path_cropping_length: 0.0 # m
   max_number_of_neighbors: 20
   maximum_rewiring_iterations: 100
   
   # Termination
-  reconsideration_time: 2
-  termination_max_gain: 100
-  termination_min_time: 2  # s
+  reconsideration_time: 2 # s
+  termination_max_gain: 300
+  terminaton_min_tree_size: 2
   DEBUG_number_of_iterations: -1  # -1 to turn off
   
   # Lidar Model

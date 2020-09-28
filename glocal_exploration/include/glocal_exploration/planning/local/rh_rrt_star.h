@@ -62,28 +62,50 @@ class RHRRTStar : public LocalPlannerBase {
   struct Connection;
   // View points are the vertices in the tree.
   struct ViewPoint {
+   public:
+    friend Connection;
     WayPoint pose;
     FloatingPoint gain = 0.f;
     FloatingPoint value = 0.f;
     bool is_root = false;
     bool is_connected_to_root = false;
+
+    // access
+    void setActiveConnection(size_t index);
+
+    // helper methods
+    Connection* addConnection(ViewPoint* target, MapBase* map);
+    void removeConnection(const Connection* connection);
+    Connection* getActiveConnection();
+    const Connection* getActiveConnection() const;
+    ViewPoint* getConnectedViewPoint(size_t index) const;
+    Connection* getConnection(size_t index) const;
+    ViewPoint* getActiveViewPoint() const;
+    std::vector<ViewPoint*> getChildViewPoints() const;
+    const std::vector<std::pair<bool, std::shared_ptr<Connection>>>&
+    getConnections() const {
+      return connections;
+    }
+    size_t getActiveConnectionIndex() const { return active_connection; }
+
+   private:
     std::vector<std::pair<bool, std::shared_ptr<Connection>>>
         connections;  // true: this ViewPoint is the parent
     size_t active_connection = 0;
-
-    // helper methods
-    bool tryAddConnection(ViewPoint* target, MapBase* map);
-    Connection* getActiveConnection();
-    Connection const* getActiveConnection() const;
-    ViewPoint* getConnectedViewPoint(size_t index) const;
   };
 
   // connections are the edges in the tree
   struct Connection {
+   public:
+    friend ViewPoint;
+    FloatingPoint cost;
+
+    const ViewPoint* getParent() const { return parent; }
+    const ViewPoint* getTarget() const { return target; }
+
+   private:
     ViewPoint* parent;
     ViewPoint* target;
-    std::vector<Point> path_points;
-    FloatingPoint cost;
   };
 
   // Nanoflann KD-tree implementation
