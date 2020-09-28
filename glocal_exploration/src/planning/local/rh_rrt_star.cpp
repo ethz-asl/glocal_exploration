@@ -7,7 +7,7 @@
 #include <memory>
 #include <queue>
 #include <random>
-#include <set>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -491,7 +491,7 @@ bool RHRRTStar::selectBestConnection(ViewPoint* view_point) {
       }
       if (it < 0) {
         is_loop = true;
-        LOG(WARNING) << "Found a loop searching the tree root!";
+        LOG(WARNING) << "Found a loop searching the tree root: " << current;
         break;
       }
     }
@@ -547,13 +547,13 @@ void RHRRTStar::computeValue(ViewPoint* view_point) {
     }
   }
   // propagate recursively to the leaves
-  std::set<ViewPoint*> visited;
+  std::unordered_set<ViewPoint*> visited;
   view_point->value = computeGNVStep(view_point, gain, cost, &visited);
 }
 
-FloatingPoint RHRRTStar::computeGNVStep(ViewPoint* view_point,
-                                        FloatingPoint gain, FloatingPoint cost,
-                                        std::set<ViewPoint*>* visited) {
+FloatingPoint RHRRTStar::computeGNVStep(
+    ViewPoint* view_point, FloatingPoint gain, FloatingPoint cost,
+    std::unordered_set<ViewPoint*>* visited) {
   // recursively iterate towards leaf, then iterate backwards and select best
   // value of children.
   FloatingPoint value = 0.f;
@@ -564,10 +564,10 @@ FloatingPoint RHRRTStar::computeGNVStep(ViewPoint* view_point,
   }
 
   // If we find a loop it cannot be more effective.
-  if (visited.find(view_point) != visited.end()) {
+  if (visited->find(view_point) != visited->end()) {
     return value;
   }
-  visited.insert(view_point);
+  visited->insert(view_point);
 
   for (size_t i = 0; i < view_point->connections.size(); ++i) {
     ViewPoint* target = view_point->getConnectedViewPoint(i);

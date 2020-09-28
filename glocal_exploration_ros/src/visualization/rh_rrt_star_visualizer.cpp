@@ -47,7 +47,9 @@ RHRRTStarVisualizer::RHRRTStarVisualizer(
 
 void RHRRTStarVisualizer::visualize() {
   // Visualize only if a new waypoint was requested.
-  if (!comm_->newWayPointIsRequested()) {
+  if (!comm_->newWayPointIsRequested() &&
+      comm_->stateMachine()->currentState() ==
+          StateMachine::State::kLocalPlanning) {
     return;
   }
 

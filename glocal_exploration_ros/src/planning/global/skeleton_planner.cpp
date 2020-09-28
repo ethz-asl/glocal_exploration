@@ -342,11 +342,11 @@ bool SkeletonPlanner::verifyNextWayPoints() {
   // Connect as many waypoints as possible with a single line, all points
   // are checked in the sliding window map to guarantee safety.
   int waypoint_index = 0;
+  Point current_position = comm_->currentPose().position;
   Point goal;
   while (waypoint_index < way_points_.size()) {
     if (!comm_->map()->isLineTraversableInActiveSubmap(
-            comm_->currentPose().position, way_points_[waypoint_index].position,
-            &goal)) {
+            current_position, way_points_[waypoint_index].position, &goal)) {
       break;
     } else {
       waypoint_index++;
@@ -355,10 +355,8 @@ bool SkeletonPlanner::verifyNextWayPoints() {
 
   // If less than one segment is connected check for minimum distance.
   if (waypoint_index == 0) {
-    Point current_position = comm_->currentPose().position;
     // TODO(schmluk): make this a param if we keep it.
     const FloatingPoint safety = 0.3;
-
     if ((current_position - goal).norm() >
         config_.path_verification_min_distance + safety) {
       // Insert intermediate goal s.t. path can be observed.

@@ -3,7 +3,7 @@
 
 #include <chrono>
 #include <memory>
-#include <set>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -146,7 +146,7 @@ class RHRRTStar : public LocalPlannerBase {
   void computeValue(ViewPoint* view_point);
   static FloatingPoint computeGNVStep(ViewPoint* view_point, FloatingPoint gain,
                                       FloatingPoint cost,
-                                      std::set<ViewPoint*>* visited);
+                                      std::unordered_set<ViewPoint*>* visited);
 
   // updating.
   void updateCollision();
