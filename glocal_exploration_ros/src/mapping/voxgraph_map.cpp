@@ -266,15 +266,17 @@ bool VoxgraphMap::isLineTraversableInActiveSubmap(
   FloatingPoint traveled_distance = 0.f;
   Point current_position = start_point;
   Point previous_position = start_point;
-
   CHECK(c_voxel_size_ < config_.traversability_radius);
-  while (traveled_distance <= line_length) {
-    double esdf_distance;
+  while (true) {
+    double esdf_distance = 0.0;
     bool collided;
+
     if (voxblox_server_->getEsdfMapPtr()->getDistanceAtPosition(
             current_position.cast<double>(), &esdf_distance)) {
+      // This means the voxel is observed.
       collided = esdf_distance <= config_.traversability_radius;
     } else {
+      // Check whether we're within the clearing distance.
       collided = (current_position - comm_->currentPose().position).norm() >=
                  config_.clearing_radius;
     }
@@ -284,18 +286,19 @@ bool VoxgraphMap::isLineTraversableInActiveSubmap(
       }
       return false;
     }
-    previous_position = current_position;
+    if (traveled_distance >= line_length) {
+      if (last_traversable_point) {
+        *last_traversable_point = end_point;
+      }
+      return true;
+    }
     const FloatingPoint step_size =
         std::max(c_voxel_size_, static_cast<FloatingPoint>(esdf_distance) -
                                     config_.traversability_radius);
+    previous_position = current_position;
     current_position += step_size * line_direction;
     traveled_distance += step_size;
   }
-
-  if (last_traversable_point) {
-    *last_traversable_point = end_point.cast<FloatingPoint>();
-  }
-  return true;
 }
 
 bool VoxgraphMap::getDistanceAndGradientAtPositionInActiveSubmap(
@@ -325,7 +328,7 @@ bool VoxgraphMap::isLineTraversableInGlobalMap(const Point& start_point,
 
   CHECK(c_voxel_size_ < config_.traversability_radius);
   while (traveled_distance <= line_length) {
-    FloatingPoint esdf_distance;
+    FloatingPoint esdf_distance = 0.f;
     if (!getDistanceInGlobalMapAtPosition(current_position, &esdf_distance) ||
         esdf_distance < config_.traversability_radius) {
       if (last_traversable_point) {

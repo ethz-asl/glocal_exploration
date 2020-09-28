@@ -116,18 +116,18 @@ local_planner:
   type: rh_rrt_star
   verbosity: 4
   # RH-RRT-Star params
-  sampling_range: 8 # m
+  sampling_range: 7 # m
   min_path_length: 1.2 # m
   min_sampling_distance: 1.2 # m
   max_path_length: 3.0  # m
   path_cropping_length: 0.0 # m
-  max_number_of_neighbors: 20
+  max_number_of_neighbors: 30
   maximum_rewiring_iterations: 100
   
   # Termination
   reconsideration_time: 2 # s
   termination_max_gain: 300
-  terminaton_min_tree_size: 2
+  terminaton_min_tree_size: 5
   DEBUG_number_of_iterations: -1  # -1 to turn off
   
   # Lidar Model

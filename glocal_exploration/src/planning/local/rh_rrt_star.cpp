@@ -581,9 +581,10 @@ bool RHRRTStar::sampleNewPoint(ViewPoint* point) {
   const FloatingPoint phi =
       acos(1.f - 2.f * static_cast<FloatingPoint>(std::rand()) /
                      static_cast<FloatingPoint>(RAND_MAX));
-  Point goal = comm_->currentPose().position +
-               config_.sampling_range * Point(sin(phi) * cos(theta),
-                                              sin(phi) * sin(theta), cos(phi));
+  const Point direction =
+      Point(sin(phi) * cos(theta), sin(phi) * sin(theta), cos(phi));
+  Point goal =
+      comm_->currentPose().position + config_.sampling_range * direction;
 
   // Find the nearest neighbor.
   std::vector<size_t> nearest_viewpoint;
@@ -596,12 +597,20 @@ bool RHRRTStar::sampleNewPoint(ViewPoint* point) {
   if (distance_max < config_.min_sampling_distance) {
     return false;
   }
-  distance_max += config_.path_cropping_length;
 
   // Verify and crop the sampled path.
-  goal = origin + (goal - origin).normalized() * distance_max;
+  goal = origin + direction * distance_max;
   Point goal_cropped;
-  comm_->map()->isLineTraversableInActiveSubmap(origin, goal, &goal_cropped);
+  if (!comm_->map()->isLineTraversableInActiveSubmap(origin, goal,
+                                                     &goal_cropped)) {
+    // Substract a safety interval.
+    const FloatingPoint distance =
+        (goal_cropped - origin).norm() - config_.path_cropping_length;
+    if (distance < config_.min_sampling_distance) {
+      return false;
+    }
+    goal_cropped = origin + direction * distance;
+  }
 
   // Check min distance.
   if (!findNearestNeighbors(goal_cropped, &nearest_viewpoint)) {
@@ -610,6 +619,17 @@ bool RHRRTStar::sampleNewPoint(ViewPoint* point) {
   if ((tree_data_.points[nearest_viewpoint.front()]->pose.position -
        goal_cropped)
           .norm() < config_.min_sampling_distance) {
+    return false;
+  }
+
+  // TEST: verify traversability again!
+  if (!comm_->map()->isLineTraversableInActiveSubmap(origin, goal_cropped)) {
+    std::cout << "VERIFICATION IS INTRAVERSABLE!" << std::endl;
+    return false;
+  }
+  // TEST: verify inverse traversability again!
+  if (!comm_->map()->isLineTraversableInActiveSubmap(goal_cropped, origin)) {
+    std::cout << "VERIFICATION INVERSE IS INTRAVERSABLE!" << std::endl;
     return false;
   }
 
