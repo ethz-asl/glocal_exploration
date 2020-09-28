@@ -149,7 +149,7 @@ class RHRRTStar : public LocalPlannerBase {
   /* methods */
   // general
   void resetPlanner(const WayPoint& origin);
-  bool findNearestNeighbors(Point position, std::vector<size_t>* result,
+  bool findNearestNeighbors(const Point& position, std::vector<size_t>* result,
                             int n_neighbors = 1);
 
   // tree building.

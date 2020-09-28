@@ -640,7 +640,7 @@ bool RHRRTStar::sampleNewPoint(ViewPoint* point) {
   return true;
 }
 
-bool RHRRTStar::findNearestNeighbors(Point position,
+bool RHRRTStar::findNearestNeighbors(const Point& position,
                                      std::vector<size_t>* result,
                                      int n_neighbors) {
   // how to use nanoflann (:
