@@ -86,8 +86,11 @@ std::shared_ptr<GlobalPlannerBase> ComponentFactoryROS::createGlobalPlanner(
     const std::shared_ptr<Communicator>& communicator) {
   std::string type = getType(nh);
   if (type == "skeleton") {
+    ros::NodeHandle nh_skeleton_a_star(nh, "skeleton_a_star");
     return std::make_shared<SkeletonPlanner>(
         config_utilities::getConfigFromRos<SkeletonPlanner::Config>(nh),
+        config_utilities::getConfigFromRos<SkeletonAStar::Config>(
+            nh_skeleton_a_star),
         communicator);
   } else {
     LOG(ERROR) << "Unknown global planner type '" << type << "'.";

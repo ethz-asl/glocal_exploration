@@ -10,6 +10,36 @@
 
 namespace glocal_exploration {
 
+SkeletonAStar::Config::Config() { setConfigName("SkeletonAStarPlanner"); }
+
+void SkeletonAStar::Config::checkParams() const {
+  checkParamGE(traversability_radius, 0.f, "traversability_radius");
+  checkParamGT(max_num_start_vertex_candidates, 0,
+               "max_num_start_vertex_candidates");
+  checkParamGT(max_num_end_vertex_candidates, 0,
+               "max_num_end_vertex_candidates");
+  checkParamGT(linking_num_nearest_neighbors, 0,
+               "linking_num_nearest_neighbors");
+  checkParamGT(linking_max_distance, 0.f, "linking_max_distance");
+}
+
+void SkeletonAStar::Config::fromRosParam() {
+  rosParam("traversability_radius", &traversability_radius);
+  rosParam("max_num_start_vertex_candidates", &max_num_start_vertex_candidates);
+  rosParam("max_num_end_vertex_candidates", &max_num_end_vertex_candidates);
+  rosParam("linking_num_nearest_neighbors", &linking_num_nearest_neighbors);
+  rosParam("linking_max_distance", &linking_max_distance);
+}
+
+void SkeletonAStar::Config::printFields() const {
+  printField("traversability_radius", traversability_radius);
+  printField("max_num_start_vertex_candidates",
+             max_num_start_vertex_candidates);
+  printField("max_num_end_vertex_candidates", max_num_end_vertex_candidates);
+  printField("linking_num_nearest_neighbors", linking_num_nearest_neighbors);
+  printField("linking_max_distance", linking_max_distance);
+}
+
 bool SkeletonAStar::planPath(const Point& start_point, const Point& goal_point,
                              std::vector<WayPoint>* way_points) {
   map_ = comm_->map();
@@ -19,49 +49,46 @@ bool SkeletonAStar::planPath(const Point& start_point, const Point& goal_point,
   }
 
   // Search the nearest reachable start vertex on the skeleton graphs
-  if (!map_->isTraversableInActiveSubmap(start_point)) {
+  if (!map_->isTraversableInActiveSubmap(start_point,
+                                         config_.traversability_radius)) {
     LOG(INFO) << "Start point is not traversable in active submap ("
-              << start_point.x() << ", " << start_point.y() << ", "
-              << start_point.z()
+              << start_point.transpose()
               << "). Will not be able to connect to skeleton graphs.";
     return false;
   }
-  constexpr int kNClosestStartVertices = 5;
   const std::vector<GlobalVertexId> start_vertex_candidates =
       searchNClosestReachableSkeletonVertices(
-          start_point, kNClosestStartVertices,
+          start_point, config_.max_num_start_vertex_candidates,
           [this](const Point& start_point, const Point& end_point) {
-            return map_->isLineTraversableInActiveSubmap(start_point,
-                                                         end_point);
+            return map_->isLineTraversableInActiveSubmap(
+                start_point, end_point, config_.traversability_radius);
           });
   if (start_vertex_candidates.empty()) {
     LOG(INFO)
         << "Could not find any reachable skeleton vertices near start point ("
-        << start_point.x() << ", " << start_point.y() << ", " << start_point.z()
-        << ")";
+        << start_point.transpose() << ")";
     return false;
   }
 
   // Search the N closest reachable end vertices on the skeleton graph
-  if (!map_->isTraversableInGlobalMap(goal_point)) {
+  if (!map_->isTraversableInGlobalMap(goal_point,
+                                      config_.traversability_radius)) {
     LOG(INFO) << "Goal point is not traversable in global map ("
-              << goal_point.x() << ", " << goal_point.y() << ", "
-              << goal_point.z()
+              << goal_point.transpose()
               << "). Will not be able to connect to skeleton graphs.";
     return false;
   }
-  constexpr int kNClosestEndVertices = 30;
   std::vector<GlobalVertexId> end_vertex_candidates =
       searchNClosestReachableSkeletonVertices(
-          goal_point, kNClosestEndVertices,
+          goal_point, config_.max_num_end_vertex_candidates,
           [this](const Point& start_point, const Point& end_point) {
-            return map_->isLineTraversableInGlobalMap(start_point, end_point);
+            return map_->isLineTraversableInGlobalMap(
+                start_point, end_point, config_.traversability_radius);
           });
   if (end_vertex_candidates.empty()) {
     LOG(INFO)
         << "Could not find any reachable skeleton vertices near goal point ("
-        << goal_point.x() << ", " << goal_point.y() << ", " << goal_point.z()
-        << ")";
+        << goal_point.transpose() << ")";
     return false;
   }
 
@@ -70,9 +97,8 @@ bool SkeletonAStar::planPath(const Point& start_point, const Point& goal_point,
   if (!getPathBetweenVertices(start_vertex_candidates, end_vertex_candidates,
                               start_point, goal_point, &vertex_path)) {
     LOG(INFO) << "Could not find global path from start point ("
-              << start_point.x() << ", " << start_point.y() << ", "
-              << start_point.z() << ") to goal point (" << goal_point.x()
-              << ", " << goal_point.y() << ", " << goal_point.z() << ")";
+              << start_point.transpose() << ") to goal point ("
+              << goal_point.transpose() << ")";
     return false;
   }
 
@@ -201,12 +227,10 @@ bool SkeletonAStar::getPathBetweenVertices(
 
         voxblox::Point t_nearby_submap_current_vertex =
             (nearby_submap->getPose().inverse() * t_odom_current_vertex);
-        constexpr int kUseNNearestNeighbors = 3;
-        constexpr float kMaxLinkingDistance = 2.f;
         std::vector<VertexIdElement> nearest_vertex_ids;
-        nearby_submap->getNClosestVertices(t_nearby_submap_current_vertex,
-                                           kUseNNearestNeighbors,
-                                           &nearest_vertex_ids);
+        nearby_submap->getNClosestVertices(
+            t_nearby_submap_current_vertex,
+            config_.linking_num_nearest_neighbors, &nearest_vertex_ids);
 
         for (const VertexIdElement& nearby_vertex_id : nearest_vertex_ids) {
           const GlobalVertexId nearby_vertex_global_id{submap_id,
@@ -217,9 +241,11 @@ bool SkeletonAStar::getPathBetweenVertices(
                                              .point;
           const float distance_current_to_nearby_vertex =
               (t_odom_current_vertex - t_odom_nearby_vertex).norm();
-          if (distance_current_to_nearby_vertex < kMaxLinkingDistance &&
-              map_->isLineTraversableInGlobalMap(t_odom_current_vertex,
-                                                 t_odom_nearby_vertex)) {
+          if (distance_current_to_nearby_vertex <
+                  config_.linking_max_distance &&
+              map_->isLineTraversableInGlobalMap(
+                  t_odom_current_vertex, t_odom_nearby_vertex,
+                  config_.traversability_radius)) {
             if (closed_set.count(nearby_vertex_global_id) > 0) {
               continue;
             }
@@ -264,7 +290,8 @@ bool SkeletonAStar::getPathBetweenVertices(
       const voxblox::Point t_odom_neighbor_vertex =
           current_submap->getPose() * neighbor_vertex.point;
       if (!map_->isLineTraversableInGlobalMap(t_odom_current_vertex,
-                                              t_odom_neighbor_vertex)) {
+                                              t_odom_neighbor_vertex,
+                                              config_.traversability_radius)) {
         continue;
       }
 

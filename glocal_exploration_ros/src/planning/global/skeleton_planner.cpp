@@ -39,11 +39,12 @@ void SkeletonPlanner::Config::printFields() const {
   printField("submap_frontier_config", submap_frontier_config);
 }
 
-SkeletonPlanner::SkeletonPlanner(const Config& config,
-                                 std::shared_ptr<Communicator> communicator)
+SkeletonPlanner::SkeletonPlanner(
+    const Config& config, const SkeletonAStar::Config& skeleton_a_star_config,
+    std::shared_ptr<Communicator> communicator)
     : config_(config.checkValid()),
       SubmapFrontierEvaluator(config.submap_frontier_config, communicator),
-      skeleton_a_star_(communicator) {
+      skeleton_a_star_(skeleton_a_star_config, communicator) {
   LOG_IF(INFO, config_.verbosity >= 1) << "\n" << config_.toString();
 
   // NOTE(schmluk): The skeleton planner has an internal cblox server that
@@ -374,7 +375,8 @@ bool SkeletonPlanner::verifyNextWayPoints() {
 
       // Make sure we don't stop in intraversable space.
       Point free_position = comm_->currentPose().position;
-      findNearbyTraversablePoint(&free_position);
+      findNearbyTraversablePoint(skeleton_a_star_.getTraversabilityRadius(),
+                                 &free_position);
       comm_->requestWayPoint(WayPoint(free_position, 0.f));
 
       vis_data_.execution_finished = true;
@@ -405,9 +407,12 @@ bool SkeletonPlanner::computePath(const Point& goal,
                                   std::vector<WayPoint>* way_points) {
   CHECK_NOTNULL(way_points);
 
+  const FloatingPoint traversability_radius =
+      skeleton_a_star_.getTraversabilityRadius();
   Point start_point = comm_->currentPose().position;
-  if (comm_->map()->isTraversableInActiveSubmap(start_point) ||
-      findNearbyTraversablePoint(&start_point)) {
+  if (comm_->map()->isTraversableInActiveSubmap(start_point,
+                                                traversability_radius) ||
+      findNearbyTraversablePoint(traversability_radius, &start_point)) {
     // Compute path along skeletons
     return skeleton_a_star_.planPath(start_point, goal, way_points);
   }
@@ -418,28 +423,26 @@ bool SkeletonPlanner::computePath(const Point& goal,
   return false;
 }
 
-bool SkeletonPlanner::findNearbyTraversablePoint(Point* position) {
+bool SkeletonPlanner::findNearbyTraversablePoint(
+    const FloatingPoint traversability_radius, Point* position) {
   CHECK_NOTNULL(position);
   const Point initial_position = *position;
 
   constexpr int kMaxNumSteps = 20;
   const std::shared_ptr<MapBase> map_ptr = comm_->map();
-  // TODO(victorr): Get traversability radius from map interface
-  const FloatingPoint traversability_radius = 1.f;
 
   FloatingPoint distance;
   Point gradient;
   int step_idx = 1;
   for (; step_idx < kMaxNumSteps; ++step_idx) {
     // Determine if we found a solution
-    if (map_ptr->isTraversableInActiveSubmap(*position)) {
+    if (map_ptr->isTraversableInActiveSubmap(*position,
+                                             traversability_radius)) {
       LOG(INFO) << "Skeleton planner: Succesfully moved point from "
                    "intraversable initial position ("
-                << initial_position.x() << ", " << initial_position.y() << ", "
-                << initial_position.z() << ") to traversable start point ("
-                << position->x() << ", " << position->y() << ", "
-                << position->z() << "), after " << step_idx
-                << " gradient ascent steps.";
+                << initial_position.transpose()
+                << ") to traversable start point (" << position->transpose()
+                << "), after " << step_idx << " gradient ascent steps.";
       return true;
     }
     // Get the distance

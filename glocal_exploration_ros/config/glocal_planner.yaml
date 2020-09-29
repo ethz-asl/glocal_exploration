@@ -175,25 +175,10 @@ global_planner:
   visualize_candidate_goals: true
   visualize_planned_path: true
  
-  # CBLOX_SKELETON_PLANNER
-  skeleton:
-    verbose: false
-    visualize: true
-    do_smoothing: false
-    path_shortening: false
-    min_value: false
-    num_seconds_to_plan: 3.0
-    grow_time: 3
-    edge_density: 1.5
-    frame_id: odom
-    world_frame: odom
-    mission_frame: odom
-    odom_frame: odom
-    robot_radius: *collision_radius
-    tsdf_voxel_size: *voxel_size
-    tsdf_voxels_per_side: *voxels_per_side
-    esdf_voxel_size: *voxel_size
-    esdf_voxels_per_side: *voxels_per_side
-    truncation_distance: *truncation_distance
-  
-  
+  # A star search along linked sparse skeleton graph submaps
+  skeleton_a_star:
+    traversability_radius: 1.1
+    max_num_start_vertex_candidates: 30
+    max_num_end_vertex_candidates: 60
+    linking_num_nearest_neighbors: 3
+    linking_max_distance: 3.0
