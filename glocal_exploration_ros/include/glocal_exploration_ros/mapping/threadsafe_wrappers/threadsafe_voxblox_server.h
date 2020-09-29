@@ -41,7 +41,7 @@ class ThreadsafeVoxbloxServer : public voxblox::EsdfServer {
   }
 
   void updateEsdf() override {
-    voxblox::EsdfServer::updateEsdfBatch();
+    voxblox::EsdfServer::updateEsdf();
     *safe_esdf_map_->getEsdfLayerPtr() = esdf_map_->getEsdfLayer();
   }
   void updateEsdfBatch(bool full_euclidean = false) override {
