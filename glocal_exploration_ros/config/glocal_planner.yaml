@@ -117,10 +117,10 @@ local_planner:
   verbosity: 4
   # RH-RRT-Star params
   sampling_range: 7 # m
-  min_path_length: 1.2 # m
-  min_sampling_distance: 1.2 # m
+  min_path_length: 1.0 # m
+  min_sampling_distance: 1.0 # m
   max_path_length: 3.0  # m
-  path_cropping_length: 0.0 # m
+  path_cropping_length: 0.3 # m
   max_number_of_neighbors: 30
   maximum_rewiring_iterations: 100
   
