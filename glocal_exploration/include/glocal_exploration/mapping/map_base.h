@@ -53,6 +53,8 @@ class MapBase {
       const FloatingPoint traversability_radius,
       Point* last_traversable_point = nullptr) = 0;
 
+  virtual bool getDistanceAtPositionInActiveSubmap(const Point& position,
+                                                   FloatingPoint* distance) = 0;
   virtual bool getDistanceAndGradientAtPositionInActiveSubmap(
       const Point& position, FloatingPoint* distance, Point* gradient) = 0;
 
@@ -81,6 +83,9 @@ class MapBase {
       const Point& start_point, const Point& end_point,
       const FloatingPoint traversability_radius,
       Point* last_traversable_point = nullptr) = 0;
+
+  virtual bool getDistanceAtPositionInGlobalMap(const Point& position,
+                                                FloatingPoint* distance) = 0;
 
   virtual std::vector<SubmapId> getSubmapIdsAtPosition(
       const Point& position) const = 0;

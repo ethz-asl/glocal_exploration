@@ -51,11 +51,15 @@ class VoxgraphMap : public MapBase {
       const FloatingPoint traversability_radius,
       Point* last_traversable_point = nullptr) override;
 
+  bool getDistanceAtPositionInActiveSubmap(const Point& position,
+                                           FloatingPoint* distance) override;
   bool getDistanceAndGradientAtPositionInActiveSubmap(const Point& position,
                                                       FloatingPoint* distance,
                                                       Point* gradient) override;
 
-  Point getVoxelCenterInLocalArea(const Point& point) override;
+  Point getVoxelCenterInLocalArea(const Point& position) override {
+    return (position / c_voxel_size_).array().round() * c_voxel_size_;
+  }
   VoxelState getVoxelStateInLocalArea(const Point& position) override;
 
   /* Global planner */
@@ -68,7 +72,7 @@ class VoxgraphMap : public MapBase {
       const FloatingPoint traversability_radius,
       Point* last_traversable_point = nullptr) override;
 
-  bool getDistanceInGlobalMapAtPosition(const Point& position,
+  bool getDistanceAtPositionInGlobalMap(const Point& position,
                                         FloatingPoint* min_esdf_distance);
 
   std::vector<voxgraph::SubmapID> getSubmapIdsAtPosition(

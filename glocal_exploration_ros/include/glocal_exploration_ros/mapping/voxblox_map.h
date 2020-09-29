@@ -32,7 +32,7 @@ class VoxbloxMap : public MapBase {
   ~VoxbloxMap() override = default;
 
   /* General and Accessors */
-  FloatingPoint getVoxelSize() override;
+  FloatingPoint getVoxelSize() override { return c_voxel_size_; }
   FloatingPoint getTraversabilityRadius() override {
     return config_.traversability_radius;
   }
@@ -46,22 +46,38 @@ class VoxbloxMap : public MapBase {
       const FloatingPoint traversability_radius,
       Point* last_traversable_point = nullptr) override;
 
+  bool getDistanceAtPositionInActiveSubmap(const Point& position,
+                                           FloatingPoint* distance) override;
   bool getDistanceAndGradientAtPositionInActiveSubmap(const Point& position,
                                                       FloatingPoint* distance,
                                                       Point* gradient) override;
 
   VoxelState getVoxelStateInLocalArea(const Point& position) override;
-  Point getVoxelCenterInLocalArea(const Point& position) override;
+  Point getVoxelCenterInLocalArea(const Point& position) override {
+    return (position / c_voxel_size_).array().round() * c_voxel_size_;
+  }
 
   /* Global planner */
-  bool isObservedInGlobalMap(const Point& position) override;
+  // Since map is monolithic global = local.
+  bool isObservedInGlobalMap(const Point& position) override {
+    return server_->getEsdfMapPtr()->isObserved(position.cast<double>());
+  }
   bool isTraversableInGlobalMap(
       const Point& position,
-      const FloatingPoint traversability_radius) override;
+      const FloatingPoint traversability_radius) override {
+    return isTraversableInActiveSubmap(position, traversability_radius);
+  }
   bool isLineTraversableInGlobalMap(
       const Point& start_point, const Point& end_point,
       const FloatingPoint traversability_radius,
-      Point* last_traversable_point = nullptr) override;
+      Point* last_traversable_point = nullptr) override {
+    return isLineTraversableInActiveSubmap(
+        start_point, end_point, traversability_radius, last_traversable_point);
+  }
+  bool getDistanceAtPositionInGlobalMap(const Point& position,
+                                        FloatingPoint* distance) override {
+    return getDistanceAtPositionInActiveSubmap(position, distance);
+  }
 
   std::vector<SubmapId> getSubmapIdsAtPosition(
       const Point& position) const override {

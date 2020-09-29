@@ -34,16 +34,13 @@ VoxbloxMap::VoxbloxMap(const Config& config,
   c_block_size_ = server_->getEsdfMapPtr()->block_size();
 }
 
-FloatingPoint VoxbloxMap::getVoxelSize() { return c_voxel_size_; }
-
 bool VoxbloxMap::isTraversableInActiveSubmap(
     const Point& position, const FloatingPoint traversability_radius) {
   if (!comm_->regionOfInterest()->contains(position)) {
     return false;
   }
-  double distance = 0.0;
-  if (server_->getEsdfMapPtr()->getDistanceAtPosition(position.cast<double>(),
-                                                      &distance)) {
+  FloatingPoint distance = 0.f;
+  if (getDistanceAtPositionInActiveSubmap(position, &distance)) {
     // This means the voxel is observed
     return (distance > traversability_radius);
   }
@@ -69,9 +66,8 @@ bool VoxbloxMap::isLineTraversableInActiveSubmap(
 
   FloatingPoint traveled_distance = 0.f;
   while (traveled_distance <= line_length) {
-    double esdf_distance = 0.0;
-    if (server_->getEsdfMapPtr()->getDistanceAtPosition(
-            current_position.cast<double>(), &esdf_distance)) {
+    FloatingPoint esdf_distance = 0.f;
+    if (getDistanceAtPositionInActiveSubmap(current_position, &esdf_distance)) {
       // This means the voxel is observed.
       if (esdf_distance <= traversability_radius) {
         return false;
@@ -88,8 +84,7 @@ bool VoxbloxMap::isLineTraversableInActiveSubmap(
       *last_traversable_point = current_position;
     }
     const FloatingPoint step_size =
-        std::max(c_voxel_size_, static_cast<FloatingPoint>(esdf_distance) -
-                                    traversability_radius);
+        std::max(c_voxel_size_, esdf_distance - traversability_radius);
     current_position += step_size * line_direction;
     traveled_distance += step_size;
   }
@@ -98,6 +93,19 @@ bool VoxbloxMap::isLineTraversableInActiveSubmap(
     if (last_traversable_point) {
       *last_traversable_point = end_point;
     }
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool VoxbloxMap::getDistanceAtPositionInActiveSubmap(const Point& position,
+                                                     FloatingPoint* distance) {
+  CHECK_NOTNULL(distance);
+  double distance_tmp;
+  if (server_->getEsdfMapPtr()->getDistanceAtPosition(position.cast<double>(),
+                                                      &distance_tmp)) {
+    *distance = static_cast<FloatingPoint>(distance_tmp);
     return true;
   } else {
     return false;
@@ -122,9 +130,8 @@ bool VoxbloxMap::getDistanceAndGradientAtPositionInActiveSubmap(
 
 MapBase::VoxelState VoxbloxMap::getVoxelStateInLocalArea(
     const Point& position) {
-  double distance = 0.0;
-  if (server_->getEsdfMapPtr()->getDistanceAtPosition(position.cast<double>(),
-                                                      &distance)) {
+  FloatingPoint distance = 0.f;
+  if (getDistanceAtPositionInActiveSubmap(position, &distance)) {
     // This means the voxel is observed
     if (distance > c_voxel_size_) {
       return VoxelState::kFree;
@@ -132,28 +139,6 @@ MapBase::VoxelState VoxbloxMap::getVoxelStateInLocalArea(
     return VoxelState::kOccupied;
   }
   return VoxelState::kUnknown;
-}
-
-Point VoxbloxMap::getVoxelCenterInLocalArea(const Point& position) {
-  return (position / c_voxel_size_).array().round() * c_voxel_size_;
-}
-
-bool VoxbloxMap::isObservedInGlobalMap(const Point& position) {
-  return server_->getEsdfMapPtr()->isObserved(position.cast<double>());
-}
-
-bool VoxbloxMap::isTraversableInGlobalMap(
-    const Point& position, const FloatingPoint traversability_radius) {
-  // Since map is monolithic global = local.
-  return isTraversableInActiveSubmap(position, traversability_radius);
-}
-
-bool VoxbloxMap::isLineTraversableInGlobalMap(
-    const Point& start_point, const Point& end_point,
-    const FloatingPoint traversability_radius, Point* last_traversable_point) {
-  // Since map is monolithic global = local.
-  return isLineTraversableInActiveSubmap(
-      start_point, end_point, traversability_radius, last_traversable_point);
 }
 
 std::vector<MapBase::SubmapData> VoxbloxMap::getAllSubmapData() {
