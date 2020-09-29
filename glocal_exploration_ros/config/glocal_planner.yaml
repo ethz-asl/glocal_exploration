@@ -60,10 +60,11 @@ mapping:
   # Visualization
   verbose: false
   color_mode: "lambert" #normals
-  slice_level: -0.5
+#  slice_level: -0.5
+  slice_level_follow_robot: true
   publish_pointclouds: true
   publish_traversable: true
-  publish_slices: false
+  publish_slices: true
   publish_pointclouds_on_update: false
 
 

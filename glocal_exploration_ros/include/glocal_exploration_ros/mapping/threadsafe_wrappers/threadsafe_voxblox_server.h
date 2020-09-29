@@ -33,18 +33,23 @@ class ThreadsafeVoxbloxServer : public voxblox::EsdfServer {
   // TODO(victorr): Also make sure all other thread-unsafe base class methods
   //                are no longer accessible, and see if there's a cleaner
   //                alternative to base method hiding.
-  std::shared_ptr<const voxblox::EsdfMap> getEsdfMapPtr() const override {
-    return safe_esdf_map_;
-  }
   std::shared_ptr<voxblox::EsdfMap> getEsdfMapPtr() override {
     return safe_esdf_map_;
   }
+  std::shared_ptr<const voxblox::EsdfMap> getEsdfMapPtr() const override {
+    return safe_esdf_map_;
+  }
+
+  void updateEsdf() override {
+    voxblox::EsdfServer::updateEsdf();
+    *safe_esdf_map_->getEsdfLayerPtr() = esdf_map_->getEsdfLayer();
+  }
+  void updateEsdfBatch(bool full_euclidean = false) override {
+    voxblox::EsdfServer::updateEsdfBatch();
+    *safe_esdf_map_->getEsdfLayerPtr() = esdf_map_->getEsdfLayer();
+  }
 
   void newPoseCallback(const voxblox::Transformation& T_G_C) override {
-    // TODO(victorr): Block getEsdfMapPtr() during this method, preferably
-    //                without a mutex though since that method gets called at a
-    //                very high rate.
-    *safe_esdf_map_->getEsdfLayerPtr() = esdf_map_->getEsdfLayer();
     voxblox::EsdfServer::newPoseCallback(T_G_C);
 
     // Call the external callback, if it has been set
