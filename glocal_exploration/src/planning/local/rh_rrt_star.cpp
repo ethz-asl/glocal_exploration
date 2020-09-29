@@ -641,6 +641,8 @@ bool RHRRTStar::findNearestNeighbors(Point position,
   if (resultSet.size() == 0) {
     return false;
   }
+  result->clear();
+  result->reserve(resultSet.size());
   for (int i = 0; i < resultSet.size(); ++i) {
     result->push_back(ret_index[i]);
   }

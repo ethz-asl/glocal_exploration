@@ -47,6 +47,7 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
     FloatingPoint euclidean_distance = 0.f;
     FloatingPoint path_distance = 0.f;
     int num_points = 0;
+    std::vector<Point> frontier_points;
     int clusters = 1;
     std::vector<WayPoint> way_points;
     enum Reachability {

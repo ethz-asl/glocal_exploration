@@ -158,6 +158,8 @@ bool SkeletonPlanner::computeGoalPoint() {
       data.num_points++;
     }
     data.centroid /= data.num_points;
+    // NOTE(schmluk): Currently copy the frontiers since it's not that many.
+    data.frontier_points = frontier;
   }
   if (frontier_data_.empty()) {
     LOG(WARNING) << "No active frontiers found to compute goal points from.";
