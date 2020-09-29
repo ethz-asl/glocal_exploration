@@ -36,7 +36,8 @@ VoxbloxMap::VoxbloxMap(const Config& config,
 
 FloatingPoint VoxbloxMap::getVoxelSize() { return c_voxel_size_; }
 
-bool VoxbloxMap::isTraversableInActiveSubmap(const Point& position) {
+bool VoxbloxMap::isTraversableInActiveSubmap(
+    const Point& position, const FloatingPoint traversability_radius) {
   if (!comm_->regionOfInterest()->contains(position)) {
     return false;
   }
@@ -44,7 +45,7 @@ bool VoxbloxMap::isTraversableInActiveSubmap(const Point& position) {
   if (server_->getEsdfMapPtr()->getDistanceAtPosition(position.cast<double>(),
                                                       &distance)) {
     // This means the voxel is observed
-    return (distance > config_.traversability_radius);
+    return (distance > traversability_radius);
   }
   return (position - comm_->currentPose().position).norm() <
          config_.clearing_radius;
@@ -52,40 +53,55 @@ bool VoxbloxMap::isTraversableInActiveSubmap(const Point& position) {
 
 bool VoxbloxMap::isLineTraversableInActiveSubmap(
     const Point& start_point, const Point& end_point,
-    Point* last_traversable_point) {
+    const FloatingPoint traversability_radius, Point* last_traversable_point) {
+  CHECK(c_voxel_size_ < traversability_radius);
+  if (last_traversable_point) {
+    *last_traversable_point = start_point;
+  }
+
   const FloatingPoint line_length = (end_point - start_point).norm();
+  if (line_length <= voxblox::kFloatEpsilon) {
+    return isTraversableInActiveSubmap(start_point, traversability_radius);
+  }
+
   const Point line_direction = (end_point - start_point) / line_length;
-  FloatingPoint traveled_distance = 0.f;
   Point current_position = start_point;
-  Point previous_position = start_point;
-  CHECK(c_voxel_size_ < config_.traversability_radius);
+
+  FloatingPoint traveled_distance = 0.f;
   while (traveled_distance <= line_length) {
-    double esdf_distance;
-    bool collided = true;
+    double esdf_distance = 0.0;
     if (server_->getEsdfMapPtr()->getDistanceAtPosition(
             current_position.cast<double>(), &esdf_distance)) {
-      collided = esdf_distance <= config_.traversability_radius;
-    } else {
-      collided = (current_position - comm_->currentPose().position).norm() >=
-                 config_.clearing_radius;
-    }
-    if (collided) {
-      if (last_traversable_point) {
-        *last_traversable_point = previous_position;
+      // This means the voxel is observed.
+      if (esdf_distance <= traversability_radius) {
+        return false;
       }
-      return false;
+    } else {
+      // Check whether we're within the clearing distance.
+      if ((current_position - comm_->currentPose().position).norm() >=
+          config_.clearing_radius) {
+        return false;
+      }
     }
-    previous_position = current_position;
+
+    if (last_traversable_point) {
+      *last_traversable_point = current_position;
+    }
     const FloatingPoint step_size =
         std::max(c_voxel_size_, static_cast<FloatingPoint>(esdf_distance) -
-                                    config_.traversability_radius);
+                                    traversability_radius);
     current_position += step_size * line_direction;
     traveled_distance += step_size;
   }
-  if (last_traversable_point) {
-    *last_traversable_point = end_point;
+
+  if (isTraversableInActiveSubmap(end_point, traversability_radius)) {
+    if (last_traversable_point) {
+      *last_traversable_point = end_point;
+    }
+    return true;
+  } else {
+    return false;
   }
-  return true;
 }
 
 bool VoxbloxMap::getDistanceAndGradientAtPositionInActiveSubmap(
@@ -126,17 +142,18 @@ bool VoxbloxMap::isObservedInGlobalMap(const Point& position) {
   return server_->getEsdfMapPtr()->isObserved(position.cast<double>());
 }
 
-bool VoxbloxMap::isTraversableInGlobalMap(const Point& position) {
+bool VoxbloxMap::isTraversableInGlobalMap(
+    const Point& position, const FloatingPoint traversability_radius) {
   // Since map is monolithic global = local.
-  return isTraversableInActiveSubmap(position);
+  return isTraversableInActiveSubmap(position, traversability_radius);
 }
 
-bool VoxbloxMap::isLineTraversableInGlobalMap(const Point& start_point,
-                                              const Point& end_point,
-                                              Point* last_traversable_point) {
+bool VoxbloxMap::isLineTraversableInGlobalMap(
+    const Point& start_point, const Point& end_point,
+    const FloatingPoint traversability_radius, Point* last_traversable_point) {
   // Since map is monolithic global = local.
-  return isLineTraversableInActiveSubmap(start_point, end_point,
-                                         last_traversable_point);
+  return isLineTraversableInActiveSubmap(
+      start_point, end_point, traversability_radius, last_traversable_point);
 }
 
 std::vector<MapBase::SubmapData> VoxbloxMap::getAllSubmapData() {

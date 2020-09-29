@@ -31,20 +31,36 @@ class VoxbloxMap : public MapBase {
                       const std::shared_ptr<Communicator>& communicator);
   ~VoxbloxMap() override = default;
 
+  /* General and Accessors */
   FloatingPoint getVoxelSize() override;
-  bool isTraversableInActiveSubmap(const Point& position) override;
+  FloatingPoint getTraversabilityRadius() override {
+    return config_.traversability_radius;
+  }
+
+  /* Local planner */
+  bool isTraversableInActiveSubmap(
+      const Point& position,
+      const FloatingPoint traversability_radius) override;
   bool isLineTraversableInActiveSubmap(
       const Point& start_point, const Point& end_point,
+      const FloatingPoint traversability_radius,
       Point* last_traversable_point = nullptr) override;
+
   bool getDistanceAndGradientAtPositionInActiveSubmap(const Point& position,
                                                       FloatingPoint* distance,
                                                       Point* gradient) override;
+
   VoxelState getVoxelStateInLocalArea(const Point& position) override;
   Point getVoxelCenterInLocalArea(const Point& position) override;
+
+  /* Global planner */
   bool isObservedInGlobalMap(const Point& position) override;
-  bool isTraversableInGlobalMap(const Point& position) override;
+  bool isTraversableInGlobalMap(
+      const Point& position,
+      const FloatingPoint traversability_radius) override;
   bool isLineTraversableInGlobalMap(
       const Point& start_point, const Point& end_point,
+      const FloatingPoint traversability_radius,
       Point* last_traversable_point = nullptr) override;
 
   std::vector<SubmapId> getSubmapIdsAtPosition(
