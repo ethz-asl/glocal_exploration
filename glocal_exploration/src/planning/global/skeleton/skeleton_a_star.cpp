@@ -21,6 +21,7 @@ void SkeletonAStar::Config::checkParams() const {
   checkParamGT(linking_num_nearest_neighbors, 0,
                "linking_num_nearest_neighbors");
   checkParamGT(linking_max_distance, 0.f, "linking_max_distance");
+  checkParamGT(max_num_a_star_iterations, 0, "max_num_a_star_iterations");
 }
 
 void SkeletonAStar::Config::fromRosParam() {
@@ -29,6 +30,7 @@ void SkeletonAStar::Config::fromRosParam() {
   rosParam("max_num_end_vertex_candidates", &max_num_end_vertex_candidates);
   rosParam("linking_num_nearest_neighbors", &linking_num_nearest_neighbors);
   rosParam("linking_max_distance", &linking_max_distance);
+  rosParam("max_num_a_star_iterations", &max_num_a_star_iterations);
 }
 
 void SkeletonAStar::Config::printFields() const {
@@ -38,29 +40,24 @@ void SkeletonAStar::Config::printFields() const {
   printField("max_num_end_vertex_candidates", max_num_end_vertex_candidates);
   printField("linking_num_nearest_neighbors", linking_num_nearest_neighbors);
   printField("linking_max_distance", linking_max_distance);
+  printField("max_num_a_star_iterations", max_num_a_star_iterations);
 }
 
 bool SkeletonAStar::planPath(const Point& start_point, const Point& goal_point,
                              std::vector<WayPoint>* way_points) {
-  map_ = comm_->map();
-  if (!map_) {
-    LOG(WARNING) << "Could not get pointer to VoxgraphMap from communicator";
-    return false;
-  }
-
   // Search the nearest reachable start vertex on the skeleton graphs
-  if (!map_->isTraversableInActiveSubmap(start_point,
-                                         config_.traversability_radius)) {
+  if (!comm_->map()->isTraversableInActiveSubmap(
+          start_point, config_.traversability_radius)) {
     LOG(INFO) << "Start point is not traversable in active submap ("
               << start_point.transpose()
               << "). Will not be able to connect to skeleton graphs.";
     return false;
   }
   const std::vector<GlobalVertexId> start_vertex_candidates =
-      searchNClosestReachableSkeletonVertices(
+      searchClosestReachableSkeletonVertices(
           start_point, config_.max_num_start_vertex_candidates,
           [this](const Point& start_point, const Point& end_point) {
-            return map_->isLineTraversableInActiveSubmap(
+            return comm_->map()->isLineTraversableInActiveSubmap(
                 start_point, end_point, config_.traversability_radius);
           });
   if (start_vertex_candidates.empty()) {
@@ -71,18 +68,18 @@ bool SkeletonAStar::planPath(const Point& start_point, const Point& goal_point,
   }
 
   // Search the N closest reachable end vertices on the skeleton graph
-  if (!map_->isTraversableInGlobalMap(goal_point,
-                                      config_.traversability_radius)) {
+  if (!comm_->map()->isTraversableInGlobalMap(goal_point,
+                                              config_.traversability_radius)) {
     LOG(INFO) << "Goal point is not traversable in global map ("
               << goal_point.transpose()
               << "). Will not be able to connect to skeleton graphs.";
     return false;
   }
   std::vector<GlobalVertexId> end_vertex_candidates =
-      searchNClosestReachableSkeletonVertices(
+      searchClosestReachableSkeletonVertices(
           goal_point, config_.max_num_end_vertex_candidates,
           [this](const Point& start_point, const Point& end_point) {
-            return map_->isLineTraversableInGlobalMap(
+            return comm_->map()->isLineTraversableInGlobalMap(
                 start_point, end_point, config_.traversability_radius);
           });
   if (end_vertex_candidates.empty()) {
@@ -108,12 +105,64 @@ bool SkeletonAStar::planPath(const Point& start_point, const Point& goal_point,
   return true;
 }
 
+std::vector<GlobalVertexId>
+SkeletonAStar::searchClosestReachableSkeletonVertices(
+    const Point& point, const int n_closest,
+    const std::function<bool(const Point& point,
+                             const Point& skeleton_vertex_point)>&
+        traversability_function) const {
+  struct CandidateVertex {
+    GlobalVertexId global_vertex_id;
+    Point t_O_point = Point::Zero();
+    float distance = -1.f;
+  };
+  std::list<CandidateVertex> candidate_start_vertices;
+  for (const SubmapId submap_id : comm_->map()->getSubmapIdsAtPosition(point)) {
+    SkeletonSubmap::ConstPtr skeleton_submap =
+        skeleton_submap_collection_.getSubmapConstPtrById(submap_id);
+    if (!skeleton_submap) {
+      LOG(ERROR) << "Couldn't get pointer to skeleton submap with ID "
+                 << submap_id;
+      continue;
+    }
+    for (const auto& vertex_kv :
+         skeleton_submap->getSkeletonGraph().getVertexMap()) {
+      CandidateVertex candidate_vertex;
+      candidate_vertex.global_vertex_id.submap_id = submap_id;
+      candidate_vertex.global_vertex_id.vertex_id = vertex_kv.second.vertex_id;
+      candidate_vertex.t_O_point =
+          skeleton_submap->getPose() * vertex_kv.second.point;
+      candidate_vertex.distance = (candidate_vertex.t_O_point - point).norm();
+      candidate_start_vertices.emplace_back(std::move(candidate_vertex));
+    }
+  }
+
+  candidate_start_vertices.sort(
+      [](const CandidateVertex& lhs, const CandidateVertex& rhs) {
+        return lhs.distance < rhs.distance;
+      });
+
+  int num_candidates_unreachable = 0;
+  std::vector<GlobalVertexId> reachable_skeleton_vertices;
+  for (const CandidateVertex& candidate_start_vertex :
+       candidate_start_vertices) {
+    if (traversability_function(point, candidate_start_vertex.t_O_point)) {
+      reachable_skeleton_vertices.emplace_back(
+          candidate_start_vertex.global_vertex_id);
+      if (n_closest <= reachable_skeleton_vertices.size()) {
+        return reachable_skeleton_vertices;
+      }
+    } else {
+      ++num_candidates_unreachable;
+    }
+  }
+}
+
 bool SkeletonAStar::getPathBetweenVertices(
     const std::vector<GlobalVertexId>& start_vertex_candidates,
     const std::vector<GlobalVertexId>& end_vertex_candidates,
     const voxblox::Point& start_point, const voxblox::Point& goal_point,
     std::vector<GlobalVertexId>* vertex_path) const {
-  CHECK_NOTNULL(map_);
   CHECK_NOTNULL(vertex_path);
   CHECK(!start_vertex_candidates.empty());
   CHECK(!end_vertex_candidates.empty());
@@ -158,7 +207,7 @@ bool SkeletonAStar::getPathBetweenVertices(
   const SkeletonSubmap* current_submap = nullptr;
   const voxblox::SparseSkeletonGraph* current_graph = nullptr;
   while (!open_set.empty()) {
-    if (kMaxNumAStarIterations <= ++iteration_counter) {
+    if (config_.max_num_a_star_iterations <= ++iteration_counter) {
       LOG(WARNING) << "Aborting skeleton planning. Exceeded maximum number of "
                       "iterations ("
                    << iteration_counter << ").";
@@ -213,7 +262,7 @@ bool SkeletonAStar::getPathBetweenVertices(
         current_submap->getPose() * current_vertex.point;
     if (current_vertex.edge_list.size() <= 3) {
       for (const SubmapId submap_id :
-           map_->getSubmapIdsAtPosition(t_odom_current_vertex)) {
+           comm_->map()->getSubmapIdsAtPosition(t_odom_current_vertex)) {
         // Avoid linking the current vertex against vertices of its own submap
         if (submap_id == current_vertex_id.submap_id) {
           continue;
@@ -243,7 +292,7 @@ bool SkeletonAStar::getPathBetweenVertices(
               (t_odom_current_vertex - t_odom_nearby_vertex).norm();
           if (distance_current_to_nearby_vertex <
                   config_.linking_max_distance &&
-              map_->isLineTraversableInGlobalMap(
+              comm_->map()->isLineTraversableInGlobalMap(
                   t_odom_current_vertex, t_odom_nearby_vertex,
                   config_.traversability_radius)) {
             if (closed_set.count(nearby_vertex_global_id) > 0) {
@@ -289,9 +338,9 @@ bool SkeletonAStar::getPathBetweenVertices(
           current_graph->getVertex(neighbor_vertex_id.vertex_id);
       const voxblox::Point t_odom_neighbor_vertex =
           current_submap->getPose() * neighbor_vertex.point;
-      if (!map_->isLineTraversableInGlobalMap(t_odom_current_vertex,
-                                              t_odom_neighbor_vertex,
-                                              config_.traversability_radius)) {
+      if (!comm_->map()->isLineTraversableInGlobalMap(
+              t_odom_current_vertex, t_odom_neighbor_vertex,
+              config_.traversability_radius)) {
         continue;
       }
 
@@ -317,21 +366,6 @@ bool SkeletonAStar::getPathBetweenVertices(
   return false;
 }
 
-void SkeletonAStar::getSolutionVertexPath(
-    GlobalVertexId end_vertex_id,
-    const std::map<GlobalVertexId, GlobalVertexId>& parent_map,
-    std::vector<GlobalVertexId>* vertex_path) {
-  CHECK_NOTNULL(vertex_path);
-  vertex_path->clear();
-  vertex_path->push_back(end_vertex_id);
-  GlobalVertexId vertex_id = end_vertex_id;
-  while (parent_map.count(vertex_id) > 0) {
-    vertex_id = parent_map.at(vertex_id);
-    vertex_path->push_back(vertex_id);
-  }
-  std::reverse(vertex_path->begin(), vertex_path->end());
-}
-
 void SkeletonAStar::convertVertexToWaypointPath(
     const std::vector<GlobalVertexId>& vertex_path, const Point& goal_point,
     std::vector<WayPoint>* way_points) const {
@@ -351,6 +385,21 @@ void SkeletonAStar::convertVertexToWaypointPath(
   }
 }
 
+void SkeletonAStar::getSolutionVertexPath(
+    GlobalVertexId end_vertex_id,
+    const std::map<GlobalVertexId, GlobalVertexId>& parent_map,
+    std::vector<GlobalVertexId>* vertex_path) {
+  CHECK_NOTNULL(vertex_path);
+  vertex_path->clear();
+  vertex_path->push_back(end_vertex_id);
+  GlobalVertexId vertex_id = end_vertex_id;
+  while (parent_map.count(vertex_id) > 0) {
+    vertex_id = parent_map.at(vertex_id);
+    vertex_path->push_back(vertex_id);
+  }
+  std::reverse(vertex_path->begin(), vertex_path->end());
+}
+
 GlobalVertexId SkeletonAStar::popSmallestFromOpen(
     const std::map<GlobalVertexId, FloatingPoint>& f_score_map,
     std::set<GlobalVertexId>* open_set) {
@@ -368,60 +417,6 @@ GlobalVertexId SkeletonAStar::popSmallestFromOpen(
   GlobalVertexId return_val = *min_iter;
   open_set->erase(min_iter);
   return return_val;
-}
-
-std::vector<GlobalVertexId>
-SkeletonAStar::searchNClosestReachableSkeletonVertices(
-    const Point& point, const int n_closest,
-    const std::function<bool(const Point& start_point, const Point& end_point)>&
-        traversability_function) const {
-  CHECK_NOTNULL(map_);
-
-  struct CandidateVertex {
-    GlobalVertexId global_vertex_id;
-    Point t_O_point = Point::Zero();
-    float distance = -1.f;
-  };
-  std::list<CandidateVertex> candidate_start_vertices;
-  for (const SubmapId submap_id : map_->getSubmapIdsAtPosition(point)) {
-    SkeletonSubmap::ConstPtr skeleton_submap =
-        skeleton_submap_collection_.getSubmapConstPtrById(submap_id);
-    if (!skeleton_submap) {
-      LOG(ERROR) << "Couldn't get pointer to skeleton submap with ID "
-                 << submap_id;
-      continue;
-    }
-    for (const auto& vertex_kv :
-         skeleton_submap->getSkeletonGraph().getVertexMap()) {
-      CandidateVertex candidate_vertex;
-      candidate_vertex.global_vertex_id.submap_id = submap_id;
-      candidate_vertex.global_vertex_id.vertex_id = vertex_kv.second.vertex_id;
-      candidate_vertex.t_O_point =
-          skeleton_submap->getPose() * vertex_kv.second.point;
-      candidate_vertex.distance = (candidate_vertex.t_O_point - point).norm();
-      candidate_start_vertices.emplace_back(std::move(candidate_vertex));
-    }
-  }
-
-  candidate_start_vertices.sort(
-      [](const CandidateVertex& lhs, const CandidateVertex& rhs) {
-        return lhs.distance < rhs.distance;
-      });
-
-  int num_candidates_unreachable = 0;
-  std::vector<GlobalVertexId> reachable_skeleton_vertices;
-  for (const CandidateVertex& candidate_start_vertex :
-       candidate_start_vertices) {
-    if (traversability_function(point, candidate_start_vertex.t_O_point)) {
-      reachable_skeleton_vertices.emplace_back(
-          candidate_start_vertex.global_vertex_id);
-      if (n_closest <= reachable_skeleton_vertices.size()) {
-        return reachable_skeleton_vertices;
-      }
-    } else {
-      ++num_candidates_unreachable;
-    }
-  }
 }
 
 }  // namespace glocal_exploration

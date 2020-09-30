@@ -34,6 +34,7 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
 
     // Frontier evaluator.
     SubmapFrontierEvaluator::Config submap_frontier_config;
+    int max_closest_frontier_search_time_sec = 25;
 
     Config();
     void checkParams() const override;
@@ -96,7 +97,9 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
 
   // Helper methods.
   bool computePath(const Point& goal, std::vector<WayPoint>* way_points);
-  bool findValidGoalPoint(Point* goal);  // Changes goal to the new point.
+  bool computePathToFrontier(const Point& frontier_centroid,
+                             const std::vector<Point>& frontier_points,
+                             std::vector<WayPoint>* way_points);
   void clusterFrontiers();
   bool verifyNextWayPoints();
   bool findNearbyTraversablePoint(const FloatingPoint traversability_radius,
