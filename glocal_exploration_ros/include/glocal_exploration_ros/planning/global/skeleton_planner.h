@@ -31,7 +31,6 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
     FloatingPoint path_verification_min_distance = 1.f;  // m
     int goal_search_steps = 5;  // number of grid elements per side of cube.
     FloatingPoint goal_search_step_size = 1.f;  // m, grid element length.
-    int min_num_visible_frontier_points = 10;
     FloatingPoint safety_distance = 0.f;
 
     // Frontier evaluator.

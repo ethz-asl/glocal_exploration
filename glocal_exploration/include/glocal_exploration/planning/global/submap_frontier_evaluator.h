@@ -56,7 +56,7 @@ class SubmapFrontierEvaluator : public GlobalPlannerBase {
     return inactive_frontiers_;
   }
 
- private:
+ protected:
   void computeFrontierCandidates(
       const voxblox::Layer<voxblox::TsdfVoxel>& layer,
       const Point& initial_point,
@@ -69,7 +69,7 @@ class SubmapFrontierEvaluator : public GlobalPlannerBase {
       const Index& index,
       const voxblox::Layer<voxblox::TsdfVoxel>& layer) const;
 
- private:
+ protected:
   const Config config_;
 
   // Aloow frontier computation in the background, although not in parallel.
