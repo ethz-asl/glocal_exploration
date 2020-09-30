@@ -54,15 +54,15 @@ class VoxgraphMap : public MapBase {
                                            const Point& end_point) override;
   bool isOccupiedInActiveSubmap(const Point& position) {
     FloatingPoint esdf_distance = 0.f;
-    return getDistanceAtPositionInActiveSubmap(position, &esdf_distance) &&
+    return getDistanceInActiveSubmap(position, &esdf_distance) &&
            esdf_distance < 0.f;
   }
 
-  bool getDistanceAtPositionInActiveSubmap(const Point& position,
-                                           FloatingPoint* distance) override;
-  bool getDistanceAndGradientAtPositionInActiveSubmap(const Point& position,
-                                                      FloatingPoint* distance,
-                                                      Point* gradient) override;
+  bool getDistanceInActiveSubmap(const Point& position,
+                                 FloatingPoint* distance) override;
+  bool getDistanceAndGradientInActiveSubmap(const Point& position,
+                                            FloatingPoint* distance,
+                                            Point* gradient) override;
 
   Point getVoxelCenterInLocalArea(const Point& position) const override {
     return (position / c_voxel_size_).array().round() * c_voxel_size_;
@@ -82,12 +82,12 @@ class VoxgraphMap : public MapBase {
                                         const Point& end_point) override;
   bool isOccupiedInGlobalMap(const Point& position) {
     FloatingPoint esdf_distance = 0.f;
-    return getDistanceAtPositionInGlobalMap(position, &esdf_distance) &&
+    return getDistanceInGlobalMap(position, &esdf_distance) &&
            esdf_distance < 0.f;
   }
 
-  bool getDistanceAtPositionInGlobalMap(const Point& position,
-                                        FloatingPoint* min_esdf_distance);
+  bool getDistanceInGlobalMap(const Point& position,
+                              FloatingPoint* min_esdf_distance);
 
   std::vector<voxgraph::SubmapID> getSubmapIdsAtPosition(
       const Point& position) const override {

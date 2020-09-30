@@ -525,8 +525,8 @@ bool SkeletonPlanner::findNearbyTraversablePoint(
       return true;
     }
     // Get the distance
-    if (!map_ptr->getDistanceAndGradientAtPositionInActiveSubmap(
-            *position, &distance, &gradient)) {
+    if (!map_ptr->getDistanceAndGradientInActiveSubmap(*position, &distance,
+                                                       &gradient)) {
       LOG(WARNING) << "Failed to look up distance and gradient "
                       "information at: "
                    << position->transpose();

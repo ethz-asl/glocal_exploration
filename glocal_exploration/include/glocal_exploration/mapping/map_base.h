@@ -55,10 +55,11 @@ class MapBase {
   virtual bool lineIntersectsSurfaceInActiveSubmap(const Point& start_point,
                                                    const Point& end_point) = 0;
 
-  virtual bool getDistanceAtPositionInActiveSubmap(const Point& position,
-                                                   FloatingPoint* distance) = 0;
-  virtual bool getDistanceAndGradientAtPositionInActiveSubmap(
-      const Point& position, FloatingPoint* distance, Point* gradient) = 0;
+  virtual bool getDistanceInActiveSubmap(const Point& position,
+                                         FloatingPoint* distance) = 0;
+  virtual bool getDistanceAndGradientInActiveSubmap(const Point& position,
+                                                    FloatingPoint* distance,
+                                                    Point* gradient) = 0;
 
   // Voxels are referred in the planner by their center points.
   virtual Point getVoxelCenterInLocalArea(const Point& position) const = 0;
@@ -88,8 +89,8 @@ class MapBase {
   virtual bool lineIntersectsSurfaceInGlobalMap(const Point& start_point,
                                                 const Point& end_point) = 0;
 
-  virtual bool getDistanceAtPositionInGlobalMap(const Point& position,
-                                                FloatingPoint* distance) = 0;
+  virtual bool getDistanceInGlobalMap(const Point& position,
+                                      FloatingPoint* distance) = 0;
 
   virtual std::vector<SubmapId> getSubmapIdsAtPosition(
       const Point& position) const = 0;

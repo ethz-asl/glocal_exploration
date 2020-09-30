@@ -49,15 +49,15 @@ class VoxbloxMap : public MapBase {
                                            const Point& end_point) override;
   bool isOccupiedInActiveSubmap(const Point& position) {
     FloatingPoint esdf_distance = 0.f;
-    return getDistanceAtPositionInActiveSubmap(position, &esdf_distance) &&
+    return getDistanceInActiveSubmap(position, &esdf_distance) &&
            esdf_distance < 0.f;
   }
 
-  bool getDistanceAtPositionInActiveSubmap(const Point& position,
-                                           FloatingPoint* distance) override;
-  bool getDistanceAndGradientAtPositionInActiveSubmap(const Point& position,
-                                                      FloatingPoint* distance,
-                                                      Point* gradient) override;
+  bool getDistanceInActiveSubmap(const Point& position,
+                                 FloatingPoint* distance) override;
+  bool getDistanceAndGradientInActiveSubmap(const Point& position,
+                                            FloatingPoint* distance,
+                                            Point* gradient) override;
 
   VoxelState getVoxelStateInLocalArea(const Point& position) override;
   Point getVoxelCenterInLocalArea(const Point& position) const override {
@@ -85,9 +85,9 @@ class VoxbloxMap : public MapBase {
                                         const Point& end_point) override {
     return lineIntersectsSurfaceInActiveSubmap(start_point, end_point);
   }
-  bool getDistanceAtPositionInGlobalMap(const Point& position,
-                                        FloatingPoint* distance) override {
-    return getDistanceAtPositionInActiveSubmap(position, distance);
+  bool getDistanceInGlobalMap(const Point& position,
+                              FloatingPoint* distance) override {
+    return getDistanceInActiveSubmap(position, distance);
   }
 
   std::vector<SubmapId> getSubmapIdsAtPosition(

@@ -119,7 +119,7 @@ bool VoxgraphMap::isTraversableInActiveSubmap(
     return false;
   }
   FloatingPoint distance = 0.f;
-  if (getDistanceAtPositionInActiveSubmap(position, &distance)) {
+  if (getDistanceInActiveSubmap(position, &distance)) {
     // This means the voxel is observed.
     return (distance > traversability_radius);
   }
@@ -142,7 +142,7 @@ MapBase::VoxelState VoxgraphMap::getVoxelStateInLocalArea(
 
   // Start by checking the state in active submap
   FloatingPoint distance;
-  if (getDistanceAtPositionInActiveSubmap(position, &distance)) {
+  if (getDistanceInActiveSubmap(position, &distance)) {
     // If getDistanceAtPosition(...) returns true, the voxel is observed
     if (distance > c_voxel_size_) {
       return VoxelState::kFree;
@@ -273,7 +273,7 @@ bool VoxgraphMap::isLineTraversableInActiveSubmap(
   FloatingPoint traveled_distance = 0.f;
   while (traveled_distance <= line_length) {
     FloatingPoint esdf_distance = 0.f;
-    if (getDistanceAtPositionInActiveSubmap(current_position, &esdf_distance)) {
+    if (getDistanceInActiveSubmap(current_position, &esdf_distance)) {
       // This means the voxel is observed.
       if (esdf_distance <= traversability_radius) {
         return false;
@@ -322,7 +322,7 @@ bool VoxgraphMap::lineIntersectsSurfaceInActiveSubmap(const Point& start_point,
   FloatingPoint traveled_distance = 0.f;
   while (traveled_distance <= line_length) {
     FloatingPoint esdf_distance = 0.f;
-    if (getDistanceAtPositionInActiveSubmap(current_position, &esdf_distance) &&
+    if (getDistanceInActiveSubmap(current_position, &esdf_distance) &&
         esdf_distance < 0.f) {
       return true;
     }
@@ -339,8 +339,8 @@ bool VoxgraphMap::lineIntersectsSurfaceInActiveSubmap(const Point& start_point,
   }
 }
 
-bool VoxgraphMap::getDistanceAtPositionInActiveSubmap(const Point& position,
-                                                      FloatingPoint* distance) {
+bool VoxgraphMap::getDistanceInActiveSubmap(const Point& position,
+                                            FloatingPoint* distance) {
   CHECK_NOTNULL(distance);
   double distance_tmp;
   if (voxblox_server_->getEsdfMapPtr()->getDistanceAtPosition(
@@ -352,8 +352,9 @@ bool VoxgraphMap::getDistanceAtPositionInActiveSubmap(const Point& position,
   }
 }
 
-bool VoxgraphMap::getDistanceAndGradientAtPositionInActiveSubmap(
-    const Point& position, FloatingPoint* distance, Point* gradient) {
+bool VoxgraphMap::getDistanceAndGradientInActiveSubmap(const Point& position,
+                                                       FloatingPoint* distance,
+                                                       Point* gradient) {
   CHECK_NOTNULL(distance);
   CHECK_NOTNULL(gradient);
   double distance_tmp;
@@ -387,7 +388,7 @@ bool VoxgraphMap::isLineTraversableInGlobalMap(
   FloatingPoint traveled_distance = 0.f;
   while (traveled_distance <= line_length) {
     FloatingPoint esdf_distance = 0.f;
-    if (!getDistanceAtPositionInGlobalMap(current_position, &esdf_distance) ||
+    if (!getDistanceInGlobalMap(current_position, &esdf_distance) ||
         esdf_distance < traversability_radius) {
       return false;
     }
@@ -428,7 +429,7 @@ bool VoxgraphMap::lineIntersectsSurfaceInGlobalMap(const Point& start_point,
   FloatingPoint traveled_distance = 0.f;
   while (traveled_distance <= line_length) {
     FloatingPoint esdf_distance = 0.f;
-    if (getDistanceAtPositionInGlobalMap(current_position, &esdf_distance) &&
+    if (getDistanceInGlobalMap(current_position, &esdf_distance) &&
         esdf_distance < 0.f) {
       return true;
     }
@@ -445,8 +446,8 @@ bool VoxgraphMap::lineIntersectsSurfaceInGlobalMap(const Point& start_point,
   }
 }
 
-bool VoxgraphMap::getDistanceAtPositionInGlobalMap(
-    const Point& position, FloatingPoint* min_esdf_distance) {
+bool VoxgraphMap::getDistanceInGlobalMap(const Point& position,
+                                         FloatingPoint* min_esdf_distance) {
   CHECK_NOTNULL(min_esdf_distance);
 
   if (!comm_->regionOfInterest()->contains(position)) {

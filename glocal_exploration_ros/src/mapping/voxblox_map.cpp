@@ -40,7 +40,7 @@ bool VoxbloxMap::isTraversableInActiveSubmap(
     return false;
   }
   FloatingPoint distance = 0.f;
-  if (getDistanceAtPositionInActiveSubmap(position, &distance)) {
+  if (getDistanceInActiveSubmap(position, &distance)) {
     // This means the voxel is observed
     return (distance > traversability_radius);
   }
@@ -67,7 +67,7 @@ bool VoxbloxMap::isLineTraversableInActiveSubmap(
   FloatingPoint traveled_distance = 0.f;
   while (traveled_distance <= line_length) {
     FloatingPoint esdf_distance = 0.f;
-    if (getDistanceAtPositionInActiveSubmap(current_position, &esdf_distance)) {
+    if (getDistanceInActiveSubmap(current_position, &esdf_distance)) {
       // This means the voxel is observed.
       if (esdf_distance <= traversability_radius) {
         return false;
@@ -116,7 +116,7 @@ bool VoxbloxMap::lineIntersectsSurfaceInActiveSubmap(const Point& start_point,
   FloatingPoint traveled_distance = 0.f;
   while (traveled_distance <= line_length) {
     FloatingPoint esdf_distance = 0.f;
-    if (getDistanceAtPositionInActiveSubmap(current_position, &esdf_distance) &&
+    if (getDistanceInActiveSubmap(current_position, &esdf_distance) &&
         esdf_distance < 0.f) {
       return true;
     }
@@ -133,8 +133,8 @@ bool VoxbloxMap::lineIntersectsSurfaceInActiveSubmap(const Point& start_point,
   }
 }
 
-bool VoxbloxMap::getDistanceAtPositionInActiveSubmap(const Point& position,
-                                                     FloatingPoint* distance) {
+bool VoxbloxMap::getDistanceInActiveSubmap(const Point& position,
+                                           FloatingPoint* distance) {
   CHECK_NOTNULL(distance);
   double distance_tmp;
   if (server_->getEsdfMapPtr()->getDistanceAtPosition(position.cast<double>(),
@@ -146,8 +146,9 @@ bool VoxbloxMap::getDistanceAtPositionInActiveSubmap(const Point& position,
   }
 }
 
-bool VoxbloxMap::getDistanceAndGradientAtPositionInActiveSubmap(
-    const Point& position, FloatingPoint* distance, Point* gradient) {
+bool VoxbloxMap::getDistanceAndGradientInActiveSubmap(const Point& position,
+                                                      FloatingPoint* distance,
+                                                      Point* gradient) {
   CHECK_NOTNULL(distance);
   CHECK_NOTNULL(gradient);
   double distance_tmp;
@@ -165,7 +166,7 @@ bool VoxbloxMap::getDistanceAndGradientAtPositionInActiveSubmap(
 MapBase::VoxelState VoxbloxMap::getVoxelStateInLocalArea(
     const Point& position) {
   FloatingPoint distance = 0.f;
-  if (getDistanceAtPositionInActiveSubmap(position, &distance)) {
+  if (getDistanceInActiveSubmap(position, &distance)) {
     // This means the voxel is observed
     if (distance > c_voxel_size_) {
       return VoxelState::kFree;
