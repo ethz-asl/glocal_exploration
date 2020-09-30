@@ -66,6 +66,7 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   };
 
   SkeletonPlanner(const Config& config,
+                  const SkeletonAStar::Config& skeleton_a_star_config,
                   std::shared_ptr<Communicator> communicator);
   ~SkeletonPlanner() override = default;
 
@@ -98,7 +99,8 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   bool findValidGoalPoint(Point* goal);  // Changes goal to the new point.
   void clusterFrontiers();
   bool verifyNextWayPoints();
-  bool findNearbyTraversablePoint(Point* position);
+  bool findNearbyTraversablePoint(const FloatingPoint traversability_radius,
+                                  Point* position);
 
  private:
   const Config config_;

@@ -32,12 +32,29 @@ class MapBase {
 
   /* General and Accessors */
   virtual FloatingPoint getVoxelSize() = 0;
+  virtual FloatingPoint getTraversabilityRadius() = 0;
 
   /* Local planner */
-  virtual bool isTraversableInActiveSubmap(const Point& position) = 0;
+  bool isTraversableInActiveSubmap(const Point& position) {
+    return isTraversableInActiveSubmap(position, getTraversabilityRadius());
+  }
+  virtual bool isTraversableInActiveSubmap(
+      const Point& position, const FloatingPoint traversability_radius) = 0;
+
+  bool isLineTraversableInActiveSubmap(
+      const Point& start_point, const Point& end_point,
+      Point* last_traversable_point = nullptr) {
+    return isLineTraversableInActiveSubmap(start_point, end_point,
+                                           getTraversabilityRadius(),
+                                           last_traversable_point);
+  }
   virtual bool isLineTraversableInActiveSubmap(
       const Point& start_point, const Point& end_point,
+      const FloatingPoint traversability_radius,
       Point* last_traversable_point = nullptr) = 0;
+
+  virtual bool getDistanceAtPositionInActiveSubmap(const Point& position,
+                                                   FloatingPoint* distance) = 0;
   virtual bool getDistanceAndGradientAtPositionInActiveSubmap(
       const Point& position, FloatingPoint* distance, Point* gradient) = 0;
 
@@ -49,10 +66,26 @@ class MapBase {
   /* Global planner */
   virtual bool isObservedInGlobalMap(const Point& position) = 0;
 
-  virtual bool isTraversableInGlobalMap(const Point& position) = 0;
+  bool isTraversableInGlobalMap(const Point& position) {
+    return isTraversableInGlobalMap(position, getTraversabilityRadius());
+  }
+  virtual bool isTraversableInGlobalMap(
+      const Point& position, const FloatingPoint traversability_radius) = 0;
+
   virtual bool isLineTraversableInGlobalMap(
       const Point& start_point, const Point& end_point,
+      Point* last_traversable_point = nullptr) {
+    return isLineTraversableInGlobalMap(start_point, end_point,
+                                        getTraversabilityRadius(),
+                                        last_traversable_point);
+  }
+  virtual bool isLineTraversableInGlobalMap(
+      const Point& start_point, const Point& end_point,
+      const FloatingPoint traversability_radius,
       Point* last_traversable_point = nullptr) = 0;
+
+  virtual bool getDistanceAtPositionInGlobalMap(const Point& position,
+                                                FloatingPoint* distance) = 0;
 
   virtual std::vector<SubmapId> getSubmapIdsAtPosition(
       const Point& position) const = 0;

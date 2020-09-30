@@ -17,8 +17,22 @@
 namespace glocal_exploration {
 class SkeletonAStar {
  public:
-  explicit SkeletonAStar(std::shared_ptr<Communicator> communicator)
-      : comm_(std::move(communicator)) {}
+  struct Config : public config_utilities::Config<Config> {
+    FloatingPoint traversability_radius = 1.1f;
+    int max_num_start_vertex_candidates = 5;
+    int max_num_end_vertex_candidates = 30;
+    int linking_num_nearest_neighbors = 3;
+    FloatingPoint linking_max_distance = 2.f;
+
+    Config();
+    void checkParams() const override;
+    void fromRosParam() override;
+    void printFields() const override;
+  };
+
+  SkeletonAStar(const Config& config,
+                std::shared_ptr<Communicator> communicator)
+      : config_(config.checkValid()), comm_(std::move(communicator)) {}
 
   bool planPath(const Point& start_point, const Point& goal_point,
                 std::vector<WayPoint>* way_points);
@@ -32,7 +46,13 @@ class SkeletonAStar {
     return skeleton_submap_collection_;
   }
 
+  FloatingPoint getTraversabilityRadius() {
+    return config_.traversability_radius;
+  }
+
  protected:
+  const Config config_;
+
   std::shared_ptr<Communicator> comm_;
   std::shared_ptr<MapBase> map_;
   SkeletonSubmapCollection skeleton_submap_collection_;

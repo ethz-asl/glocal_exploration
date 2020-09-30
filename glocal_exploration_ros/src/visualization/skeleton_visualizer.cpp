@@ -330,7 +330,7 @@ void SkeletonVisualizer::visualizeFrontiers() {
     frontier_points_msg.header.frame_id = frame_id_;
     frontier_points_msg.header.stamp = ros::Time::now();
     frontier_pub_.publish(frontier_points_msg);
-    }
+  }
 }
 
 void SkeletonVisualizer::visualizeInactiveFrontiers() {

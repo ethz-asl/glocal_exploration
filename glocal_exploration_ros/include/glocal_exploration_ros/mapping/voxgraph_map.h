@@ -36,26 +36,43 @@ class VoxgraphMap : public MapBase {
                        const std::shared_ptr<Communicator>& communicator);
   ~VoxgraphMap() override = default;
 
-  // MapBase overrides.
+  /* General and Accessors */
   FloatingPoint getVoxelSize() override { return c_voxel_size_; }
+  FloatingPoint getTraversabilityRadius() override {
+    return config_.traversability_radius;
+  }
 
-  bool isTraversableInActiveSubmap(const Point& position) override;
+  /* Local planner */
+  bool isTraversableInActiveSubmap(
+      const Point& position,
+      const FloatingPoint traversability_radius) override;
   bool isLineTraversableInActiveSubmap(
       const Point& start_point, const Point& end_point,
+      const FloatingPoint traversability_radius,
       Point* last_traversable_point = nullptr) override;
+
+  bool getDistanceAtPositionInActiveSubmap(const Point& position,
+                                           FloatingPoint* distance) override;
   bool getDistanceAndGradientAtPositionInActiveSubmap(const Point& position,
                                                       FloatingPoint* distance,
                                                       Point* gradient) override;
 
-  Point getVoxelCenterInLocalArea(const Point& point) override;
+  Point getVoxelCenterInLocalArea(const Point& position) override {
+    return (position / c_voxel_size_).array().round() * c_voxel_size_;
+  }
   VoxelState getVoxelStateInLocalArea(const Point& position) override;
 
+  /* Global planner */
   bool isObservedInGlobalMap(const Point& position) override;
-  bool isTraversableInGlobalMap(const Point& position) override;
+  bool isTraversableInGlobalMap(
+      const Point& position,
+      const FloatingPoint traversability_radius) override;
   bool isLineTraversableInGlobalMap(
       const Point& start_point, const Point& end_point,
+      const FloatingPoint traversability_radius,
       Point* last_traversable_point = nullptr) override;
-  bool getDistanceInGlobalMapAtPosition(const Point& position,
+
+  bool getDistanceAtPositionInGlobalMap(const Point& position,
                                         FloatingPoint* min_esdf_distance);
 
   std::vector<voxgraph::SubmapID> getSubmapIdsAtPosition(
