@@ -50,7 +50,7 @@ class VoxbloxMap : public MapBase {
   bool isOccupiedInActiveSubmap(const Point& position) {
     FloatingPoint esdf_distance = 0.f;
     return getDistanceInActiveSubmap(position, &esdf_distance) &&
-           esdf_distance < 0.f;
+           esdf_distance < c_voxel_size_;
   }
 
   bool getDistanceInActiveSubmap(const Point& position,

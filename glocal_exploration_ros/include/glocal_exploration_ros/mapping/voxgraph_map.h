@@ -55,7 +55,7 @@ class VoxgraphMap : public MapBase {
   bool isOccupiedInActiveSubmap(const Point& position) {
     FloatingPoint esdf_distance = 0.f;
     return getDistanceInActiveSubmap(position, &esdf_distance) &&
-           esdf_distance < 0.f;
+           esdf_distance < c_voxel_size_;
   }
 
   bool getDistanceInActiveSubmap(const Point& position,
@@ -83,7 +83,7 @@ class VoxgraphMap : public MapBase {
   bool isOccupiedInGlobalMap(const Point& position) {
     FloatingPoint esdf_distance = 0.f;
     return getDistanceInGlobalMap(position, &esdf_distance) &&
-           esdf_distance < 0.f;
+           esdf_distance < c_voxel_size_;
   }
 
   bool getDistanceInGlobalMap(const Point& position,

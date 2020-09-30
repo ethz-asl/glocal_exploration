@@ -15,6 +15,8 @@ void SkeletonPlanner::Config::checkParams() const {
   checkParamGT(goal_search_steps, 0, "goal_search_steps");
   checkParamGE(max_closest_frontier_search_time_sec, 0,
                "max_closest_frontier_search_time_sec");
+  checkParamGT(min_num_visible_frontier_points, 0,
+               "min_num_visible_frontier_points");
 }
 
 void SkeletonPlanner::Config::fromRosParam() {
@@ -25,6 +27,7 @@ void SkeletonPlanner::Config::fromRosParam() {
   rosParam("path_verification_min_distance", &path_verification_min_distance);
   rosParam("goal_search_steps", &goal_search_steps);
   rosParam("goal_search_step_size", &goal_search_step_size);
+  rosParam("min_num_visible_frontier_points", &min_num_visible_frontier_points);
   rosParam(&submap_frontier_config);
   rosParam("max_closest_frontier_search_time_sec",
            &max_closest_frontier_search_time_sec);
@@ -40,6 +43,8 @@ void SkeletonPlanner::Config::printFields() const {
   printField("goal_search_steps", goal_search_steps);
   printField("goal_search_step_size", goal_search_step_size);
   printField("nh_private_namespace", nh_private_namespace);
+  printField("min_num_visible_frontier_points",
+             min_num_visible_frontier_points);
   printField("submap_frontier_config", submap_frontier_config);
   printField("max_closest_frontier_search_time_sec",
              max_closest_frontier_search_time_sec);
@@ -179,8 +184,6 @@ bool SkeletonPlanner::computeGoalPoint() {
   }
 
   // Try to find feasible goal near centroid and remove infeasible frontiers.
-  int unreachable_goal_counter = 0;
-  const int total_frontiers = frontier_data_.size();
   const Point current_position = comm_->currentPose().position;
   for (auto& frontier : frontier_data_) {
     frontier.euclidean_distance = (current_position - frontier.centroid).norm();
@@ -188,6 +191,8 @@ bool SkeletonPlanner::computeGoalPoint() {
 
   // Compute paths to frontiers to determine the closest reachable one. Start
   // with closest and use euclidean distance as lower bound to prune candidates.
+  int unobservable_frontier_counter = 0;
+  const int total_frontiers = frontier_data_.size();
   std::sort(frontier_data_.begin(), frontier_data_.end(),
             [](const FrontierSearchData& lhs, const FrontierSearchData& rhs) {
               return lhs.euclidean_distance < rhs.euclidean_distance;
@@ -216,8 +221,9 @@ bool SkeletonPlanner::computeGoalPoint() {
       // Try to find a path via linked skeleton planning.
       path_counter++;
       std::vector<WayPoint> way_points;
+      bool frontier_is_observable = false;
       if (computePathToFrontier(candidate.centroid, candidate.frontier_points,
-                                &way_points)) {
+                                &way_points, &frontier_is_observable)) {
         // Frontier is reachable, save path and compute path length.
         candidate.way_points = way_points;
         candidate.path_distance =
@@ -232,7 +238,12 @@ bool SkeletonPlanner::computeGoalPoint() {
       } else {
         // Inaccessible frontier.
         candidate.path_distance = std::numeric_limits<FloatingPoint>::max();
-        candidate.reachability = FrontierSearchData::kUnreachable;
+        if (frontier_is_observable) {
+          candidate.reachability = FrontierSearchData::kUnreachable;
+        } else {
+          ++unobservable_frontier_counter;
+          candidate.reachability = FrontierSearchData::kInvalidGoal;
+        }
       }
     }
   }
@@ -261,8 +272,8 @@ bool SkeletonPlanner::computeGoalPoint() {
             .count()
      << "ms.";
   if (config_.verbosity >= 4) {
-    ss << " Skipped " << unreachable_goal_counter
-       << " unreachable goal points.";
+    ss << " Skipped " << unobservable_frontier_counter
+       << " unobservable frontiers.";
   }
   LOG_IF(INFO, config_.verbosity >= 3) << ss.str();
 
@@ -412,7 +423,7 @@ bool SkeletonPlanner::computePath(const Point& goal,
 
 bool SkeletonPlanner::computePathToFrontier(
     const Point& frontier_centroid, const std::vector<Point>& frontier_points,
-    std::vector<WayPoint>* way_points) {
+    std::vector<WayPoint>* way_points, bool* frontier_is_observable) {
   CHECK_NOTNULL(way_points);
 
   const std::shared_ptr<MapBase> map = comm_->map();
@@ -446,19 +457,8 @@ bool SkeletonPlanner::computePathToFrontier(
   }
 
   // Search the N skeleton vertices that are closest to the frontier centroid,
-  // and that can observe at least one frontier point
+  // and from which at least M frontier points can be observed
   Point frontier_goal_point = frontier_centroid;
-  if (!map->isTraversableInActiveSubmap(frontier_goal_point,
-                                        traversability_radius) &&
-      !findNearbyTraversablePoint(traversability_radius,
-                                  &frontier_goal_point)) {
-    LOG(INFO) << "Frontier centroid is not traversable in global map ("
-              << frontier_goal_point.transpose()
-              << "). Could not find a nearby valid positions.";
-    return false;
-  }
-  constexpr FloatingPoint kRayTraversabilityRadius = 0.f;
-  constexpr int kMinNumVisibleFrontierPoints = 3;
   std::vector<GlobalVertexId> end_vertex_candidates =
       skeleton_a_star_.searchClosestReachableSkeletonVertices(
           frontier_goal_point,
@@ -466,10 +466,9 @@ bool SkeletonPlanner::computePathToFrontier(
           [&](const Point& point, const Point& skeleton_vertex_point) {
             int num_visible_frontier_points = 0;
             for (const Point& frontier_point : frontier_points) {
-              if (map->isLineTraversableInGlobalMap(frontier_point,
-                                                    skeleton_vertex_point,
-                                                    kRayTraversabilityRadius)) {
-                if (kMinNumVisibleFrontierPoints <
+              if (!map->lineIntersectsSurfaceInGlobalMap(skeleton_vertex_point,
+                                                         frontier_point)) {
+                if (config_.min_num_visible_frontier_points <
                     ++num_visible_frontier_points) {
                   return true;
                 }
@@ -478,10 +477,17 @@ bool SkeletonPlanner::computePathToFrontier(
             return false;
           });
   if (end_vertex_candidates.empty()) {
-    LOG(INFO) << "Could not find any reachable skeleton vertices near frontier "
-                 "centroid ("
-              << frontier_goal_point.transpose() << ")";
+    LOG(INFO) << "Could not find any skeleton vertices from which the frontier "
+                 "with centroid ("
+              << frontier_goal_point.transpose() << ") can be observed.";
+    if (frontier_is_observable != nullptr) {
+      *frontier_is_observable = false;
+    }
     return false;
+  } else {
+    if (frontier_is_observable != nullptr) {
+      *frontier_is_observable = true;
+    }
   }
 
   // Plan path along the skeleton

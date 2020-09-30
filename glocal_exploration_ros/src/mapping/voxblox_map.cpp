@@ -117,11 +117,12 @@ bool VoxbloxMap::lineIntersectsSurfaceInActiveSubmap(const Point& start_point,
   while (traveled_distance <= line_length) {
     FloatingPoint esdf_distance = 0.f;
     if (getDistanceInActiveSubmap(current_position, &esdf_distance) &&
-        esdf_distance < 0.f) {
+        esdf_distance < c_voxel_size_) {
       return true;
     }
 
-    const FloatingPoint step_size = std::max(c_voxel_size_, esdf_distance);
+    const FloatingPoint step_size =
+        std::max(c_voxel_size_, esdf_distance - c_voxel_size_);
     current_position += step_size * line_direction;
     traveled_distance += step_size;
   }

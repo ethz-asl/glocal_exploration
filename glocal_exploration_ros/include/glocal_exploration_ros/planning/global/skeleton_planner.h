@@ -31,6 +31,7 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
     FloatingPoint path_verification_min_distance = 1.f;  // m
     int goal_search_steps = 5;  // number of grid elements per side of cube.
     FloatingPoint goal_search_step_size = 1.f;  // m, grid element length.
+    int min_num_visible_frontier_points = 10;
 
     // Frontier evaluator.
     SubmapFrontierEvaluator::Config submap_frontier_config;
@@ -99,7 +100,8 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   bool computePath(const Point& goal, std::vector<WayPoint>* way_points);
   bool computePathToFrontier(const Point& frontier_centroid,
                              const std::vector<Point>& frontier_points,
-                             std::vector<WayPoint>* way_points);
+                             std::vector<WayPoint>* way_points,
+                             bool* frontier_is_observable = nullptr);
   void clusterFrontiers();
   bool verifyNextWayPoints();
   bool findNearbyTraversablePoint(const FloatingPoint traversability_radius,
