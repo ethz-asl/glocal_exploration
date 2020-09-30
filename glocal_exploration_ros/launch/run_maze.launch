@@ -12,7 +12,7 @@
   
   <!-- Airsim arguments -->
   <arg name="airsim_config" default="maze/maze_airsim.yaml"/>
-  <arg name="drift_config" default="maze/airsim_nodrift.yaml"/>
+  <arg name="drift_config" default="maze/drift_none.yaml"/>
   <arg name="use_airsim_time" default="true"/>
   <arg name="mav_name" default="airsim_drone"/>
   
@@ -83,7 +83,7 @@
     
     <!-- Record visualization topics -->
     <node pkg="rosbag" type="record" name="rosbag_vis_recorder"
-       args="record -o $(arg data_path)/tmp_bags/tmp_bag /rosout /clock /tf" if="$(eval arg('record_data') and arg('record_visualization'))"/>
+       args="record -o $(arg data_path)/tmp_bags/tmp_bag /clock /rosout /tf /tf_static /glocal/glocal_system/global_planner/executed_path /glocal/glocal_system/global_planner/frontiers /glocal/glocal_system/global_planner/goal_points /glocal/glocal_system/global_planner/planned_path /glocal/glocal_system/local_planner/executed_path /glocal/glocal_system/local_planner/tree /glocal/glocal_system/mapping/separated_mesh /glocal/glocal_system/mapping/mesh" if="$(eval arg('record_data') and arg('record_visualization'))"/>
   </group>
   
   

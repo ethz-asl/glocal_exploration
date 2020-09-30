@@ -28,6 +28,7 @@ void SkeletonPlanner::Config::fromRosParam() {
   rosParam("goal_search_steps", &goal_search_steps);
   rosParam("goal_search_step_size", &goal_search_step_size);
   rosParam("min_num_visible_frontier_points", &min_num_visible_frontier_points);
+  rosParam("safety_distance", &safety_distance);
   rosParam(&submap_frontier_config);
   rosParam("max_closest_frontier_search_time_sec",
            &max_closest_frontier_search_time_sec);
@@ -45,6 +46,7 @@ void SkeletonPlanner::Config::printFields() const {
   printField("nh_private_namespace", nh_private_namespace);
   printField("min_num_visible_frontier_points",
              min_num_visible_frontier_points);
+  printField("safety_distance", safety_distance);
   printField("submap_frontier_config", submap_frontier_config);
   printField("max_closest_frontier_search_time_sec",
              max_closest_frontier_search_time_sec);
@@ -123,7 +125,6 @@ void SkeletonPlanner::resetPlanner() {
   stage_ = Stage::k1ComputeFrontiers;
   vis_data_.frontiers_have_changed = false;
   vis_data_.execution_finished = false;
-  vis_data_.finished_successfully = false;
 }
 
 bool SkeletonPlanner::computeFrontiers() {
@@ -330,7 +331,6 @@ void SkeletonPlanner::executeWayPoint() {
       LOG_IF(INFO, config_.verbosity >= 2)
           << "Finished global path execution, switching to local planning.";
       vis_data_.execution_finished = true;
-      vis_data_.finished_successfully = true;
     } else {
       // Request next way point.
       if (config_.use_path_verification) {
@@ -369,13 +369,13 @@ bool SkeletonPlanner::verifyNextWayPoints() {
   // If less than one segment is connected check for minimum distance.
   if (waypoint_index == 0) {
     // TODO(schmluk): make this a param if we keep it.
-    const FloatingPoint safety = 0.3;
     if ((current_position - goal).norm() >
-        config_.path_verification_min_distance + safety) {
+        config_.path_verification_min_distance + config_.safety_distance) {
       // Insert intermediate goal s.t. path can be observed.
       Point direction = goal - current_position;
       Point new_goal =
-          current_position + direction * (1.f - safety / direction.norm());
+          current_position +
+          direction * (1.f - config_.safety_distance / direction.norm());
       way_points_.insert(way_points_.begin(), WayPoint(new_goal, 0.f));
     } else {
       // The goal is inaccessible, return to local planning.

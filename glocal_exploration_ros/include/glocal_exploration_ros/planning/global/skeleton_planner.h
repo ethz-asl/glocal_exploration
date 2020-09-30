@@ -32,6 +32,7 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
     int goal_search_steps = 5;  // number of grid elements per side of cube.
     FloatingPoint goal_search_step_size = 1.f;  // m, grid element length.
     int min_num_visible_frontier_points = 10;
+    FloatingPoint safety_distance = 0.f;
 
     // Frontier evaluator.
     SubmapFrontierEvaluator::Config submap_frontier_config;
@@ -64,7 +65,6 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   struct VisualizationData {
     bool frontiers_have_changed = false;
     bool execution_finished = false;
-    bool finished_successfully = false;
   };
 
   SkeletonPlanner(const Config& config,

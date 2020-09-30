@@ -19,6 +19,15 @@ void BoundingBox::Config::fromRosParam() {
   rosParam("z_max", &z_max);
 }
 
+void BoundingBox::Config::printFields() const {
+  printField("x_min", x_min);
+  printField("x_max", x_max);
+  printField("y_min", y_min);
+  printField("y_max", y_max);
+  printField("z_min", z_min);
+  printField("z_max", z_max);
+}
+
 bool BoundingBox::contains(const Point& point) {
   if (point.x() > config_.x_max) {
     return false;
