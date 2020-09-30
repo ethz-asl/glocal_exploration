@@ -1,0 +1,12 @@
+<launch>
+  <arg name="data_directory" default="/home/lukas/Documents/Glocal/Data/glocal" />
+  <arg name="bag_name" default="test/20200930_162018/visualization.bag" />
+  <arg name="rate" default="5"/>
+	<arg name="rviz_file" default="$(find glocal_exploration_ros)/config/maze/maze_visualization.rviz" />
+
+
+	<!-- Play Rosbag and RVIZ (visualization) -->
+	<node pkg="rosbag" type="play" name="player" output="screen" args="-r $(arg rate) $(arg data_directory)/$(arg bag_name)"/>	
+
+  <node type="rviz" name="rviz" pkg="rviz" args="-d $(arg rviz_file)"/>
+</launch>

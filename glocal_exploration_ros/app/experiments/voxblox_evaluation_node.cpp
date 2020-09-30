@@ -52,8 +52,9 @@ EvaluationNode::EvaluationNode(const ros::NodeHandle& nh,
                                const ros::NodeHandle& nh_private)
     : nh_(nh), nh_private_(nh_private) {
   // Default to bounding box here.
-  roi_ = std::make_unique<BoundingBox>(
-      config_utilities::getConfigFromRos<BoundingBox::Config>(nh_private_));
+  auto roi_cfg =
+      config_utilities::getConfigFromRos<BoundingBox::Config>(nh_private_);
+  roi_ = std::make_unique<BoundingBox>(roi_cfg);
   eval_srv_ =
       nh_private_.advertiseService("evaluate", &EvaluationNode::evaluate, this);
 }

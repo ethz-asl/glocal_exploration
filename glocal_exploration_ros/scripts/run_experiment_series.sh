@@ -12,7 +12,7 @@ fi
 for (( i=1; i<=n_experiments; i++ ))
 do  
   # run experiment
-  roslaunch glocal_exploration_ros $launch_file.launch data_path:=$target_dir record_data:=true time_limit:=$duration data_interval:=$frequency drift_config:=$drift.yaml
+  roslaunch glocal_exploration_ros $launch_file.launch data_path:=$target_dir record_data:=true time_limit:=$duration data_interval:=$frequency drift_config:=$drift.yaml record_visualization:=$record_visualization
   # evaluate
   roslaunch glocal_exploration_ros evaluate_experiment.launch target_directory:=$target_dir method:=recent series:=false clear_voxblox_maps:=$clear_voxblox_maps evaluate:=true
 done
@@ -23,18 +23,15 @@ echo "Experiment series '$launch_file' of ${n_experiments} runs at '${target_dir
 
 # ========== Args (need to be set) ==========
 n_experiments=1
-target_dir="/home/lukas/Documents/Glocal/Data/glocal/nodrift"		# Can reuse same dir to add experiments
+target_dir="/home/lukas/Documents/Glocal/Data/glocal/test"		# Can reuse same dir to add experiments
 clear_voxblox_maps=true		# Irreversibly remove maps after evaluation to save disk space
-launch_file="run_maze"  # run_maze active_3d_run_maze
-drift="maze/airsim_nodrift"  # airsim_nodrift airsim_drift1
-duration=15
-frequency=15
+launch_file="run_maze"  # run_maze, active_3d_run_maze
+drift="maze/drift_4"  # drift_none, drift_1, drift_2, drift_4
+duration=3   #min
+frequency=5   #s
+record_visualization=true
 
 # ========== Run experiments ==========
-#run_experiments
-
-target_dir="/home/lukas/Documents/Glocal/Data/active_3d/drift1"
-launch_file="active_3d_run_maze"
-drift="maze/airsim_drift1"  
 
 run_experiments
+

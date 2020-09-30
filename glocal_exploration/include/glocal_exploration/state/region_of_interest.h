@@ -33,6 +33,7 @@ class BoundingBox : public RegionOfInterest {
     Config();
     void checkParams() const override;
     void fromRosParam() override;
+    void printFields() const override;
   };
 
   explicit BoundingBox(const Config& config);

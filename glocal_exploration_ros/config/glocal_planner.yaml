@@ -138,11 +138,11 @@ local_planner:
   horizontal_resolution: 10000 # 1024 / 200
   ray_step: 0.4 # m
   downsampling_factor: 3
-  T_baselink_sensor:  # 25 deg pitch
-   - [ 0.9063078,  0.0000000,  0.4226183,  0.0]
-   - [ 0.0000000,  1.0000000,  0.0000000,  0.0]
-   - [-0.4226183,  0.0000000,  0.9063078,  0.0]
-   - [ 0.0,        0.0,        0.0,        1.0]
+  T_baselink_sensor:  # 15 deg pitch
+   - [0.9659258,  0.0000000,  0.2588190, 0.0]
+   - [0.0000000,  1.0000000,  0.0000000, 0.0]
+   - [-0.2588190, 0.0000000,  0.9659258, 0.0]
+   - [0.0,        0.0,        0.0,       1.0]
    
   # Visualization
   visualize_tree: true
@@ -159,6 +159,7 @@ global_planner:
   use_centroid_clustering: true
   centroid_clustering_radius: 1.0
   use_path_verification: true
+  safety_distance: 0.3
   path_verification_min_distance: 1.0
   goal_search_steps: 5.0
   goal_search_step_size: 1.0

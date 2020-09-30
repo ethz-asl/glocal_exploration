@@ -273,9 +273,12 @@ class EvaluationManager(object):
             dataset = voxblox_data[i]
             length = len(dataset['RosTime']) - 1
             if length < max_data_length - 1:
+                time = 0
+                if length >= 0:
+                    time = float(dataset['RosTime'][length])
                 early_stops.append(length)
                 self.writelog("Early stop detected for '%s' at %.2fs." %
-                              (names[i], float(dataset['RosTime'][length])))
+                              (names[i], time))
 
         # create all plots.
         fig, axes = plt.subplots(2, 2)
@@ -291,7 +294,7 @@ class EvaluationManager(object):
                 markersize=9,
                 markeredgewidth=2)
         ax.set_ylabel('Observed Volume [%]')
-        ax.set_ylim(bottom=0)
+        ax.set_ylim(bottom=0, top=100)
         ax.set_xlim(left=0, right=x[-1])
         ax.set_xlabel('Simulated Time [%s]' % unit)
 
@@ -383,7 +386,7 @@ class EvaluationManager(object):
         mean = mean / (40 * 40 * 3) * 100  # Compensate for total volume
         ax.plot(x, mean, 'b-')
         ax.set_ylabel('Observed Volume [%]')
-        ax.set_ylim(bottom=0)
+        ax.set_ylim(bottom=0, top=100)
         ax.set_xlim(left=0, right=x[-1])
         ax.set_xlabel("Simulated Time [%s]" % unit)
 

@@ -63,6 +63,11 @@ class EvalData(object):
             self.collided = False
             self.run_planner_srv = None
 
+            # placeholders
+            self.eval_timer = None
+            self.dist_timer = None
+            self.initial_point_offset = None
+
             # Setup data directory
             if not os.path.isdir(os.path.join(self.eval_directory,
                                               "tmp_bags")):
@@ -103,8 +108,6 @@ class EvalData(object):
             self.eval_voxblox_service = rospy.ServiceProxy(
                 self.ns_voxblox + "/save_map", FilePath)
             rospy.on_shutdown(self.eval_finish)
-            self.eval_timer = None
-            self.dist_timer = None
 
         self.launch_simulation()
 
@@ -236,28 +239,28 @@ class EvalData(object):
 
         drift_estimated_pos = None
         drift_estimated_rot = 0
+
         try:
             (t, r) = self.tf_listener.lookupTransform('odom', 'initial_pose',
                                                       rospy.Time(0))
-            (t2, r2) = self.tf_listener.lookupTransform(
-                'airsim_drone/Lidar_ground_truth', 'airsim_drone_ground_truth',
-                rospy.Time(0))
         except (tf.LookupException, tf.ConnectivityException,
                 tf.ExtrapolationException):
             drift_estimated_pos = 0
         if drift_estimated_pos is None:
-            trans1 = np.dot(tf.transformations.translation_matrix(t),
-                            tf.transformations.quaternion_matrix(r))
-            trans2 = np.dot(tf.transformations.translation_matrix(t2),
-                            tf.transformations.quaternion_matrix(r2))
+            if self.initial_point_offset is None:
+                drift_estimated_pos = 0
+            else:
+                trans = np.dot(tf.transformations.translation_matrix(t),
+                               tf.transformations.quaternion_matrix(r))
 
-            trans = tf.transformations.concatenate_matrices(trans1, trans2)
-            t = tf.transformations.translation_from_matrix(trans)
-            r = tf.transformations.quaternion_from_matrix(trans)
-            drift_estimated_pos = (t[0]**2 + t[1]**2 + t[2]**2)**0.5
-            r = np.array(r)
-            r = r / np.linalg.norm(r)
-            drift_estimated_rot = 2 * math.acos(r[3]) * 180.0 / math.pi
+                trans = tf.transformations.concatenate_matrices(
+                    trans, self.initial_point_offset)
+                t = tf.transformations.translation_from_matrix(trans)
+                r = tf.transformations.quaternion_from_matrix(trans)
+                drift_estimated_pos = (t[0]**2 + t[1]**2 + t[2]**2)**0.5
+                r = np.array(r)
+                r = r / np.linalg.norm(r)
+                drift_estimated_rot = 2 * math.acos(r[3]) * 180.0 / math.pi
 
         self.eval_writer.writerow([
             map_name, time_ros, time_real, drift_pos, drift_rot,
@@ -276,6 +279,26 @@ class EvalData(object):
 
     def distance_callback(self, _):
         """ Periodically query tf to see how much distance was covered """
+        # Test whether the origin point is already published
+        if self.initial_point_offset is None:
+            try:
+                (t1, r1) = self.tf_listener.lookupTransform(
+                    'initial_pose', 'odom', rospy.Time(0))
+                (t2, r2) = self.tf_listener.lookupTransform(
+                    'airsim_drone/Lidar', 'airsim_drone/Lidar_ground_truth',
+                    rospy.Time(0))
+                trans1 = np.dot(tf.transformations.translation_matrix(t1),
+                                tf.transformations.quaternion_matrix(r1))
+                trans2 = np.dot(tf.transformations.translation_matrix(t2),
+                                tf.transformations.quaternion_matrix(r2))
+                self.initial_point_offset = \
+                    tf.transformations.concatenate_matrices(trans1, trans2)
+
+            except (tf.LookupException, tf.ConnectivityException,
+                    tf.ExtrapolationException):
+                pass
+
+        # Query position
         t, _ = self.tf_listener.lookupTransform('odom',
                                                 'airsim_drone_ground_truth',
                                                 rospy.Time(0))
