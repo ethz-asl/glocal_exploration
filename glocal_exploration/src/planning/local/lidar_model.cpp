@@ -221,6 +221,26 @@ void LidarModel::getVisibleUnknownVoxels(const WayPoint& waypoint,
   }
 }
 
+void LidarModel::getVisibleUnknownVoxelsAndOptimalYaw(
+    WayPoint* waypoint, voxblox::LongIndexSet* voxels) {
+  CHECK_NOTNULL(waypoint);
+  CHECK_NOTNULL(voxels);
+
+  constexpr int kNumYawSamples = 3;
+  FloatingPoint yaw_sample = waypoint->yaw;
+  for (int yaw_sample_i = 0; yaw_sample_i < kNumYawSamples; ++yaw_sample_i) {
+    yaw_sample += 2.f * M_PI / kNumYawSamples;
+    const WayPoint waypoint_sample(waypoint->position, yaw_sample);
+
+    voxblox::LongIndexSet visible_voxels;
+    getVisibleUnknownVoxels(waypoint_sample, &visible_voxels);
+    if (voxels->size() < visible_voxels.size()) {
+      *waypoint = waypoint_sample;
+      *voxels = visible_voxels;
+    }
+  }
+}
+
 void LidarModel::markNeighboringRays(int x, int y, int segment, int value) {
   // Set all nearby (towards bottom right) ray starts, depending on the segment
   // depth, to a value.

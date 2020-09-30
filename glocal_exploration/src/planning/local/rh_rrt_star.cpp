@@ -512,7 +512,8 @@ bool RHRRTStar::selectBestConnection(ViewPoint* view_point) {
 
 void RHRRTStar::evaluateViewPoint(ViewPoint* view_point) {
   voxblox::LongIndexSet voxels;
-  sensor_model_->getVisibleUnknownVoxels(view_point->pose, &voxels);
+  sensor_model_->getVisibleUnknownVoxelsAndOptimalYaw(&view_point->pose,
+                                                      &voxels);
   view_point->gain = voxels.size();
 }
 

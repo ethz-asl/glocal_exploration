@@ -44,6 +44,8 @@ class LidarModel : public SensorModel {
 
   void getVisibleUnknownVoxels(const WayPoint& waypoint,
                                voxblox::LongIndexSet* voxels) override;
+  void getVisibleUnknownVoxelsAndOptimalYaw(
+      WayPoint* waypoint, voxblox::LongIndexSet* voxels) override;
 
  protected:
   const Config config_;
