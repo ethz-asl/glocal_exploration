@@ -32,8 +32,8 @@ class VoxbloxMap : public MapBase {
   ~VoxbloxMap() override = default;
 
   /* General and Accessors */
-  FloatingPoint getVoxelSize() override { return c_voxel_size_; }
-  FloatingPoint getTraversabilityRadius() override {
+  FloatingPoint getVoxelSize() const override { return c_voxel_size_; }
+  FloatingPoint getTraversabilityRadius() const override {
     return config_.traversability_radius;
   }
 
@@ -53,7 +53,7 @@ class VoxbloxMap : public MapBase {
                                                       Point* gradient) override;
 
   VoxelState getVoxelStateInLocalArea(const Point& position) override;
-  Point getVoxelCenterInLocalArea(const Point& position) override {
+  Point getVoxelCenterInLocalArea(const Point& position) const override {
     return (position / c_voxel_size_).array().round() * c_voxel_size_;
   }
 

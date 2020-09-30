@@ -51,7 +51,7 @@ bool VoxbloxMap::isTraversableInActiveSubmap(
 bool VoxbloxMap::isLineTraversableInActiveSubmap(
     const Point& start_point, const Point& end_point,
     const FloatingPoint traversability_radius, Point* last_traversable_point) {
-  CHECK(c_voxel_size_ < traversability_radius);
+  CHECK_GT(c_voxel_size_, 0.f);
   if (last_traversable_point) {
     *last_traversable_point = start_point;
   }
