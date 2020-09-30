@@ -45,6 +45,13 @@ class VoxbloxMap : public MapBase {
       const Point& start_point, const Point& end_point,
       const FloatingPoint traversability_radius,
       Point* last_traversable_point = nullptr) override;
+  bool lineIntersectsSurfaceInActiveSubmap(const Point& start_point,
+                                           const Point& end_point) override;
+  bool isOccupiedInActiveSubmap(const Point& position) {
+    FloatingPoint esdf_distance = 0.f;
+    return getDistanceAtPositionInActiveSubmap(position, &esdf_distance) &&
+           esdf_distance < 0.f;
+  }
 
   bool getDistanceAtPositionInActiveSubmap(const Point& position,
                                            FloatingPoint* distance) override;
@@ -73,6 +80,10 @@ class VoxbloxMap : public MapBase {
       Point* last_traversable_point = nullptr) override {
     return isLineTraversableInActiveSubmap(
         start_point, end_point, traversability_radius, last_traversable_point);
+  }
+  bool lineIntersectsSurfaceInGlobalMap(const Point& start_point,
+                                        const Point& end_point) override {
+    return lineIntersectsSurfaceInActiveSubmap(start_point, end_point);
   }
   bool getDistanceAtPositionInGlobalMap(const Point& position,
                                         FloatingPoint* distance) override {

@@ -50,6 +50,13 @@ class VoxgraphMap : public MapBase {
       const Point& start_point, const Point& end_point,
       const FloatingPoint traversability_radius,
       Point* last_traversable_point = nullptr) override;
+  bool lineIntersectsSurfaceInActiveSubmap(const Point& start_point,
+                                           const Point& end_point) override;
+  bool isOccupiedInActiveSubmap(const Point& position) {
+    FloatingPoint esdf_distance = 0.f;
+    return getDistanceAtPositionInActiveSubmap(position, &esdf_distance) &&
+           esdf_distance < 0.f;
+  }
 
   bool getDistanceAtPositionInActiveSubmap(const Point& position,
                                            FloatingPoint* distance) override;
@@ -71,6 +78,13 @@ class VoxgraphMap : public MapBase {
       const Point& start_point, const Point& end_point,
       const FloatingPoint traversability_radius,
       Point* last_traversable_point = nullptr) override;
+  bool lineIntersectsSurfaceInGlobalMap(const Point& start_point,
+                                        const Point& end_point) override;
+  bool isOccupiedInGlobalMap(const Point& position) {
+    FloatingPoint esdf_distance = 0.f;
+    return getDistanceAtPositionInGlobalMap(position, &esdf_distance) &&
+           esdf_distance < 0.f;
+  }
 
   bool getDistanceAtPositionInGlobalMap(const Point& position,
                                         FloatingPoint* min_esdf_distance);

@@ -52,6 +52,8 @@ class MapBase {
       const Point& start_point, const Point& end_point,
       const FloatingPoint traversability_radius,
       Point* last_traversable_point = nullptr) = 0;
+  virtual bool lineIntersectsSurfaceInActiveSubmap(const Point& start_point,
+                                                   const Point& end_point) = 0;
 
   virtual bool getDistanceAtPositionInActiveSubmap(const Point& position,
                                                    FloatingPoint* distance) = 0;
@@ -83,6 +85,8 @@ class MapBase {
       const Point& start_point, const Point& end_point,
       const FloatingPoint traversability_radius,
       Point* last_traversable_point = nullptr) = 0;
+  virtual bool lineIntersectsSurfaceInGlobalMap(const Point& start_point,
+                                                const Point& end_point) = 0;
 
   virtual bool getDistanceAtPositionInGlobalMap(const Point& position,
                                                 FloatingPoint* distance) = 0;

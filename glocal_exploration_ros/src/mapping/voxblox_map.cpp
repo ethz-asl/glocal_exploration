@@ -99,6 +99,40 @@ bool VoxbloxMap::isLineTraversableInActiveSubmap(
   }
 }
 
+bool VoxbloxMap::lineIntersectsSurfaceInActiveSubmap(const Point& start_point,
+                                                     const Point& end_point) {
+  CHECK_GT(c_voxel_size_, 0.f);
+
+  const FloatingPoint line_length = (end_point - start_point).norm();
+  if (line_length <= voxblox::kFloatEpsilon) {
+    if (isOccupiedInActiveSubmap(start_point)) {
+      return true;
+    }
+  }
+
+  const Point line_direction = (end_point - start_point) / line_length;
+  Point current_position = start_point;
+
+  FloatingPoint traveled_distance = 0.f;
+  while (traveled_distance <= line_length) {
+    FloatingPoint esdf_distance = 0.f;
+    if (getDistanceAtPositionInActiveSubmap(current_position, &esdf_distance) &&
+        esdf_distance < 0.f) {
+      return true;
+    }
+
+    const FloatingPoint step_size = std::max(c_voxel_size_, esdf_distance);
+    current_position += step_size * line_direction;
+    traveled_distance += step_size;
+  }
+
+  if (isOccupiedInActiveSubmap(end_point)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 bool VoxbloxMap::getDistanceAtPositionInActiveSubmap(const Point& position,
                                                      FloatingPoint* distance) {
   CHECK_NOTNULL(distance);
