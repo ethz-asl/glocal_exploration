@@ -24,6 +24,7 @@ class LidarModel : public SensorModel {
     int vertical_resolution = 64;
     int horizontal_resolution = 1024;
     FloatingPoint ray_step = 0.1f;  // m
+    int num_yaw_samples = 4;
     // reduce the number of checks by this factor
     FloatingPoint downsampling_factor = 1.f;
     Transformation T_baselink_sensor;

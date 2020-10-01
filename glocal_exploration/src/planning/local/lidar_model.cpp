@@ -21,6 +21,7 @@ void LidarModel::Config::checkParams() const {
   checkParamGT(horizontal_resolution, 0, "horizontal_resolution");
   checkParamGT(ray_length, 0.f, "ray_length");
   checkParamGT(ray_step, 0.f, "ray_step");
+  checkParamGT(num_yaw_samples, 0, "num_yaw_samples");
   checkParamGT(downsampling_factor, 0.f, "downsampling_factor");
 }
 
@@ -31,6 +32,7 @@ void LidarModel::Config::fromRosParam() {
   rosParam("horizontal_resolution", &horizontal_resolution);
   rosParam("ray_length", &ray_length);
   rosParam("ray_step", &ray_step);
+  rosParam("num_yaw_samples", &num_yaw_samples);
   rosParam("downsampling_factor", &downsampling_factor);
   rosParam("T_baselink_sensor", &T_baselink_sensor);
 }
@@ -42,6 +44,7 @@ void LidarModel::Config::printFields() const {
   printField("horizontal_resolution", horizontal_resolution);
   printField("ray_length", ray_length);
   printField("ray_step", ray_step);
+  printField("num_yaw_samples", num_yaw_samples);
   printField("downsampling_factor", downsampling_factor);
   printField("T_baselink_sensor", T_baselink_sensor);
 }
@@ -226,10 +229,10 @@ void LidarModel::getVisibleUnknownVoxelsAndOptimalYaw(
   CHECK_NOTNULL(waypoint);
   CHECK_NOTNULL(voxels);
 
-  constexpr int kNumYawSamples = 3;
   FloatingPoint yaw_sample = waypoint->yaw;
-  for (int yaw_sample_i = 0; yaw_sample_i < kNumYawSamples; ++yaw_sample_i) {
-    yaw_sample += 2.f * M_PI / kNumYawSamples;
+  for (int yaw_sample_i = 0; yaw_sample_i < config_.num_yaw_samples;
+       ++yaw_sample_i) {
+    yaw_sample += 2.f * M_PI / config_.num_yaw_samples;
     const WayPoint waypoint_sample(waypoint->position, yaw_sample);
 
     voxblox::LongIndexSet visible_voxels;
