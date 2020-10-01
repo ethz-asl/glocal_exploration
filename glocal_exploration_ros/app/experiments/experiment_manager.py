@@ -195,7 +195,8 @@ class EvalData(object):
                 'PlannerCpuPercent', 'PlannerMemoryPercent'
             ])
             self.eval_writer.writerow(
-                ['Unit', 's', 's', 'm', 'deg', 'm', 'deg', 'm', '%', '%'])
+                ['Unit', 's', 's', 'm', 'deg', 'm', 'deg', 'm', 'MHz', 's', 's',
+                 'Percent', 'Percent', 's', 's', 'Percent', 'Percent'])
             self.eval_log_file = open(
                 os.path.join(self.eval_directory, "data_log.txt"), 'a')
 
@@ -383,6 +384,9 @@ class EvalData(object):
             self.planner_resource_monitor.node_cpu_percent,
             self.planner_resource_monitor.node_memory_percent
         ])
+        # Immediately write the data to disk to avoid losing anything if the
+        # experiment gets interupted
+        self.eval_data_file.flush()
         self.eval_voxblox_service(
             os.path.join(self.eval_directory, "voxblox_maps",
                          map_name + ".vxblx"))
