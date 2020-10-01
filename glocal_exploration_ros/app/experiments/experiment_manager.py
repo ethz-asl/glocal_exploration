@@ -10,15 +10,113 @@ import re
 import subprocess
 import math
 import numpy as np
+import psutil
 
-# ros
+# ROS
 import rospy
 import tf
+import rosnode
+import rosgraph
+from xmlrpc.client import ServerProxy
 
 # msgs
 from std_msgs.msg import Bool
 from std_srvs.srv import SetBool
 from voxblox_msgs.srv import FilePath
+
+
+class ResourceMonitor(object):
+    def __init__(self, ros_node_name, verbose=False):
+        self.verbose = verbose
+
+        self.cpu_frequency = 0
+        self.total_wall_time = 0
+        self.total_cpu_time = 0
+        self.total_cpu_percent = 0
+        self.total_memory_percent = 0
+
+        self.node_name = ros_node_name
+        self.node_process = None
+        self.node_wall_time = 0
+        self.node_cpu_time = 0
+        self.node_cpu_percent = 0
+        self.node_memory_percent = 0
+
+    def get_process_for_ros_node(self, node_name):
+        target_node = None
+        caller_id = '/experiment_manager'
+        master = rosgraph.Master(caller_id)
+        running_nodes = rosnode.get_node_names()
+        for node in running_nodes:
+            if node_name in node:
+                if target_node is None:
+                    target_node = node
+                else:
+                    rospy.logwarn("Multiple nodes found whose name "
+                                  "contains " + node_name)
+                    return None
+        if target_node is None:
+            rospy.logwarn("Could not find a node whose name contains " +
+                          node_name)
+            return None
+        target_node_api = rosnode.get_api_uri(master, target_node)
+        if not target_node_api:
+            rospy.logwarn("Could not connect to " + target_node + "'s API")
+            return None
+
+        target_node = ServerProxy(target_node_api)
+        target_node_pid = rosnode._succeed(target_node.getPid(caller_id))
+        rospy.loginfo("Registered glocal system node PID {} for resource "
+                      "usage tracking".format(target_node_pid))
+        return psutil.Process(target_node_pid)
+
+    def update_stats(self):
+        if self.node_process is None:
+            self.node_process = self.get_process_for_ros_node(self.node_name)
+            if self.node_process is None:
+                rospy.logwarn(
+                    'Could not get PID for node named %s for resource '
+                    'usage tracking.' % self.node_name)
+            else:
+                rospy.loginfo('Resource usage tracking set up for %s, '
+                              'under PID %i' %
+                              (self.node_name, self.node_process.pid))
+
+        # NOTE: By default psutil evaluates its percentages over the interval
+        #       since they were last queried
+        self.cpu_frequency = psutil.cpu_freq().current
+        self.total_wall_time = psutil._timer() - psutil.boot_time()
+        self.total_cpu_time = psutil.cpu_times().system + psutil.cpu_times(
+        ).user
+        self.total_cpu_percent = psutil.cpu_percent()
+        self.total_memory_percent = psutil.virtual_memory().percent
+
+        self.node_wall_time = psutil._timer() - self.node_process.create_time()
+        self.node_cpu_time = \
+            self.node_process.cpu_times().system + \
+            self.node_process.cpu_times().children_system + \
+            self.node_process.cpu_times().user + \
+            self.node_process.cpu_times().children_user
+        self.node_cpu_percent = self.node_process.cpu_percent()
+        self.node_memory_percent = self.node_process.memory_percent()
+
+        if self.verbose:
+            rospy.loginfo(
+                'Resource usage of node %s with PID: %i\n'
+                '--CPU frequency: %iMHz\n'
+                '--Total wall time: %is\n'
+                '--Total CPU time: %is\n'
+                '--Total CPU percent: %0.2f%%\n'
+                '--Total memory percent: %0.2f%%\n'
+                '--Node wall time: %is\n'
+                '--Node CPU time: %is\n'
+                '--Node CPU percent: %0.2f%%\n'
+                '--Node memory percent: %0.2f%%\n' %
+                (self.node_name, self.node_process.pid, self.cpu_frequency,
+                 self.total_wall_time, self.total_cpu_time,
+                 self.total_cpu_percent, self.total_memory_percent,
+                 self.node_wall_time, self.node_cpu_time,
+                 self.node_cpu_percent, self.node_memory_percent))
 
 
 class EvalData(object):
@@ -38,6 +136,8 @@ class EvalData(object):
                                               30.0)  # Save rate in seconds
         self.time_limit = rospy.get_param(
             '~time_limit', 0.0)  # Maximum sim duration in minutes, 0 for inf
+
+        self.planner_node_name = '/glocal_system'
 
         self.eval_walltime_0 = None
         self.eval_rostime_0 = None
@@ -67,6 +167,8 @@ class EvalData(object):
             self.eval_timer = None
             self.dist_timer = None
             self.initial_point_offset = None
+            self.planner_resource_monitor = ResourceMonitor(
+                self.planner_node_name, verbose=False)
 
             # Setup data directory
             if not os.path.isdir(os.path.join(self.eval_directory,
@@ -87,10 +189,13 @@ class EvalData(object):
             self.eval_writer.writerow([
                 'MapName', 'RosTime', 'WallTime', 'PositionDrift',
                 'RotationDrift', 'PositionDriftEstimated',
-                'RotationDriftEstimated', 'DistanceTraveled'
+                'RotationDriftEstimated', 'DistanceTraveled', 'CpuFrequency',
+                'TotalWallTime', 'TotalCpuTime', 'TotalCpuPercent',
+                'TotalMemoryPercent', 'PlannerWallTime', 'PlannerCpuTime',
+                'PlannerCpuPercent', 'PlannerMemoryPercent'
             ])
             self.eval_writer.writerow(
-                ['Unit', 's', 's', 'm', 'deg', 'm', 'deg', 'm'])
+                ['Unit', 's', 's', 'm', 'deg', 'm', 'deg', 'm', '%', '%'])
             self.eval_log_file = open(
                 os.path.join(self.eval_directory, "data_log.txt"), 'a')
 
@@ -262,9 +367,21 @@ class EvalData(object):
                 r = r / np.linalg.norm(r)
                 drift_estimated_rot = 2 * math.acos(r[3]) * 180.0 / math.pi
 
+        # Gather system resource usage stats
+        self.planner_resource_monitor.update_stats()
+
         self.eval_writer.writerow([
             map_name, time_ros, time_real, drift_pos, drift_rot,
-            drift_estimated_pos, drift_estimated_rot, self.distance_traveled
+            drift_estimated_pos, drift_estimated_rot, self.distance_traveled,
+            self.planner_resource_monitor.cpu_frequency,
+            self.planner_resource_monitor.total_wall_time,
+            self.planner_resource_monitor.total_cpu_time,
+            self.planner_resource_monitor.total_cpu_percent,
+            self.planner_resource_monitor.total_memory_percent,
+            self.planner_resource_monitor.node_wall_time,
+            self.planner_resource_monitor.node_cpu_time,
+            self.planner_resource_monitor.node_cpu_percent,
+            self.planner_resource_monitor.node_memory_percent
         ])
         self.eval_voxblox_service(
             os.path.join(self.eval_directory, "voxblox_maps",
