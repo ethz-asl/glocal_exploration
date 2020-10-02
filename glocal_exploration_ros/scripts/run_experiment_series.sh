@@ -1,28 +1,33 @@
 #!/bin/bash
 # ========== Experiment Function ==========
 function run_experiments() {
-  echo "Starting experiment series '$launch_file' of ${n_experiments} runs at '${target_dir}'!"
+  run_target_dir="$target_dir$drift"
 
-  # Create dir
-  if [ ! -d "$target_dir" ]; then
-    mkdir -p $target_dir
+  echo "Starting experiment series '$launch_file' of ${n_experiments} runs at '${run_target_dir}'!"
+
+  # Create dirs
+  if [ ! -d "$run_target_dir" ]; then
+    mkdir -p $run_target_dir
+  fi
+  if [ ! -d "$record_visualization" ]; then
+    mkdir -p "$run_target_dir/tmp_bags"
   fi
 
   # Run the experiments
   for (( i=1; i<=n_experiments; i++ ))
   do
     # run experiment
-    roslaunch glocal_exploration_ros $launch_file.launch data_path:=$target_dir record_data:=true time_limit:=$duration data_interval:=$frequency drift_config:=$drift.yaml record_visualization:=$record_visualization
+    roslaunch glocal_exploration_ros $launch_file.launch data_path:=$run_target_dir record_data:=true time_limit:=$duration data_interval:=$frequency drift_config:=$drift.yaml record_visualization:=$record_visualization
     # evaluate
-    roslaunch glocal_exploration_ros evaluate_experiment.launch target_directory:=$target_dir method:=recent series:=false clear_voxblox_maps:=$clear_voxblox_maps evaluate:=true
+    roslaunch glocal_exploration_ros evaluate_experiment.launch target_directory:=$run_target_dir method:=recent series:=false clear_voxblox_maps:=$clear_voxblox_maps evaluate:=true
   done
 
-  roslaunch glocal_exploration_ros evaluate_experiment.launch target_directory:=$target_dir series:=true
-  echo "Experiment series '$launch_file' of ${n_experiments} runs at '${target_dir}' finished!"
+  roslaunch glocal_exploration_ros evaluate_experiment.launch target_directory:=$run_target_dir series:=true
+  echo "Experiment series '$launch_file' of ${n_experiments} runs at '${run_target_dir}' finished!"
 }
 
 # ========== General args (need to be set) ==========
-target_dir="/home/victor/data/glocal/automated_tests"		# Can reuse same dir to add experiments
+target_dir="/home/victor/data/glocal/automated_tests/glocal/"
 
 record_visualization=true
 clear_voxblox_maps=true		# Irreversibly remove maps after evaluation to save disk space
