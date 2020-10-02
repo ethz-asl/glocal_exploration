@@ -66,8 +66,8 @@ class ResourceMonitor(object):
 
         target_node = ServerProxy(target_node_api)
         target_node_pid = rosnode._succeed(target_node.getPid(caller_id))
-        rospy.loginfo("Registered glocal system node PID {} for resource "
-                      "usage tracking".format(target_node_pid))
+        rospy.loginfo('Registered %s node PID %i for resource '
+                      'usage tracking' % (node_name, target_node_pid))
         return psutil.Process(target_node_pid)
 
     def update_stats(self):
@@ -137,7 +137,9 @@ class EvalData(object):
         self.time_limit = rospy.get_param(
             '~time_limit', 0.0)  # Maximum sim duration in minutes, 0 for inf
 
-        self.planner_node_name = '/glocal_system'
+        # Name of the node whose resource usage we measure
+        self.planner_node_name = rospy.get_param(
+            '~planner_node_name', '/glocal_system')
 
         self.eval_walltime_0 = None
         self.eval_rostime_0 = None

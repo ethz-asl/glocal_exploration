@@ -22,6 +22,7 @@
   <arg name="data_path" default="/home/lukas/Documents/Glocal/Data"/>
   <arg name="time_limit" default="30"/> <!-- min -->
   <arg name="data_interval" default="30"/>  <!-- sec -->
+  <arg name="planner_node_name" default="/active_3d_planner/planner_node"/> <!-- Name of Active 3D's ROS node -->
   
   
 
@@ -95,7 +96,7 @@
   <!-- Experiment startup and Evaluation -->
   <group ns="evaluation">
     <!-- Manager -->
-    <node name="experiment_manager" pkg="glocal_exploration_ros" type="experiment_manager.py" output="screen" required="true">                
+    <node name="experiment_manager" pkg="glocal_exploration_ros" type="experiment_manager.py" output="screen" required="true">
       <remap from="collision" to="/$(arg mav_name)/collision" />
       <param name="ns_planner" value="/active_3d_planner/planner_node/toggle_running" />
       <param name="ns_voxblox" value="voxblox_gt" />
@@ -103,7 +104,8 @@
       <param name="eval_directory" value="$(arg data_path)" />
       <param name="time_limit" value="$(arg time_limit)" />
       <param name="eval_frequency" value="$(arg data_interval)" />
-      
+      <param name="planner_node_name" value="$(arg planner_node_name)" />
+
       <param name="startup_timeout" value="30.0" />
     </node>
     
