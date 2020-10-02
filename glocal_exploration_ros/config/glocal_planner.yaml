@@ -4,7 +4,9 @@
 voxel_size: &voxel_size 0.2
 voxels_per_side: &voxels_per_side 16
 truncation_distance: &truncation_distance 0.6
-collision_radius: &collision_radius 1.0
+traversability_radius_local_planner: &traversability_radius_local_planner 1.2
+traversability_radius_global_planner: &traversability_radius_global_planner 1.1
+traversability_radius_path_following: &traversability_radius_path_following 1.0
 max_ray_length: &max_ray_length 10
 
 # General params
@@ -28,7 +30,7 @@ mapping:
   type: voxgraph
 
   clearing_radius: 1.0
-  traversability_radius: *collision_radius
+  traversability_radius: *traversability_radius_path_following
   verbosity: 4
 
   # VOXBLOX sliding window
@@ -39,9 +41,11 @@ mapping:
   # Integrator settings general
   method: "projective"
   truncation_distance: *truncation_distance
-  min_ray_length_m: 1.0
+  min_ray_length_m: 0.1
   max_ray_length_m: *max_ray_length
-  max_weight: 1000
+  # Disable max_weight. Not required in sliding window, and makes integration
+  # and deintegration assymetric.
+  max_weight: 1000000
   use_const_weight: true
   use_weight_dropoff: false
   max_consecutive_ray_collisions: 1  # Only affects the fast integrator
@@ -123,6 +127,7 @@ local_planner:
   path_cropping_length: 0.3 # m
   max_number_of_neighbors: 30
   maximum_rewiring_iterations: 100
+  traversability_radius: *traversability_radius_local_planner
   
   # Termination
   reconsideration_time: 2 # s
@@ -178,7 +183,7 @@ global_planner:
  
   # A star search along linked sparse skeleton graph submaps
   skeleton_a_star:
-    traversability_radius: 1.1
+    traversability_radius: *traversability_radius_global_planner
     max_num_start_vertex_candidates: 5
     max_num_end_vertex_candidates: 5
     linking_num_nearest_neighbors: 3

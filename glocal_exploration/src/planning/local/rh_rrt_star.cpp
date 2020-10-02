@@ -23,6 +23,7 @@ RHRRTStar::Config::Config() { setConfigName("RHRRTStar"); }
 void RHRRTStar::Config::checkParams() const {
   checkParamGT(max_path_length, 0.f, "max_path_length");
   checkParamGE(path_cropping_length, 0.f, "path_cropping_length");
+  checkParamGT(traversability_radius, 0.f, "traversability_radius");
   checkParamGT(max_number_of_neighbors, 0, "max_number_of_neighbors");
   checkParamGT(maximum_rewiring_iterations, 0, "maximum_rewiring_iterations");
   checkParamGT(sampling_range, 0.f, "sampling_range");
@@ -41,6 +42,7 @@ void RHRRTStar::Config::fromRosParam() {
   rosParam("min_sampling_distance", &min_sampling_distance);
   rosParam("max_path_length", &max_path_length);
   rosParam("path_cropping_length", &path_cropping_length);
+  rosParam("traversability_radius", &traversability_radius);
   rosParam("max_number_of_neighbors", &max_number_of_neighbors);
   rosParam("maximum_rewiring_iterations", &maximum_rewiring_iterations);
   rosParam("terminaton_min_tree_size", &terminaton_min_tree_size);
@@ -57,6 +59,7 @@ void RHRRTStar::Config::printFields() const {
   printField("min_sampling_distance", min_sampling_distance);
   printField("max_path_length", max_path_length);
   printField("path_cropping_length", path_cropping_length);
+  printField("traversability_radius", traversability_radius);
   printField("max_number_of_neighbors", max_number_of_neighbors);
   printField("maximum_rewiring_iterations", maximum_rewiring_iterations);
   printField("terminaton_min_tree_size", terminaton_min_tree_size);
@@ -320,7 +323,8 @@ void RHRRTStar::updateCollision() {
                 config_.sampling_range ||
             !comm_->map()->isLineTraversableInActiveSubmap(
                 connection->getParent()->pose.position,
-                connection->getTarget()->pose.position)) {
+                connection->getTarget()->pose.position,
+                config_.traversability_radius)) {
           viewpoint->removeConnection(connection);
           offset--;
         }
@@ -602,7 +606,8 @@ bool RHRRTStar::sampleNewPoint(ViewPoint* point) {
   // Verify and crop the sampled path.
   goal = origin + direction * (distance_max + config_.path_cropping_length);
   Point goal_cropped;
-  comm_->map()->isLineTraversableInActiveSubmap(origin, goal, &goal_cropped);
+  comm_->map()->isLineTraversableInActiveSubmap(
+      origin, goal, config_.traversability_radius, &goal_cropped);
   // Substract a safety interval.
   const FloatingPoint distance =
       (goal_cropped - origin).norm() - config_.path_cropping_length;

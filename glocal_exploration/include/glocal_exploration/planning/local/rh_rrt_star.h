@@ -28,6 +28,7 @@ class RHRRTStar : public LocalPlannerBase {
                                                  // viewpoints
     FloatingPoint path_cropping_length = 0.2f;   // m, distance until cropped
                                                  // paths become infeasible
+    FloatingPoint traversability_radius = 1.f;
 
     // Behavior.
     int maximum_rewiring_iterations = 100;
