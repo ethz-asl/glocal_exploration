@@ -41,11 +41,11 @@ mapping:
   # Integrator settings general
   method: "projective"
   truncation_distance: *truncation_distance
-  min_ray_length_m: 0.1
+  min_ray_length_m: 0.6
   max_ray_length_m: *max_ray_length
   # When tuning the max weight, note that it makes integration and deintegration
   # assymetric. Among others, good values therefore depend on the window length.
-  max_weight: 1400
+  max_weight: 14000
   use_const_weight: true
   use_weight_dropoff: false
   max_consecutive_ray_collisions: 1  # Only affects the fast integrator
@@ -66,9 +66,9 @@ mapping:
   color_mode: "lambert" #normals
 #  slice_level: -0.5
   slice_level_follow_robot: true
-  publish_pointclouds: true
-  publish_traversable: true
-  publish_slices: true
+  publish_pointclouds: false
+  publish_traversable: false
+  publish_slices: false
   publish_pointclouds_on_update: false
 
 
@@ -143,6 +143,7 @@ local_planner:
   horizontal_resolution: 10000 # 1024 / 200
   ray_step: 0.4 # m
   downsampling_factor: 3
+  num_yaw_samples: 3
   T_baselink_sensor:  # 15 deg pitch
    - [0.9659258,  0.0000000,  0.2588190, 0.0]
    - [0.0000000,  1.0000000,  0.0000000, 0.0]
