@@ -44,7 +44,7 @@ void SkeletonAStar::Config::printFields() const {
 }
 
 bool SkeletonAStar::planPath(const Point& start_point, const Point& goal_point,
-                             std::vector<WayPoint>* way_points) {
+                             std::vector<RelativeWayPoint>* way_points) {
   // Search the nearest reachable start vertex on the skeleton graphs
   if (!comm_->map()->isTraversableInActiveSubmap(
           start_point, config_.traversability_radius)) {
@@ -368,19 +368,20 @@ bool SkeletonAStar::getPathBetweenVertices(
 
 void SkeletonAStar::convertVertexToWaypointPath(
     const std::vector<GlobalVertexId>& vertex_path, const Point& goal_point,
-    std::vector<WayPoint>* way_points) const {
+    std::vector<RelativeWayPoint>* way_points) const {
   CHECK_NOTNULL(way_points);
   way_points->clear();
   for (const GlobalVertexId& global_vertex_id : vertex_path) {
     if (global_vertex_id == kGoalVertexId) {
-      way_points->emplace_back(WayPoint(goal_point, /* yaw */ 0.f));
+      way_points->emplace_back(RelativeWayPoint(goal_point));
     } else {
-      const SkeletonSubmap& submap =
-          skeleton_submap_collection_.getSubmapById(global_vertex_id.submap_id);
+      SkeletonSubmap::ConstPtr submap_ptr =
+          skeleton_submap_collection_.getSubmapConstPtrById(
+              global_vertex_id.submap_id);
       const voxblox::SkeletonVertex& vertex =
-          submap.getSkeletonGraph().getVertex(global_vertex_id.vertex_id);
-      const Point t_odom_vertex = submap.getPose() * vertex.point;
-      way_points->emplace_back(WayPoint(t_odom_vertex, /* yaw */ 0.f));
+          submap_ptr->getSkeletonGraph().getVertex(global_vertex_id.vertex_id);
+      const Point t_submap_vertex = vertex.point;
+      way_points->emplace_back(RelativeWayPoint(submap_ptr, t_submap_vertex));
     }
   }
 }

@@ -43,9 +43,9 @@ mapping:
   truncation_distance: *truncation_distance
   min_ray_length_m: 0.1
   max_ray_length_m: *max_ray_length
-  # Disable max_weight. Not required in sliding window, and makes integration
-  # and deintegration assymetric.
-  max_weight: 1000000
+  # When tuning the max weight, note that it makes integration and deintegration
+  # assymetric. Among others, good values therefore depend on the window length.
+  max_weight: 1400
   use_const_weight: true
   use_weight_dropoff: false
   max_consecutive_ray_collisions: 1  # Only affects the fast integrator

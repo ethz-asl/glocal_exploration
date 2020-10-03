@@ -15,6 +15,7 @@
 #include <glocal_exploration/planning/global/submap_frontier_evaluator.h>
 #include <glocal_exploration/state/communicator.h>
 #include <glocal_exploration/3rd_party/config_utilities.hpp>
+#include "glocal_exploration/planning/global/skeleton/relative_waypoint.h"
 
 namespace glocal_exploration {
 /**
@@ -32,6 +33,9 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
     int goal_search_steps = 5;  // number of grid elements per side of cube.
     FloatingPoint goal_search_step_size = 1.f;  // m, grid element length.
     FloatingPoint safety_distance = 0.f;
+    // Maximum number of times the system can replan to the currently chosen
+    // frontier before returning to local planning (or choosing a new frontier).
+    int max_replan_attempts_to_chosen_frontier = 3;
 
     // Frontier evaluator.
     SubmapFrontierEvaluator::Config submap_frontier_config;
@@ -51,7 +55,7 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
     int num_points = 0;
     std::vector<Point> frontier_points;
     int clusters = 1;
-    std::vector<WayPoint> way_points;
+    std::vector<RelativeWayPoint> way_points;
     enum Reachability {
       kReachable,
       kUnreachable,
@@ -77,7 +81,7 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   const std::vector<FrontierSearchData>& getFrontierSearchData() const {
     return frontier_data_;
   }
-  const std::vector<WayPoint>& getWayPoints() const { return way_points_; }
+  std::vector<WayPoint> getWayPoints() const;
   VisualizationData& visualizationData() { return vis_data_; }  // mutable
 
   void addSubmap(cblox::TsdfEsdfSubmap::ConstPtr submap_ptr,
@@ -96,10 +100,12 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   void executeWayPoint();
 
   // Helper methods.
-  bool computePath(const Point& goal, std::vector<WayPoint>* way_points);
+  bool computePath(const Point& goal,
+                   std::vector<RelativeWayPoint>* way_points);
+  int num_replan_attempts_to_chosen_frontier_;
   bool computePathToFrontier(const Point& frontier_centroid,
                              const std::vector<Point>& frontier_points,
-                             std::vector<WayPoint>* way_points,
+                             std::vector<RelativeWayPoint>* way_points,
                              bool* frontier_is_observable = nullptr);
   void clusterFrontiers();
   bool verifyNextWayPoints();
@@ -113,7 +119,7 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   SkeletonAStar skeleton_a_star_;
 
   // Variables.
-  std::vector<WayPoint> way_points_;  // in mission frame.
+  std::vector<RelativeWayPoint> way_points_;  // in mission frame.
   std::vector<FrontierSearchData> frontier_data_;
   VisualizationData vis_data_;
 

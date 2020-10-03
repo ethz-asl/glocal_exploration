@@ -10,6 +10,7 @@
 #include <cblox/core/tsdf_esdf_submap.h>
 
 #include "glocal_exploration/planning/global/skeleton/global_vertex_id.h"
+#include "glocal_exploration/planning/global/skeleton/relative_waypoint.h"
 #include "glocal_exploration/planning/global/skeleton/skeleton_submap_collection.h"
 #include "glocal_exploration/state/communicator.h"
 #include "glocal_exploration/state/waypoint.h"
@@ -41,7 +42,7 @@ class SkeletonAStar {
   }
 
   bool planPath(const Point& start_point, const Point& goal_point,
-                std::vector<WayPoint>* way_points);
+                std::vector<RelativeWayPoint>* way_points);
 
   std::vector<GlobalVertexId> searchClosestReachableSkeletonVertices(
       const Point& point, const int n_closest,
@@ -55,9 +56,9 @@ class SkeletonAStar {
       std::vector<GlobalVertexId>* vertex_path) const;
   void convertVertexToWaypointPath(
       const std::vector<GlobalVertexId>& vertex_path, const Point& goal_point,
-      std::vector<WayPoint>* way_points) const;
+      std::vector<RelativeWayPoint>* way_points) const;
 
-  const SkeletonSubmapCollection& getSkeletonSubmapCollection() {
+  const SkeletonSubmapCollection& getSkeletonSubmapCollection() const {
     return skeleton_submap_collection_;
   }
   void addSubmap(cblox::TsdfEsdfSubmap::ConstPtr submap_ptr,
@@ -72,7 +73,7 @@ class SkeletonAStar {
   std::shared_ptr<Communicator> comm_;
   SkeletonSubmapCollection skeleton_submap_collection_;
 
-  const GlobalVertexId kGoalVertexId{-1u, -1u};
+  const GlobalVertexId kGoalVertexId{RelativeWayPoint::kOdomFrameId, -1u};
 
   static void getSolutionVertexPath(
       GlobalVertexId end_vertex_id,

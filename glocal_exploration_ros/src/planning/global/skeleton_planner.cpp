@@ -15,6 +15,8 @@ void SkeletonPlanner::Config::checkParams() const {
   checkParamGT(goal_search_steps, 0, "goal_search_steps");
   checkParamGE(max_closest_frontier_search_time_sec, 0,
                "max_closest_frontier_search_time_sec");
+  checkParamGT(max_replan_attempts_to_chosen_frontier, 0,
+               "max_replan_attempts_to_chosen_frontier");
 }
 
 void SkeletonPlanner::Config::fromRosParam() {
@@ -27,6 +29,8 @@ void SkeletonPlanner::Config::fromRosParam() {
   rosParam("goal_search_step_size", &goal_search_step_size);
   rosParam("safety_distance", &safety_distance);
   rosParam(&submap_frontier_config);
+  rosParam("max_replan_attempts_to_chosen_frontier",
+           &max_replan_attempts_to_chosen_frontier);
   rosParam("max_closest_frontier_search_time_sec",
            &max_closest_frontier_search_time_sec);
   nh_private_namespace = rosParamNameSpace() + "/skeleton";
@@ -45,6 +49,8 @@ void SkeletonPlanner::Config::printFields() const {
   printField("submap_frontier_config", submap_frontier_config);
   printField("max_closest_frontier_search_time_sec",
              max_closest_frontier_search_time_sec);
+  printField("max_replan_attempts_to_chosen_frontier",
+             max_replan_attempts_to_chosen_frontier);
 }
 
 SkeletonPlanner::SkeletonPlanner(
@@ -52,6 +58,7 @@ SkeletonPlanner::SkeletonPlanner(
     std::shared_ptr<Communicator> communicator)
     : config_(config.checkValid()),
       SubmapFrontierEvaluator(config.submap_frontier_config, communicator),
+      num_replan_attempts_to_chosen_frontier_(0),
       skeleton_a_star_(skeleton_a_star_config, communicator) {
   LOG_IF(INFO, config_.verbosity >= 1) << "\n" << config_.toString();
 
@@ -114,6 +121,14 @@ void SkeletonPlanner::executePlanningIteration() {
     // Execute way points until finished, then switch back to local.
     executeWayPoint();
   }
+}
+
+std::vector<WayPoint> SkeletonPlanner::getWayPoints() const {
+  std::vector<WayPoint> global_way_points;
+  for (const RelativeWayPoint& submap_way_point : way_points_) {
+    global_way_points.emplace_back(static_cast<WayPoint>(submap_way_point));
+  }
+  return global_way_points;
 }
 
 void SkeletonPlanner::resetPlanner() {
@@ -216,17 +231,18 @@ bool SkeletonPlanner::computeGoalPoint() {
     } else {
       // Try to find a path via linked skeleton planning.
       path_counter++;
-      std::vector<WayPoint> way_points;
+      std::vector<RelativeWayPoint> way_points;
       bool frontier_is_observable = false;
       if (computePathToFrontier(candidate.centroid, candidate.frontier_points,
                                 &way_points, &frontier_is_observable)) {
         // Frontier is reachable, save path and compute path length.
         candidate.way_points = way_points;
         candidate.path_distance =
-            (way_points[0].position - current_position).norm();
+            (way_points[0].getGlobalPosition() - current_position).norm();
         for (size_t i = 1; i < way_points.size(); ++i) {
-          candidate.path_distance +=
-              (way_points[i].position - way_points[i - 1].position).norm();
+          candidate.path_distance += (way_points[i].getGlobalPosition() -
+                                      way_points[i - 1].getGlobalPosition())
+                                         .norm();
         }
         shortest_path = std::min(shortest_path, candidate.path_distance);
         candidate.reachability = FrontierSearchData::kReachable;
@@ -258,6 +274,7 @@ bool SkeletonPlanner::computeGoalPoint() {
         return lhs.path_distance < rhs.path_distance;
       });
   way_points_ = best_path_it->way_points;
+  num_replan_attempts_to_chosen_frontier_ = 0;
 
   // Logging.
   auto t_end = std::chrono::high_resolution_clock::now();
@@ -336,7 +353,7 @@ void SkeletonPlanner::executeWayPoint() {
       }
 
       // Send the next waypoint in the list.
-      WayPoint& way_point = way_points_[0];
+      auto way_point = static_cast<WayPoint>(way_points_[0]);
       way_point.yaw = std::atan2(
           (way_point.position.y() - comm_->currentPose().position.y()),
           (way_point.position.x() - comm_->currentPose().position.x()));
@@ -347,57 +364,109 @@ void SkeletonPlanner::executeWayPoint() {
 }
 
 bool SkeletonPlanner::verifyNextWayPoints() {
-  // Connect as many waypoints as possible with a single line, all points
-  // are checked in the sliding window map to guarantee safety.
+  const Point current_position = comm_->currentPose().position;
+
+  // Start by checking if the current position is intraversable.
+  if (!comm_->map()->isTraversableInActiveSubmap(
+          current_position, skeleton_a_star_.getTraversabilityRadius())) {
+    LOG_IF(INFO, config_.verbosity >= 2)
+        << "Current position is intraversable.";
+    // Attempt find a nearby traversable point and move to it.
+    Point free_position = comm_->currentPose().position;
+    if (findNearbyTraversablePoint(skeleton_a_star_.getTraversabilityRadius(),
+                                   &free_position)) {
+      LOG_IF(INFO, config_.verbosity >= 2)
+          << "Moving to nearby traversable point.";
+      comm_->requestWayPoint(WayPoint(free_position, 0.f));
+    } else {
+      // Fall back to local planning.
+      LOG_IF(INFO, config_.verbosity) << "Could not find nearby traversable "
+                                         "point. Returning to local planning.";
+      comm_->stateMachine()->signalLocalPlanning();
+      vis_data_.execution_finished = true;
+    }
+    return false;
+  }
+
+  // Check if the coming segment is intraversable.
+  Point last_traversable_point;
+  if (!comm_->map()->isLineTraversableInActiveSubmap(
+          current_position, way_points_[0].getGlobalPosition(),
+          &last_traversable_point)) {
+    LOG_IF(INFO, config_.verbosity >= 2)
+        << "Next global path segment is intraversable.";
+    // As a first remedy, try to find a new path to the current frontier.
+    if (num_replan_attempts_to_chosen_frontier_ <
+        config_.max_replan_attempts_to_chosen_frontier) {
+      ++num_replan_attempts_to_chosen_frontier_;
+      LOG(WARNING) << "Attempt nr" << num_replan_attempts_to_chosen_frontier_
+                   << " to find a new global path to the current frontier.";
+      const RelativeWayPoint& current_frontier_goal = way_points_.back();
+      std::vector<RelativeWayPoint> new_way_points;
+      if (computePath(current_frontier_goal.getGlobalPosition(),
+                      &new_way_points)) {
+        LOG(INFO) << "Found a new global path to the current frontier.";
+        way_points_ = new_way_points;
+        return true;
+      } else {
+        LOG(INFO)
+            << "Could not find a new global path to the current frontier.";
+      }
+    }
+
+    // As a second remedy, try to move a bit ahead to refresh the active submap.
+    if ((current_position - last_traversable_point).norm() >
+        config_.path_verification_min_distance + config_.safety_distance) {
+      // Insert intermediate goal s.t. path can be observed.
+      LOG_IF(INFO, config_.verbosity >= 2)
+          << "Moving a bit ahead to refresh the active submap.";
+      const Point direction = (last_traversable_point - current_position);
+      const FloatingPoint move_ahead_distance =
+          std::min(direction.norm(), 1.f - config_.safety_distance);
+      const Point new_goal =
+          current_position + move_ahead_distance * direction.normalized();
+      way_points_.insert(way_points_.begin(), RelativeWayPoint(new_goal));
+      return false;
+    }
+
+    // Give up and return to local planning.
+    LOG_IF(INFO, config_.verbosity >= 2) << "Returning to local planning.";
+    comm_->stateMachine()->signalLocalPlanning();
+    // Try to avoid stopping in intraversable space.
+    Point free_position = comm_->currentPose().position;
+    if (findNearbyTraversablePoint(skeleton_a_star_.getTraversabilityRadius(),
+                                   &free_position)) {
+      comm_->requestWayPoint(WayPoint(free_position, 0.f));
+    }
+    vis_data_.execution_finished = true;
+    return false;
+  }
+
+  // The next path segment is traversable.
+  // Check if we can skip some of the coming waypoints, by connecting the
+  // current pose to the nth waypoint with a straight line.
   int waypoint_index = 0;
-  Point current_position = comm_->currentPose().position;
-  Point goal;
   while (waypoint_index < way_points_.size()) {
     if (!comm_->map()->isLineTraversableInActiveSubmap(
-            current_position, way_points_[waypoint_index].position, &goal)) {
+            current_position,
+            way_points_[waypoint_index].getGlobalPosition())) {
       break;
     } else {
       waypoint_index++;
     }
   }
-
-  // If less than one segment is connected check for minimum distance.
-  if (waypoint_index == 0) {
-    // TODO(schmluk): make this a param if we keep it.
-    if ((current_position - goal).norm() >
-        config_.path_verification_min_distance + config_.safety_distance) {
-      // Insert intermediate goal s.t. path can be observed.
-      Point direction = goal - current_position;
-      Point new_goal =
-          current_position +
-          direction * (1.f - config_.safety_distance / direction.norm());
-      way_points_.insert(way_points_.begin(), WayPoint(new_goal, 0.f));
-    } else {
-      // The goal is inaccessible, return to local planning.
-      comm_->stateMachine()->signalLocalPlanning();
-      LOG_IF(INFO, config_.verbosity >= 2)
-          << "Global path became infeasible, returning to local planning.";
-
-      // Make sure we don't stop in intraversable space.
-      Point free_position = comm_->currentPose().position;
-      findNearbyTraversablePoint(skeleton_a_star_.getTraversabilityRadius(),
-                                 &free_position);
-      comm_->requestWayPoint(WayPoint(free_position, 0.f));
-
-      vis_data_.execution_finished = true;
-      return false;
-    }
-  } else {
-    // The ith path was intraversible, remove previous way points.
+  if (0 < waypoint_index) {
+    // Remove the unecessary waypoints to shorten the path.
     for (int i = 0; i < waypoint_index - 1; ++i) {
       way_points_.erase(way_points_.begin());
     }
   }
+
   return true;
 }
 
 bool SkeletonPlanner::computePath(const Point& goal,
-                                  std::vector<WayPoint>* way_points) {
+                                  std::vector<RelativeWayPoint>* way_points) {
   CHECK_NOTNULL(way_points);
 
   const FloatingPoint traversability_radius =
@@ -418,7 +487,7 @@ bool SkeletonPlanner::computePath(const Point& goal,
 
 bool SkeletonPlanner::computePathToFrontier(
     const Point& frontier_centroid, const std::vector<Point>& frontier_points,
-    std::vector<WayPoint>* way_points, bool* frontier_is_observable) {
+    std::vector<RelativeWayPoint>* way_points, bool* frontier_is_observable) {
   CHECK_NOTNULL(way_points);
 
   const std::shared_ptr<MapBase> map = comm_->map();
@@ -505,12 +574,20 @@ bool SkeletonPlanner::computePathToFrontier(
   // and the frontier centroid.
   way_points->pop_back();
   if (!way_points->empty()) {
-    const Point last_vertex_position = way_points->back().position;
-    Point last_traversable_point;
+    const RelativeWayPoint& last_vertex_waypoint = way_points->back();
+    Point t_odom_last_traversable_point;
     map->isLineTraversableInGlobalMap(
-        last_vertex_position, frontier_centroid,
-        skeleton_a_star_.getTraversabilityRadius(), &last_traversable_point);
-    way_points->emplace_back(WayPoint(last_traversable_point, 0.f));
+        last_vertex_waypoint.getGlobalPosition(), frontier_centroid,
+        skeleton_a_star_.getTraversabilityRadius(),
+        &t_odom_last_traversable_point);
+    SkeletonSubmap::ConstPtr last_vertex_submap_ptr =
+        skeleton_a_star_.getSkeletonSubmapCollection().getSubmapConstPtrById(
+            last_vertex_waypoint.getFrameId());
+    const Point t_submap_last_traversable_point =
+        last_vertex_submap_ptr->getPose().inverse() *
+        t_odom_last_traversable_point;
+    way_points->emplace_back(RelativeWayPoint(last_vertex_submap_ptr,
+                                              t_submap_last_traversable_point));
   }
 
   return true;
