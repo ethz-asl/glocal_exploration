@@ -516,8 +516,9 @@ bool SkeletonPlanner::computePathToFrontier(
     }
   }
 
-  // Search the N nearest reachable start vertices on the skeleton graphs
-  const std::vector<GlobalVertexId> start_vertex_candidates =
+  // Search the N nearest reachable start vertices on the skeleton graphs.
+  // First try to find vertices that are reachable in the active submap.
+  std::vector<GlobalVertexId> start_vertex_candidates =
       skeleton_a_star_.searchClosestReachableSkeletonVertices(
           start_point,
           skeleton_a_star_.getConfig().max_num_start_vertex_candidates,
@@ -525,11 +526,23 @@ bool SkeletonPlanner::computePathToFrontier(
             return map->isLineTraversableInActiveSubmap(start_point, end_point,
                                                         traversability_radius);
           });
+  // If this fails, search vertices that are reachable in the global map to give
+  // the path follower a chance to try to reach them.
   if (start_vertex_candidates.empty()) {
-    LOG(INFO)
-        << "Could not find any reachable skeleton vertices near start point ("
-        << start_point.transpose() << ")";
-    return false;
+    start_vertex_candidates =
+        skeleton_a_star_.searchClosestReachableSkeletonVertices(
+            start_point,
+            skeleton_a_star_.getConfig().max_num_start_vertex_candidates,
+            [&](const Point& start_point, const Point& end_point) {
+              return map->isLineTraversableInGlobalMap(start_point, end_point,
+                                                       traversability_radius);
+            });
+    if (start_vertex_candidates.empty()) {
+      LOG(INFO)
+          << "Could not find any reachable skeleton vertices near start point ("
+          << start_point.transpose() << "). Both in the local and global map.";
+      return false;
+    }
   }
 
   // Search the N skeleton vertices that are closest to the frontier centroid,
