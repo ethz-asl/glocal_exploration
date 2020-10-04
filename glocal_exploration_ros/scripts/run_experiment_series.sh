@@ -55,21 +55,21 @@ run_experiments
 drift="maze/drift_0"  # drift_0, drift_1, drift_2, drift_3, drift_4
 run_experiments
 
-# Active 3D
-target_dir="/home/victor/data/glocal/automated_tests/active_3d/"
-launch_file="active_3d_run_maze"  # run_maze, active_3d_run_maze
-
-drift="maze/drift_4"  # drift_0, drift_1, drift_2, drift_3, drift_4
-run_experiments
-
-drift="maze/drift_3"  # drift_0, drift_1, drift_2, drift_3, drift_4
-run_experiments
-
-drift="maze/drift_2"  # drift_0, drift_1, drift_2, drift_3, drift_4
-run_experiments
-
-drift="maze/drift_1"  # drift_0, drift_1, drift_2, drift_3, drift_4
-run_experiments
-
-drift="maze/drift_0"  # drift_0, drift_1, drift_2, drift_3, drift_4
-run_experiments
+## Active 3D
+#target_dir="/home/victor/data/glocal/automated_tests/active_3d/"
+#launch_file="active_3d_run_maze"  # run_maze, active_3d_run_maze
+#
+#drift="maze/drift_4"  # drift_0, drift_1, drift_2, drift_3, drift_4
+#run_experiments
+#
+#drift="maze/drift_3"  # drift_0, drift_1, drift_2, drift_3, drift_4
+#run_experiments
+#
+#drift="maze/drift_2"  # drift_0, drift_1, drift_2, drift_3, drift_4
+#run_experiments
+#
+#drift="maze/drift_1"  # drift_0, drift_1, drift_2, drift_3, drift_4
+#run_experiments
+#
+#drift="maze/drift_0"  # drift_0, drift_1, drift_2, drift_3, drift_4
+#run_experiments

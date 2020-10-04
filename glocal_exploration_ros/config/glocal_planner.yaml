@@ -4,7 +4,7 @@
 voxel_size: &voxel_size 0.2
 voxels_per_side: &voxels_per_side 16
 truncation_distance: &truncation_distance 0.6
-traversability_radius_local_planner: &traversability_radius_local_planner 1.0
+traversability_radius_local_planner: &traversability_radius_local_planner 1.1
 traversability_radius_global_planner: &traversability_radius_global_planner 1.1
 traversability_radius_path_following: &traversability_radius_path_following 1.0
 max_ray_length: &max_ray_length 10

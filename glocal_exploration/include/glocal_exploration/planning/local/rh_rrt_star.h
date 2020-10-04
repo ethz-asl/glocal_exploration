@@ -180,6 +180,10 @@ class RHRRTStar : public LocalPlannerBase {
   void sampleReconsideration();
   bool isTerminationCriterionMet();
 
+  // emergency
+  bool findSafestNearbyPoint(const FloatingPoint minimum_distance,
+                             Point* position) const;
+
   /* variables */
   bool gain_update_needed_;
   ViewPoint* root_;  // root pointer so it does not need to be searched for all
