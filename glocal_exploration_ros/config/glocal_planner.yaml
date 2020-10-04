@@ -4,7 +4,7 @@
 voxel_size: &voxel_size 0.2
 voxels_per_side: &voxels_per_side 16
 truncation_distance: &truncation_distance 0.6
-traversability_radius_local_planner: &traversability_radius_local_planner 1.2
+traversability_radius_local_planner: &traversability_radius_local_planner 1.0
 traversability_radius_global_planner: &traversability_radius_global_planner 1.1
 traversability_radius_path_following: &traversability_radius_path_following 1.0
 max_ray_length: &max_ray_length 10
@@ -41,11 +41,11 @@ mapping:
   # Integrator settings general
   method: "projective"
   truncation_distance: *truncation_distance
-  min_ray_length_m: 0.6
+  min_ray_length_m: 1.0
   max_ray_length_m: *max_ray_length
   # When tuning the max weight, note that it makes integration and deintegration
   # assymetric. Among others, good values therefore depend on the window length.
-  max_weight: 14000
+  max_weight: 1000
   use_const_weight: true
   use_weight_dropoff: false
   max_consecutive_ray_collisions: 1  # Only affects the fast integrator
@@ -143,7 +143,7 @@ local_planner:
   horizontal_resolution: 10000 # 1024 / 200
   ray_step: 0.4 # m
   downsampling_factor: 3
-  num_yaw_samples: 3
+  num_yaw_samples: 4
   T_baselink_sensor:  # 15 deg pitch
    - [0.9659258,  0.0000000,  0.2588190, 0.0]
    - [0.0000000,  1.0000000,  0.0000000, 0.0]
