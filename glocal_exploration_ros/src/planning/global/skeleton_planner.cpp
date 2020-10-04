@@ -373,10 +373,9 @@ bool SkeletonPlanner::verifyNextWayPoints() {
         << "Current position is intraversable.";
     // Attempt find a nearby traversable point and move to it.
     Point free_position = comm_->currentPose().position;
-    if (findNearbyTraversablePoint(skeleton_a_star_.getTraversabilityRadius(),
-                                   &free_position)) {
-      LOG_IF(INFO, config_.verbosity >= 2)
-          << "Moving to nearby traversable point.";
+    if (findSafestNearbyPoint(skeleton_a_star_.getTraversabilityRadius(),
+                              &free_position)) {
+      LOG_IF(INFO, config_.verbosity >= 2) << "Moving to safest nearby point.";
       comm_->requestWayPoint(WayPoint(free_position, 0.f));
     } else {
       // Fall back to local planning.
@@ -434,8 +433,8 @@ bool SkeletonPlanner::verifyNextWayPoints() {
     comm_->stateMachine()->signalLocalPlanning();
     // Try to avoid stopping in intraversable space.
     Point free_position = comm_->currentPose().position;
-    if (findNearbyTraversablePoint(skeleton_a_star_.getTraversabilityRadius(),
-                                   &free_position)) {
+    if (findSafestNearbyPoint(skeleton_a_star_.getTraversabilityRadius(),
+                              &free_position)) {
       comm_->requestWayPoint(WayPoint(free_position, 0.f));
     }
     vis_data_.execution_finished = true;
@@ -472,11 +471,19 @@ bool SkeletonPlanner::computePath(const Point& goal,
   const FloatingPoint traversability_radius =
       skeleton_a_star_.getTraversabilityRadius();
   Point start_point = comm_->currentPose().position;
-  if (comm_->map()->isTraversableInActiveSubmap(start_point,
-                                                traversability_radius) ||
-      findNearbyTraversablePoint(traversability_radius, &start_point)) {
+  const bool current_position_is_traversable =
+      comm_->map()->isTraversableInActiveSubmap(start_point,
+                                                traversability_radius);
+  if (current_position_is_traversable ||
+      findSafestNearbyPoint(traversability_radius, &start_point)) {
     // Compute path along skeletons
-    return skeleton_a_star_.planPath(start_point, goal, way_points);
+    if (skeleton_a_star_.planPath(start_point, goal, way_points)) {
+      // Set the start point to the safe point if applicable
+      if (!current_position_is_traversable) {
+        way_points->emplace(way_points->begin(), RelativeWayPoint(start_point));
+      }
+      return true;
+    }
   }
 
   LOG(WARNING) << "Skeleton planner: The active submap is not traversable "
@@ -496,12 +503,12 @@ bool SkeletonPlanner::computePathToFrontier(
 
   // Ensure the start point is valid
   Point start_point = comm_->currentPose().position;
-  const bool current_pose_is_intraversable =
+  const bool current_position_is_intraversable =
       !map->isTraversableInActiveSubmap(start_point, traversability_radius);
-  if (current_pose_is_intraversable) {
-    if (!findNearbyTraversablePoint(traversability_radius, &start_point)) {
+  if (current_position_is_intraversable) {
+    if (!findSafestNearbyPoint(traversability_radius, &start_point)) {
       LOG(WARNING) << "Skeleton planner: The active submap is not traversable "
-                      "at the current pose. Could not find a nearby valid "
+                      "at the current pose. Could not find a nearby safe "
                       "start position.";
       return false;
     }
@@ -570,6 +577,10 @@ bool SkeletonPlanner::computePathToFrontier(
   // Convert the path from vertex IDs to waypoints
   skeleton_a_star_.convertVertexToWaypointPath(vertex_path, frontier_centroid,
                                                way_points);
+  // Set the start point to the safe point if applicable
+  if (current_position_is_intraversable) {
+    way_points->emplace(way_points->begin(), RelativeWayPoint(start_point));
+  }
   // Set the last waypoint to a safe point between the last skeleton vertex
   // and the frontier centroid.
   way_points->pop_back();
@@ -594,7 +605,7 @@ bool SkeletonPlanner::computePathToFrontier(
 }
 
 bool SkeletonPlanner::findNearbyTraversablePoint(
-    const FloatingPoint traversability_radius, Point* position) {
+    const FloatingPoint traversability_radius, Point* position) const {
   CHECK_NOTNULL(position);
   const Point initial_position = *position;
 
@@ -628,6 +639,60 @@ bool SkeletonPlanner::findNearbyTraversablePoint(
         std::max(map_ptr->getVoxelSize(), traversability_radius - distance);
     *position += step_size * gradient;
   }
+  return false;
+}
+
+bool SkeletonPlanner::findSafestNearbyPoint(
+    const FloatingPoint minimum_distance, Point* position) const {
+  CHECK_NOTNULL(position);
+  const Point initial_position = *position;
+
+  constexpr int kMaxNumSteps = 80;
+  const std::shared_ptr<MapBase> map_ptr = comm_->map();
+  const FloatingPoint voxel_size = map_ptr->getVoxelSize();
+
+  Point current_position = initial_position;
+  FloatingPoint best_distance_so_far = 0.f;
+  Point best_position_so_far = initial_position;
+  int step_idx = 1;
+  for (; step_idx < kMaxNumSteps; ++step_idx) {
+    // Get the distance.
+    FloatingPoint distance = 0.f;
+    Point gradient;
+    if (!map_ptr->getDistanceAndGradientInActiveSubmap(current_position,
+                                                       &distance, &gradient)) {
+      LOG(WARNING) << "Failed to look up distance and gradient "
+                      "information at: "
+                   << current_position.transpose();
+      return false;
+    }
+
+    // Save the new position if it is better, or see if it's time to terminate.
+    if (best_distance_so_far < distance) {
+      best_distance_so_far = distance;
+      best_position_so_far = current_position;
+    } else if (distance + voxel_size / 2 < best_distance_so_far ||
+               step_idx == kMaxNumSteps - 1) {
+      if (map_ptr->isTraversableInActiveSubmap(current_position,
+                                               minimum_distance)) {
+        LOG(INFO) << "Found a safe point near initial position ("
+                  << initial_position.transpose() << "), at ("
+                  << best_position_so_far.transpose() << ") with distance "
+                  << best_distance_so_far << " after " << step_idx
+                  << " gradient ascent steps.";
+        *position = best_position_so_far;
+        return true;
+      }
+    }
+
+    // Take a tiny step in the direction that maximizes the distance.
+    const FloatingPoint step_size = voxel_size;
+    current_position += step_size * gradient;
+  }
+
+  LOG(INFO) << "Could not find a safer point near initial position ("
+            << initial_position.transpose() << "), attempted " << step_idx
+            << " gradient ascent steps.";
   return false;
 }
 

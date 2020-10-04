@@ -45,7 +45,7 @@ mapping:
   max_ray_length_m: *max_ray_length
   # When tuning the max weight, note that it makes integration and deintegration
   # assymetric. Among others, good values therefore depend on the window length.
-  max_weight: 1000
+  max_weight: 7280
   use_const_weight: true
   use_weight_dropoff: false
   max_consecutive_ray_collisions: 1  # Only affects the fast integrator

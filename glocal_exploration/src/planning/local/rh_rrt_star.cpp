@@ -232,10 +232,11 @@ bool RHRRTStar::selectNextBestWayPoint(WayPoint* next_waypoint) {
     LOG(ERROR) << "The best path we could find isn't traversable.";
     Point safe_position = comm_->currentPose().position;
     if (findSafestNearbyPoint(config_.traversability_radius, &safe_position)) {
-      LOG(INFO) << "Attempting to fly to safety and start global planning from"
-                   " there.";
-      comm_->requestWayPoint(WayPoint(safe_position, 0.f));
-      comm_->stateMachine()->signalGlobalPlanning();
+      LOG(INFO) << "Attempting to fly to safety and start over from there.";
+      WayPoint safe_waypoint(safe_position, 0.f);
+      comm_->requestWayPoint(safe_waypoint);
+      resetPlanner(safe_waypoint);
+      comm_->stateMachine()->signalLocalPlanning();
       return false;
     } else {
       LOG(WARNING) << "Could not find a nearby safer point. Will continue "
