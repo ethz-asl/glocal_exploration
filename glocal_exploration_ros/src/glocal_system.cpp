@@ -14,6 +14,7 @@ GlocalSystem::Config::Config() { setConfigName("GlocalSystem"); }
 void GlocalSystem::Config::checkParams() const {
   checkParamGT(replan_position_threshold, 0.f, "replan_position_threshold");
   checkParamGT(replan_yaw_threshold, 0.f, "replan_yaw_threshold");
+  checkParamGT(collision_check_period_s, 0.f, "collision_check_period_s");
 }
 
 void GlocalSystem::Config::fromRosParam() {
@@ -22,6 +23,7 @@ void GlocalSystem::Config::fromRosParam() {
   rosParam("replan_yaw_threshold", &replan_yaw_threshold);
   rosParam("replan_timeout_constant", &replan_timeout_constant);
   rosParam("replan_timeout_velocity", &replan_timeout_velocity);
+  rosParam("collision_check_period_s", &collision_check_period_s);
 }
 
 void GlocalSystem::Config::printFields() const {
@@ -30,6 +32,7 @@ void GlocalSystem::Config::printFields() const {
   printField("replan_yaw_threshold", replan_yaw_threshold);
   printField("replan_timeout_constant", replan_timeout_constant);
   printField("replan_timeout_velocity", replan_timeout_velocity);
+  printField("collision_check_period_s", collision_check_period_s);
 }
 
 GlocalSystem::GlocalSystem(const ros::NodeHandle& nh,
@@ -43,7 +46,7 @@ GlocalSystem::GlocalSystem(const ros::NodeHandle& nh,
     : nh_(nh),
       nh_private_(nh_private),
       config_(config.checkValid()),
-      collision_check_period_(0.1),
+      collision_check_period_(config.collision_check_period_s),
       collision_check_last_timestamp_(0) {
   LOG_IF(INFO, config_.verbosity >= 1) << "\n" + config_.toString();
   // build communicator and components
@@ -118,7 +121,9 @@ void GlocalSystem::loopIteration() {
         comm_->map()->findSafestNearbyPoint(
             comm_->map()->getTraversabilityRadius(), &safe_position)) {
       LOG(INFO) << "Attempting to fly to safety and continue from there.";
-      const WayPoint safe_waypoint(safe_position, comm_->currentPose().yaw);
+      // Rotate by 180deg to reduce unobserved space in the active submap
+      const FloatingPoint new_yaw = comm_->currentPose().yaw + M_PI;
+      const WayPoint safe_waypoint(safe_position, new_yaw);
       target_position_ = safe_waypoint.position;
       target_yaw_ = safe_waypoint.yaw;
       publishTargetPose();

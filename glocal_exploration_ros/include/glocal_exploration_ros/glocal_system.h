@@ -24,6 +24,8 @@ class GlocalSystem {
     FloatingPoint replan_timeout_constant = 0.f;     // s, wait this long always
     // add timeout time per distance
     FloatingPoint replan_timeout_velocity = 0.f;
+    // rate at which to check for imminent collisions
+    FloatingPoint collision_check_period_s = 0.1f;
 
     Config();
     void checkParams() const override;
