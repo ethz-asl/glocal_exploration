@@ -38,6 +38,9 @@ class Communicator {
   const std::shared_ptr<LocalPlannerBase>& localPlanner() const {
     return local_planner_;
   }
+  void resetLocalPlanner(const WayPoint& new_origin) {
+    local_planner_->resetPlanner(new_origin);
+  }
   const std::shared_ptr<GlobalPlannerBase>& globalPlanner() const {
     return global_planner_;
   }

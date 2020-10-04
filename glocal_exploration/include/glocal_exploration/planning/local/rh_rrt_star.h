@@ -59,6 +59,7 @@ class RHRRTStar : public LocalPlannerBase {
 
   // planning
   void executePlanningIteration() override;
+  void resetPlanner(const WayPoint& new_origin) override;
 
   struct Connection;
   // View points are the vertices in the tree.
@@ -149,7 +150,6 @@ class RHRRTStar : public LocalPlannerBase {
 
   /* methods */
   // general
-  void resetPlanner(const WayPoint& origin);
   bool findNearestNeighbors(const Point& position, std::vector<size_t>* result,
                             int n_neighbors = 1);
 
@@ -179,10 +179,6 @@ class RHRRTStar : public LocalPlannerBase {
   // termination
   void sampleReconsideration();
   bool isTerminationCriterionMet();
-
-  // emergency
-  bool findSafestNearbyPoint(const FloatingPoint minimum_distance,
-                             Point* position) const;
 
   /* variables */
   bool gain_update_needed_;

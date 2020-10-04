@@ -154,11 +154,11 @@ bool RHRRTStar::isTerminationCriterionMet() {
   return true;
 }
 
-void RHRRTStar::resetPlanner(const WayPoint& origin) {
+void RHRRTStar::resetPlanner(const WayPoint& new_origin) {
   // clear the tree and initialize with a point at the current pose
   tree_data_.points.clear();
   auto point = std::make_unique<ViewPoint>();
-  point->pose = origin;
+  point->pose = new_origin;
   point->is_root = true;
   kdtree_ = std::make_unique<KDTree>(3, tree_data_);
   tree_data_.points.push_back(std::move(point));
@@ -221,27 +221,6 @@ bool RHRRTStar::selectNextBestWayPoint(WayPoint* next_waypoint) {
         << config_.reconsideration_time << "s before moving backwards.";
     sampleReconsideration();
     optimizeTreeAndFindBestGoal(&next_point_index);
-  }
-
-  // If the best path we could find is intraversable, run for your life.
-  // Or at least try to.
-  if (!comm_->map()->isLineTraversableInActiveSubmap(
-          comm_->currentPose().position,
-          root_->getConnectedViewPoint(next_point_index)->pose.position,
-          config_.traversability_radius)) {
-    LOG(ERROR) << "The best path we could find isn't traversable.";
-    Point safe_position = comm_->currentPose().position;
-    if (findSafestNearbyPoint(config_.traversability_radius, &safe_position)) {
-      LOG(INFO) << "Attempting to fly to safety and start over from there.";
-      WayPoint safe_waypoint(safe_position, 0.f);
-      comm_->requestWayPoint(safe_waypoint);
-      resetPlanner(safe_waypoint);
-      comm_->stateMachine()->signalLocalPlanning();
-      return false;
-    } else {
-      LOG(WARNING) << "Could not find a nearby safer point. Will continue "
-                      "normal operation and hope for the best.";
-    }
   }
 
   // result
@@ -826,60 +805,6 @@ void RHRRTStar::ViewPoint::setActiveConnection(size_t index) {
     return;
   }
   active_connection = index;
-}
-
-bool RHRRTStar::findSafestNearbyPoint(const FloatingPoint minimum_distance,
-                                      Point* position) const {
-  CHECK_NOTNULL(position);
-  const Point initial_position = *position;
-
-  constexpr int kMaxNumSteps = 100;
-  const std::shared_ptr<MapBase> map_ptr = comm_->map();
-  const FloatingPoint voxel_size = map_ptr->getVoxelSize();
-
-  Point current_position = initial_position;
-  FloatingPoint best_distance_so_far = 0.f;
-  Point best_position_so_far = initial_position;
-  int step_idx = 1;
-  for (; step_idx < kMaxNumSteps; ++step_idx) {
-    // Get the distance.
-    FloatingPoint distance = 0.f;
-    Point gradient;
-    if (!map_ptr->getDistanceAndGradientInActiveSubmap(current_position,
-                                                       &distance, &gradient)) {
-      LOG(WARNING) << "Failed to look up distance and gradient "
-                      "information at: "
-                   << current_position.transpose();
-      return false;
-    }
-
-    // Save the new position if it is better, or see if it's time to terminate.
-    if (best_distance_so_far < distance) {
-      best_distance_so_far = distance;
-      best_position_so_far = current_position;
-    } else if (distance + voxel_size / 2 < best_distance_so_far ||
-               step_idx == kMaxNumSteps - 1) {
-      if (map_ptr->isTraversableInActiveSubmap(current_position,
-                                               minimum_distance)) {
-        LOG(INFO) << "Found a safe point near initial position ("
-                  << initial_position.transpose() << "), at ("
-                  << best_position_so_far.transpose() << ") with distance "
-                  << best_distance_so_far << " after " << step_idx
-                  << " gradient ascent steps.";
-        *position = best_position_so_far;
-        return true;
-      }
-    }
-
-    // Take a tiny step in the direction that maximizes the distance.
-    const FloatingPoint step_size = voxel_size;
-    current_position += step_size * gradient;
-  }
-
-  LOG(INFO) << "Could not find a safer point near initial position ("
-            << initial_position.transpose() << "), attempted " << step_idx
-            << " gradient ascent steps.";
-  return false;
 }
 
 }  // namespace glocal_exploration

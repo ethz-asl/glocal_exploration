@@ -73,6 +73,10 @@ class GlocalSystem {
   FloatingPoint target_yaw_;             // rad
   FloatingPoint last_waypoint_timeout_;  // s
   ros::Time last_waypoint_published_;
+
+  // Collision avoidance
+  ros::Duration collision_check_period_;
+  ros::Time collision_check_last_timestamp_;
 };
 
 }  // namespace glocal_exploration

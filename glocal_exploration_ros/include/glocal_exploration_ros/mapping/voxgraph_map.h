@@ -45,7 +45,7 @@ class VoxgraphMap : public MapBase {
   /* Local planner */
   bool isTraversableInActiveSubmap(
       const Point& position,
-      const FloatingPoint traversability_radius) override;
+      const FloatingPoint traversability_radius) const override;
   bool isLineTraversableInActiveSubmap(
       const Point& start_point, const Point& end_point,
       const FloatingPoint traversability_radius,
@@ -59,10 +59,10 @@ class VoxgraphMap : public MapBase {
   }
 
   bool getDistanceInActiveSubmap(const Point& position,
-                                 FloatingPoint* distance) override;
+                                 FloatingPoint* distance) const override;
   bool getDistanceAndGradientInActiveSubmap(const Point& position,
                                             FloatingPoint* distance,
-                                            Point* gradient) override;
+                                            Point* gradient) const override;
 
   Point getVoxelCenterInLocalArea(const Point& position) const override {
     return (position / c_voxel_size_).array().round() * c_voxel_size_;

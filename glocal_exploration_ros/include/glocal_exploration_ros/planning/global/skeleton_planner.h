@@ -109,10 +109,6 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
                              bool* frontier_is_observable = nullptr);
   void clusterFrontiers();
   bool verifyNextWayPoints();
-  bool findNearbyTraversablePoint(const FloatingPoint traversability_radius,
-                                  Point* position) const;
-  bool findSafestNearbyPoint(const FloatingPoint minimum_distance,
-                             Point* position) const;
 
  private:
   const Config config_;

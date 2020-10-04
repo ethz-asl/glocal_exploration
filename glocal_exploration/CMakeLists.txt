@@ -14,6 +14,7 @@ cs_add_library(${PROJECT_NAME}
         src/state/state_machine.cpp
         src/state/communicator.cpp
         src/state/region_of_interest.cpp
+        src/mapping/map_base.cpp
         src/planning/local/rh_rrt_star.cpp
         src/planning/local/lidar_model.cpp
         src/planning/global/submap_frontier_evaluator.cpp

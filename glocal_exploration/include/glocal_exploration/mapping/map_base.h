@@ -1,6 +1,7 @@
 #ifndef GLOCAL_EXPLORATION_MAPPING_MAP_BASE_H_
 #define GLOCAL_EXPLORATION_MAPPING_MAP_BASE_H_
 
+#include <algorithm>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -39,7 +40,8 @@ class MapBase {
     return isTraversableInActiveSubmap(position, getTraversabilityRadius());
   }
   virtual bool isTraversableInActiveSubmap(
-      const Point& position, const FloatingPoint traversability_radius) = 0;
+      const Point& position,
+      const FloatingPoint traversability_radius) const = 0;
 
   bool isLineTraversableInActiveSubmap(
       const Point& start_point, const Point& end_point,
@@ -56,10 +58,15 @@ class MapBase {
                                                    const Point& end_point) = 0;
 
   virtual bool getDistanceInActiveSubmap(const Point& position,
-                                         FloatingPoint* distance) = 0;
+                                         FloatingPoint* distance) const = 0;
   virtual bool getDistanceAndGradientInActiveSubmap(const Point& position,
                                                     FloatingPoint* distance,
-                                                    Point* gradient) = 0;
+                                                    Point* gradient) const = 0;
+
+  bool findNearbyTraversablePoint(const FloatingPoint traversability_radius,
+                                  Point* position) const;
+  bool findSafestNearbyPoint(const FloatingPoint minimum_distance,
+                             Point* position) const;
 
   // Voxels are referred in the planner by their center points.
   virtual Point getVoxelCenterInLocalArea(const Point& position) const = 0;

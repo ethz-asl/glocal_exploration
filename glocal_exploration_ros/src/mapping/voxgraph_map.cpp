@@ -114,7 +114,7 @@ VoxgraphMap::VoxgraphMap(const Config& config,
 }
 
 bool VoxgraphMap::isTraversableInActiveSubmap(
-    const Point& position, const FloatingPoint traversability_radius) {
+    const Point& position, const FloatingPoint traversability_radius) const {
   if (!comm_->regionOfInterest()->contains(position)) {
     return false;
   }
@@ -341,7 +341,7 @@ bool VoxgraphMap::lineIntersectsSurfaceInActiveSubmap(const Point& start_point,
 }
 
 bool VoxgraphMap::getDistanceInActiveSubmap(const Point& position,
-                                            FloatingPoint* distance) {
+                                            FloatingPoint* distance) const {
   CHECK_NOTNULL(distance);
   double distance_tmp;
   if (voxblox_server_->getEsdfMapPtr()->getDistanceAtPosition(
@@ -355,7 +355,7 @@ bool VoxgraphMap::getDistanceInActiveSubmap(const Point& position,
 
 bool VoxgraphMap::getDistanceAndGradientInActiveSubmap(const Point& position,
                                                        FloatingPoint* distance,
-                                                       Point* gradient) {
+                                                       Point* gradient) const {
   CHECK_NOTNULL(distance);
   CHECK_NOTNULL(gradient);
   double distance_tmp;

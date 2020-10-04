@@ -40,7 +40,11 @@ GlocalSystem::GlocalSystem(const ros::NodeHandle& nh,
 GlocalSystem::GlocalSystem(const ros::NodeHandle& nh,
                            const ros::NodeHandle& nh_private,
                            const Config& config)
-    : nh_(nh), nh_private_(nh_private), config_(config.checkValid()) {
+    : nh_(nh),
+      nh_private_(nh_private),
+      config_(config.checkValid()),
+      collision_check_period_(0.1),
+      collision_check_last_timestamp_(0) {
   LOG_IF(INFO, config_.verbosity >= 1) << "\n" + config_.toString();
   // build communicator and components
   buildComponents(nh_private_);
@@ -101,6 +105,31 @@ void GlocalSystem::mainLoop() {
 }
 
 void GlocalSystem::loopIteration() {
+  // If the current path became intraversable, run for your life.
+  // Or at least try to.
+  ros::Time current_timestamp = ros::Time::now();
+  if (collision_check_last_timestamp_ + collision_check_period_ <
+      current_timestamp) {
+    collision_check_last_timestamp_ = current_timestamp;
+
+    Point safe_position = comm_->currentPose().position;
+    if (!comm_->map()->isLineTraversableInActiveSubmap(
+            comm_->currentPose().position, target_position_) &&
+        comm_->map()->findSafestNearbyPoint(
+            comm_->map()->getTraversabilityRadius(), &safe_position)) {
+      LOG(INFO) << "Attempting to fly to safety and continue from there.";
+      const WayPoint safe_waypoint(safe_position, comm_->currentPose().yaw);
+      target_position_ = safe_waypoint.position;
+      target_yaw_ = safe_waypoint.yaw;
+      publishTargetPose();
+      comm_->setRequestedWayPointRead();
+      if (comm_->stateMachine()->currentState() ==
+          StateMachine::State::kLocalPlanning) {
+        comm_->localPlanner()->resetPlanner(safe_waypoint);
+      }
+    }
+  }
+
   // Actions.
   switch (comm_->stateMachine()->currentState()) {
     case StateMachine::State::kLocalPlanning: {
