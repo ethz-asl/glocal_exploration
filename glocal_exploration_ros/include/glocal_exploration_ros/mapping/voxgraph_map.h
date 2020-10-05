@@ -41,18 +41,7 @@ class VoxgraphMap : public MapBase {
   FloatingPoint getTraversabilityRadius() const override {
     return config_.traversability_radius;
   }
-  std::vector<WayPoint> getPoseHistory() const override {
-    std::vector<WayPoint> past_poses;
-    for (const geometry_msgs::PoseStamped& past_pose_msg :
-         voxgraph_server_->getSubmapCollection().getPoseHistory()) {
-      kindr::minimal::QuatTransformation past_pose;
-      tf::poseMsgToKindr(past_pose_msg.pose, &past_pose);
-      const FloatingPoint yaw = past_pose.getRotation().log().z();
-      past_poses.emplace_back(past_pose.getPosition().cast<FloatingPoint>(),
-                              yaw);
-    }
-    return past_poses;
-  }
+  std::vector<WayPoint> getPoseHistory() const override;
 
   /* Local planner */
   bool isTraversableInActiveSubmap(

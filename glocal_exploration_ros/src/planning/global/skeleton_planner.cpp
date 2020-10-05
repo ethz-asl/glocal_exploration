@@ -202,9 +202,10 @@ bool SkeletonPlanner::computeGoalPoint() {
   }
 
   // Try to find feasible goal near centroid and remove infeasible frontiers.
-  const Point current_position = comm_->currentPose().position;
+  const Point current_robot_position = comm_->currentPose().position;
   for (auto& frontier : frontier_data_) {
-    frontier.euclidean_distance = (current_position - frontier.centroid).norm();
+    frontier.euclidean_distance =
+        (current_robot_position - frontier.centroid).norm();
   }
 
   // Compute paths to frontiers to determine the closest reachable one. Start
@@ -245,7 +246,7 @@ bool SkeletonPlanner::computeGoalPoint() {
         // Frontier is reachable, save path and compute path length.
         candidate.way_points = way_points;
         candidate.path_distance =
-            (way_points[0].getGlobalPosition() - current_position).norm();
+            (way_points[0].getGlobalPosition() - current_robot_position).norm();
         for (size_t i = 1; i < way_points.size(); ++i) {
           candidate.path_distance += (way_points[i].getGlobalPosition() -
                                       way_points[i - 1].getGlobalPosition())
@@ -273,12 +274,38 @@ bool SkeletonPlanner::computeGoalPoint() {
     if (0 < config_.backtracking_distance_m) {
       way_points_.clear();
       const std::vector<WayPoint> past_poses = comm_->map()->getPoseHistory();
+      Point t_odom_previous_crumb = Point::Zero();
+      const FloatingPoint min_offset =
+          comm_->map()->getTraversabilityRadius() / 2;
       for (auto past_pose = past_poses.crbegin();
            past_pose != past_poses.crend(); ++past_pose) {
-        if ((past_pose->position - current_position).norm() <
+        const Point t_odom_current_crumb = past_pose->position;
+        if ((t_odom_current_crumb - current_robot_position).norm() <
             config_.backtracking_distance_m) {
-          way_points_.emplace_back(RelativeWayPoint(past_pose->position));
+          if (min_offset <
+              (t_odom_current_crumb - t_odom_previous_crumb).norm()) {
+            const std::vector<SubmapId> overlapping_submaps =
+                comm_->map()->getSubmapIdsAtPosition(t_odom_current_crumb);
+            SubmapId youngest_submap_id = *std::max_element(
+                overlapping_submaps.begin(), overlapping_submaps.end());
+            SkeletonSubmap::ConstPtr youngest_submap_ptr =
+                skeleton_a_star_.getSkeletonSubmapCollection()
+                    .getSubmapConstPtrById(youngest_submap_id);
+            if (youngest_submap_ptr) {
+              const Point t_submap_current_crumb =
+                  youngest_submap_ptr->getPose().inverse() *
+                  t_odom_current_crumb;
+              way_points_.emplace_back(RelativeWayPoint(
+                  youngest_submap_ptr, t_submap_current_crumb));
+
+              t_odom_previous_crumb = t_odom_current_crumb;
+            } else {
+              LOG(WARNING) << "Could not get pointer to submap with ID: "
+                           << youngest_submap_id << ". Skipping past pose.";
+            }
+          }
         } else {
+          // Reached the end of the backtracking range.
           break;
         }
       }

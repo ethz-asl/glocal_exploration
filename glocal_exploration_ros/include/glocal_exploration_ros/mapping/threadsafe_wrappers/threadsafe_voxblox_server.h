@@ -4,7 +4,9 @@
 #include <functional>
 #include <memory>
 #include <utility>
+#include <vector>
 
+#include <minkindr_conversions/kindr_msg.h>
 #include <voxblox_ros/esdf_server.h>
 #include <voxblox_ros/ros_params.h>
 
@@ -60,6 +62,17 @@ class ThreadsafeVoxbloxServer : public voxblox::EsdfServer {
 
   void setExternalNewPoseCallback(Function callback) {
     external_new_pose_callback_ = std::move(callback);
+  }
+
+  std::vector<geometry_msgs::PoseStamped> getPoseHistory() {
+    std::vector<geometry_msgs::PoseStamped> pose_history;
+    for (const auto& item : pointcloud_deintegration_queue_) {
+      geometry_msgs::PoseStamped pose_msg;
+      pose_msg.header.stamp = item.timestamp;
+      tf::poseKindrToMsg(item.T_G_C.cast<double>(), &pose_msg.pose);
+      pose_history.emplace_back(pose_msg);
+    }
+    return pose_history;
   }
 
  protected:

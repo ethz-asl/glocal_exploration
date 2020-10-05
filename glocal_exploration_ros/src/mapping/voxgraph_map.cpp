@@ -512,4 +512,30 @@ bool VoxgraphMap::getDistanceInGlobalMap(const Point& position,
   return distance_available_anywhere;
 }
 
+std::vector<WayPoint> VoxgraphMap::getPoseHistory() const {
+  std::vector<WayPoint> past_poses;
+  // Add the optimized pose history from voxgraph's submap collection.
+  const std::vector<geometry_msgs::PoseStamped> past_voxgraph_poses =
+      voxgraph_server_->getSubmapCollection().getPoseHistory();
+  for (const geometry_msgs::PoseStamped& past_pose_msg : past_voxgraph_poses) {
+    kindr::minimal::QuatTransformation past_pose;
+    tf::poseMsgToKindr(past_pose_msg.pose, &past_pose);
+    const FloatingPoint yaw = past_pose.getRotation().log().z();
+    past_poses.emplace_back(past_pose.getPosition().cast<FloatingPoint>(), yaw);
+  }
+  // Add the most recent poses from the active submap (from voxblox).
+  for (const geometry_msgs::PoseStamped& past_pose_msg :
+       voxblox_server_->getPoseHistory()) {
+    if (past_voxgraph_poses.empty() ||
+        past_voxgraph_poses.back().header.stamp < past_pose_msg.header.stamp) {
+      kindr::minimal::QuatTransformation past_pose;
+      tf::poseMsgToKindr(past_pose_msg.pose, &past_pose);
+      const FloatingPoint yaw = past_pose.getRotation().log().z();
+      past_poses.emplace_back(past_pose.getPosition().cast<FloatingPoint>(),
+                              yaw);
+    }
+  }
+  return past_poses;
+}
+
 }  // namespace glocal_exploration
