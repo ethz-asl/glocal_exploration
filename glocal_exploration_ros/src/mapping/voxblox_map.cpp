@@ -35,22 +35,27 @@ VoxbloxMap::VoxbloxMap(const Config& config,
 }
 
 bool VoxbloxMap::isTraversableInActiveSubmap(
-    const Point& position, const FloatingPoint traversability_radius) const {
+    const Point& position, const FloatingPoint traversability_radius,
+    const bool optimistic) const {
   if (!comm_->regionOfInterest()->contains(position)) {
     return false;
   }
   FloatingPoint distance = 0.f;
   if (getDistanceInActiveSubmap(position, &distance)) {
-    // This means the voxel is observed
+    // This means the voxel is observed.
     return (distance > traversability_radius);
+  } else {
+    const bool within_clear_sphere =
+        (position - comm_->currentPose().position).norm() <=
+        config_.clearing_radius;
+    return optimistic || within_clear_sphere;
   }
-  return (position - comm_->currentPose().position).norm() <
-         config_.clearing_radius;
 }
 
 bool VoxbloxMap::isLineTraversableInActiveSubmap(
     const Point& start_point, const Point& end_point,
-    const FloatingPoint traversability_radius, Point* last_traversable_point) {
+    const FloatingPoint traversability_radius, Point* last_traversable_point,
+    const bool optimistic) {
   CHECK_GT(c_voxel_size_, 0.f);
   if (last_traversable_point) {
     *last_traversable_point = start_point;
@@ -58,7 +63,8 @@ bool VoxbloxMap::isLineTraversableInActiveSubmap(
 
   const FloatingPoint line_length = (end_point - start_point).norm();
   if (line_length <= voxblox::kFloatEpsilon) {
-    return isTraversableInActiveSubmap(start_point, traversability_radius);
+    return isTraversableInActiveSubmap(start_point, traversability_radius,
+                                       optimistic);
   }
 
   const Point line_direction = (end_point - start_point) / line_length;
@@ -69,13 +75,17 @@ bool VoxbloxMap::isLineTraversableInActiveSubmap(
     FloatingPoint esdf_distance = 0.f;
     if (getDistanceInActiveSubmap(current_position, &esdf_distance)) {
       // This means the voxel is observed.
-      if (esdf_distance <= traversability_radius) {
+      if (esdf_distance < traversability_radius) {
         return false;
       }
     } else {
       // Check whether we're within the clearing distance.
-      if ((current_position - comm_->currentPose().position).norm() >=
-          config_.clearing_radius) {
+      const bool within_clear_sphere =
+          (current_position - comm_->currentPose().position).norm() <=
+          config_.clearing_radius;
+      if (optimistic || within_clear_sphere) {
+        esdf_distance = 0.f;
+      } else {
         return false;
       }
     }
@@ -89,7 +99,8 @@ bool VoxbloxMap::isLineTraversableInActiveSubmap(
     traveled_distance += step_size;
   }
 
-  if (isTraversableInActiveSubmap(end_point, traversability_radius)) {
+  if (isTraversableInActiveSubmap(end_point, traversability_radius,
+                                  optimistic)) {
     if (last_traversable_point) {
       *last_traversable_point = end_point;
     }

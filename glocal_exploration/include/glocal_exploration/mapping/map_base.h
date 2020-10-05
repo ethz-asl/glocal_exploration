@@ -40,8 +40,8 @@ class MapBase {
     return isTraversableInActiveSubmap(position, getTraversabilityRadius());
   }
   virtual bool isTraversableInActiveSubmap(
-      const Point& position,
-      const FloatingPoint traversability_radius) const = 0;
+      const Point& position, const FloatingPoint traversability_radius,
+      const bool optimistic = false) const = 0;
 
   bool isLineTraversableInActiveSubmap(
       const Point& start_point, const Point& end_point,
@@ -53,7 +53,8 @@ class MapBase {
   virtual bool isLineTraversableInActiveSubmap(
       const Point& start_point, const Point& end_point,
       const FloatingPoint traversability_radius,
-      Point* last_traversable_point = nullptr) = 0;
+      Point* last_traversable_point = nullptr,
+      const bool optimistic = false) = 0;
   virtual bool lineIntersectsSurfaceInActiveSubmap(const Point& start_point,
                                                    const Point& end_point) = 0;
 

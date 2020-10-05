@@ -44,12 +44,13 @@ class VoxgraphMap : public MapBase {
 
   /* Local planner */
   bool isTraversableInActiveSubmap(
-      const Point& position,
-      const FloatingPoint traversability_radius) const override;
+      const Point& position, const FloatingPoint traversability_radius,
+      const bool optimistic = false) const override;
   bool isLineTraversableInActiveSubmap(
       const Point& start_point, const Point& end_point,
       const FloatingPoint traversability_radius,
-      Point* last_traversable_point = nullptr) override;
+      Point* last_traversable_point = nullptr,
+      const bool optimistic = false) override;
   bool lineIntersectsSurfaceInActiveSubmap(const Point& start_point,
                                            const Point& end_point) override;
   bool isOccupiedInActiveSubmap(const Point& position) {
