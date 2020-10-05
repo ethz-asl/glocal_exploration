@@ -29,7 +29,7 @@ region_of_interest:
 mapping:
   type: voxgraph
 
-  clearing_radius: 1.0
+  clearing_radius: 1.3
   traversability_radius: *traversability_radius_path_following
   verbosity: 4
 
@@ -185,7 +185,7 @@ global_planner:
   # A star search along linked sparse skeleton graph submaps
   skeleton_a_star:
     traversability_radius: *traversability_radius_global_planner
-    max_num_start_vertex_candidates: 5
+    max_num_start_vertex_candidates: 30
     max_num_end_vertex_candidates: 5
     linking_num_nearest_neighbors: 3
-    linking_max_distance: 3.0
+    linking_max_distance: 5.0

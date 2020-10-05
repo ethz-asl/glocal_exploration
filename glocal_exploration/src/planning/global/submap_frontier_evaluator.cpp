@@ -16,18 +16,25 @@ SubmapFrontierEvaluator::Config::Config() {
   setConfigName("SubmapFrontierEvaluator");
 }
 
-void SubmapFrontierEvaluator::Config::checkParams() const {}
+void SubmapFrontierEvaluator::Config::checkParams() const {
+  checkParamGT(min_frontier_size, 0, "min_frontier_size");
+  checkParamGT(min_num_visible_frontier_points, 0,
+               "min_num_visible_frontier_points");
+}
 
 void SubmapFrontierEvaluator::Config::fromRosParam() {
   rosParam("verbosity", &verbosity);
   rosParam("min_frontier_size", &min_frontier_size);
   rosParam("submaps_are_frozen", &submaps_are_frozen);
+  rosParam("min_num_visible_frontier_points", &min_num_visible_frontier_points);
 }
 
 void SubmapFrontierEvaluator::Config::printFields() const {
   printField("verbosity", verbosity);
   printField("min_frontier_size", min_frontier_size);
   printField("submaps_are_frozen", submaps_are_frozen);
+  printField("min_num_visible_frontier_points",
+             min_num_visible_frontier_points);
 }
 
 SubmapFrontierEvaluator::SubmapFrontierEvaluator(

@@ -22,6 +22,7 @@ class SubmapFrontierEvaluator : public GlobalPlannerBase {
     int min_frontier_size = 1;
     bool submaps_are_frozen = true;  // false: submap frontiers will be
                                      // recomputed and overwritten.
+    int min_num_visible_frontier_points = 1;
 
     Config();
     void checkParams() const override;

@@ -17,6 +17,7 @@ void SkeletonPlanner::Config::checkParams() const {
                "max_closest_frontier_search_time_sec");
   checkParamGT(max_replan_attempts_to_chosen_frontier, 0,
                "max_replan_attempts_to_chosen_frontier");
+  checkParamGT(sensor_vertical_fov_rad, 0.f, "sensor_vertical_fov_rad");
 }
 
 void SkeletonPlanner::Config::fromRosParam() {
@@ -33,6 +34,7 @@ void SkeletonPlanner::Config::fromRosParam() {
            &max_replan_attempts_to_chosen_frontier);
   rosParam("max_closest_frontier_search_time_sec",
            &max_closest_frontier_search_time_sec);
+  rosParam("sensor_vertical_fov_rad", &sensor_vertical_fov_rad);
   nh_private_namespace = rosParamNameSpace() + "/skeleton";
 }
 
@@ -51,6 +53,7 @@ void SkeletonPlanner::Config::printFields() const {
              max_closest_frontier_search_time_sec);
   printField("max_replan_attempts_to_chosen_frontier",
              max_replan_attempts_to_chosen_frontier);
+  printField("sensor_vertical_fov_rad", sensor_vertical_fov_rad);
 }
 
 SkeletonPlanner::SkeletonPlanner(
@@ -546,7 +549,7 @@ bool SkeletonPlanner::computePathToFrontier(
   }
 
   // Search the N skeleton vertices that are closest to the frontier centroid,
-  // and from which at least M frontier points can be observed
+  // and from which at least M frontier points can be observed.
   std::vector<GlobalVertexId> end_vertex_candidates =
       skeleton_a_star_.searchClosestReachableSkeletonVertices(
           frontier_centroid,
@@ -554,9 +557,10 @@ bool SkeletonPlanner::computePathToFrontier(
           [&](const Point& point, const Point& skeleton_vertex_point) {
             int num_visible_frontier_points = 0;
             for (const Point& frontier_point : frontier_points) {
-              if (!map->lineIntersectsSurfaceInGlobalMap(skeleton_vertex_point,
-                                                         frontier_point)) {
-                if (SubmapFrontierEvaluator::config_.min_frontier_size <
+              if (isFrontierPointObservableFromPosition(
+                      frontier_point, skeleton_vertex_point)) {
+                if (SubmapFrontierEvaluator::config_
+                        .min_num_visible_frontier_points <
                     ++num_visible_frontier_points) {
                   return true;
                 }
@@ -617,6 +621,23 @@ bool SkeletonPlanner::computePathToFrontier(
   }
 
   return true;
+}
+
+bool SkeletonPlanner::isFrontierPointObservableFromPosition(
+    const Point& frontier_point, const Point& skeleton_vertex_point) {
+  // Check for occlusions.
+  if (comm_->map()->lineIntersectsSurfaceInGlobalMap(skeleton_vertex_point,
+                                                     frontier_point)) {
+    return false;
+  }
+
+  // Check if the frontier point is within the LiDAR's FoV.
+  const FloatingPoint vertical_offset =
+      frontier_point.z() - skeleton_vertex_point.z();
+  const FloatingPoint horizontal_offset =
+      (frontier_point - skeleton_vertex_point).head<2>().norm();
+  return std::abs(std::atan2(vertical_offset, horizontal_offset)) <
+         config_.sensor_vertical_fov_rad / 2;
 }
 
 }  // namespace glocal_exploration
