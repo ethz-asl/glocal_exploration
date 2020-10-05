@@ -235,9 +235,11 @@ bool VoxgraphMap::isTraversableInGlobalMap(
       }
     }
   }
-  // Avoid allowing never observed points to be traversable. Also we ignore the
-  // clearing radius for global planning.
-  return traversable_anywhere;
+
+  const bool within_clear_sphere =
+      (position - comm_->currentPose().position).norm() <=
+      config_.clearing_radius;
+  return traversable_anywhere || within_clear_sphere;
 }
 
 std::vector<MapBase::SubmapData> VoxgraphMap::getAllSubmapData() {
@@ -399,9 +401,19 @@ bool VoxgraphMap::isLineTraversableInGlobalMap(
   FloatingPoint traveled_distance = 0.f;
   while (traveled_distance <= line_length) {
     FloatingPoint esdf_distance = 0.f;
-    if (!getDistanceInGlobalMap(current_position, &esdf_distance) ||
-        esdf_distance < traversability_radius) {
-      return false;
+    if (getDistanceInGlobalMap(current_position, &esdf_distance)) {
+      // This means the voxel is observed.
+      if (esdf_distance < traversability_radius) {
+        return false;
+      }
+    } else {
+      // Check whether we're within the clearing distance.
+      if ((current_position - comm_->currentPose().position).norm() <=
+          config_.clearing_radius) {
+        esdf_distance = 0.f;
+      } else {
+        return false;
+      }
     }
 
     if (last_traversable_point) {
