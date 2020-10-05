@@ -106,6 +106,7 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
   bool computePath(const Point& goal,
                    std::vector<RelativeWayPoint>* way_points);
   int num_replan_attempts_to_chosen_frontier_;
+  bool is_backtracking_;
   bool computePathToFrontier(const Point& frontier_centroid,
                              const std::vector<Point>& frontier_points,
                              std::vector<RelativeWayPoint>* way_points,

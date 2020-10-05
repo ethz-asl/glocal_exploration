@@ -64,6 +64,7 @@ SkeletonPlanner::SkeletonPlanner(
     : config_(config.checkValid()),
       SubmapFrontierEvaluator(config.submap_frontier_config, communicator),
       num_replan_attempts_to_chosen_frontier_(0),
+      is_backtracking_(false),
       skeleton_a_star_(skeleton_a_star_config, communicator) {
   LOG_IF(INFO, config_.verbosity >= 1) << "\n" << config_.toString();
 
@@ -138,6 +139,7 @@ std::vector<WayPoint> SkeletonPlanner::getWayPoints() const {
 
 void SkeletonPlanner::resetPlanner() {
   stage_ = Stage::k1ComputeFrontiers;
+  is_backtracking_ = false;
   vis_data_.frontiers_have_changed = false;
   vis_data_.execution_finished = false;
 }
@@ -174,6 +176,8 @@ bool SkeletonPlanner::computeFrontiers() {
 }
 
 bool SkeletonPlanner::computeGoalPoint() {
+  is_backtracking_ = false;
+
   // Compute the frontier with the shortest path to it.
   auto t_start = std::chrono::high_resolution_clock::now();
 
@@ -314,6 +318,7 @@ bool SkeletonPlanner::computeGoalPoint() {
             << "No reachable frontier found, backtracking "
             << config_.backtracking_distance_m << " meters.";
         num_replan_attempts_to_chosen_frontier_ = 0;
+        is_backtracking_ = true;
         return true;
       }
     }
@@ -421,16 +426,18 @@ void SkeletonPlanner::executeWayPoint() {
 
 bool SkeletonPlanner::verifyNextWayPoints() {
   const Point current_position = comm_->currentPose().position;
+  const FloatingPoint traversability_radius =
+      comm_->map()->getTraversabilityRadius();
 
   // Start by checking if the current position is intraversable.
   if (!comm_->map()->isTraversableInActiveSubmap(
-          current_position, skeleton_a_star_.getTraversabilityRadius())) {
+          current_position, traversability_radius, is_backtracking_)) {
     LOG_IF(INFO, config_.verbosity >= 2)
         << "Current position is intraversable.";
     // Attempt find a nearby traversable point and move to it.
     Point free_position = comm_->currentPose().position;
-    if (comm_->map()->findSafestNearbyPoint(
-            skeleton_a_star_.getTraversabilityRadius(), &free_position)) {
+    if (comm_->map()->findSafestNearbyPoint(traversability_radius,
+                                            &free_position)) {
       LOG_IF(INFO, config_.verbosity >= 2) << "Moving to safest nearby point.";
       comm_->requestWayPoint(WayPoint(free_position, 0.f));
     } else {
@@ -447,7 +454,7 @@ bool SkeletonPlanner::verifyNextWayPoints() {
   Point last_traversable_point;
   if (!comm_->map()->isLineTraversableInActiveSubmap(
           current_position, way_points_[0].getGlobalPosition(),
-          &last_traversable_point)) {
+          traversability_radius, &last_traversable_point, is_backtracking_)) {
     LOG_IF(INFO, config_.verbosity >= 2)
         << "Next global path segment is intraversable.";
     // As a first remedy, try to find a new path to the current frontier.
@@ -461,6 +468,7 @@ bool SkeletonPlanner::verifyNextWayPoints() {
       if (computePath(current_frontier_goal.getGlobalPosition(),
                       &new_way_points)) {
         LOG(INFO) << "Found a new global path to the current frontier.";
+        is_backtracking_ = false;
         way_points_ = new_way_points;
         return true;
       } else {
@@ -489,8 +497,8 @@ bool SkeletonPlanner::verifyNextWayPoints() {
     comm_->stateMachine()->signalLocalPlanning();
     // Try to avoid stopping in intraversable space.
     Point free_position = comm_->currentPose().position;
-    if (comm_->map()->findSafestNearbyPoint(
-            skeleton_a_star_.getTraversabilityRadius(), &free_position)) {
+    if (comm_->map()->findSafestNearbyPoint(traversability_radius,
+                                            &free_position)) {
       comm_->requestWayPoint(WayPoint(free_position, 0.f));
     }
     vis_data_.execution_finished = true;
@@ -523,7 +531,6 @@ bool SkeletonPlanner::verifyNextWayPoints() {
 bool SkeletonPlanner::computePath(const Point& goal,
                                   std::vector<RelativeWayPoint>* way_points) {
   CHECK_NOTNULL(way_points);
-
   const FloatingPoint traversability_radius =
       skeleton_a_star_.getTraversabilityRadius();
   Point start_point = comm_->currentPose().position;
