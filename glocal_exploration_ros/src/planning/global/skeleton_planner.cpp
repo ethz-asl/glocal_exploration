@@ -278,11 +278,23 @@ bool SkeletonPlanner::computeGoalPoint() {
     if (0 < config_.backtracking_distance_m) {
       way_points_.clear();
       const std::vector<WayPoint> past_poses = comm_->map()->getPoseHistory();
+      // Find the oldest pose history crumb that we can directly connect to.
+      // This is mainly done to avoid traveling back and forth in subsequent
+      // backtracking attempts.
+      auto oldest_adjacent_crumb = past_poses.cend();
+      for (auto past_pose = past_poses.cbegin(); past_pose != past_poses.cend();
+           ++past_pose) {
+        if ((past_pose->position - current_robot_position).norm() <
+            comm_->map()->getTraversabilityRadius()) {
+          oldest_adjacent_crumb = past_pose;
+          break;
+        }
+      }
+
       Point t_odom_previous_crumb = Point::Zero();
-      const FloatingPoint min_offset =
-          comm_->map()->getTraversabilityRadius() / 2;
-      for (auto past_pose = past_poses.crbegin();
-           past_pose != past_poses.crend(); ++past_pose) {
+      const FloatingPoint min_offset = comm_->map()->getTraversabilityRadius();
+      for (auto past_pose = oldest_adjacent_crumb;
+           past_poses.cbegin() <= past_pose; --past_pose) {
         const Point t_odom_current_crumb = past_pose->position;
         if ((t_odom_current_crumb - current_robot_position).norm() <
             config_.backtracking_distance_m) {
