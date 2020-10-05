@@ -35,6 +35,7 @@ void SkeletonPlanner::Config::fromRosParam() {
   rosParam("max_closest_frontier_search_time_sec",
            &max_closest_frontier_search_time_sec);
   rosParam("sensor_vertical_fov_rad", &sensor_vertical_fov_rad);
+  rosParam("backtracking_distance_m", &backtracking_distance_m);
   nh_private_namespace = rosParamNameSpace() + "/skeleton";
 }
 
@@ -54,6 +55,7 @@ void SkeletonPlanner::Config::printFields() const {
   printField("max_replan_attempts_to_chosen_frontier",
              max_replan_attempts_to_chosen_frontier);
   printField("sensor_vertical_fov_rad", sensor_vertical_fov_rad);
+  printField("backtracking_distance_m", backtracking_distance_m);
 }
 
 SkeletonPlanner::SkeletonPlanner(
@@ -152,6 +154,7 @@ bool SkeletonPlanner::computeFrontiers() {
     LOG_IF(INFO, config_.verbosity >= 2)
         << "No submaps finished yet for global planning, switching back local.";
     comm_->stateMachine()->signalLocalPlanning();
+    vis_data_.execution_finished = true;
     return false;
   }
 
@@ -189,6 +192,7 @@ bool SkeletonPlanner::computeGoalPoint() {
   }
   if (frontier_data_.empty()) {
     LOG(WARNING) << "No active frontiers found to compute goal points from.";
+    vis_data_.execution_finished = true;
     return false;
   }
 
@@ -265,6 +269,28 @@ bool SkeletonPlanner::computeGoalPoint() {
 
   // Select result.
   if (!found_a_valid_path) {
+    // Backtrack if enabled.
+    if (0 < config_.backtracking_distance_m) {
+      way_points_.clear();
+      const std::vector<WayPoint> past_poses = comm_->map()->getPoseHistory();
+      for (auto past_pose = past_poses.crbegin();
+           past_pose != past_poses.crend(); ++past_pose) {
+        if ((past_pose->position - current_position).norm() <
+            config_.backtracking_distance_m) {
+          way_points_.emplace_back(RelativeWayPoint(past_pose->position));
+        } else {
+          break;
+        }
+      }
+      if (!way_points_.empty()) {
+        LOG_IF(WARNING, config_.verbosity >= 2)
+            << "No reachable frontier found, backtracking "
+            << config_.backtracking_distance_m << " meters.";
+        num_replan_attempts_to_chosen_frontier_ = 0;
+        return true;
+      }
+    }
+    // Otherwise just fall back to local planning.
     LOG_IF(INFO, config_.verbosity >= 2)
         << "No reachable frontier found, returning to local planning.";
     comm_->stateMachine()->signalLocalPlanning();

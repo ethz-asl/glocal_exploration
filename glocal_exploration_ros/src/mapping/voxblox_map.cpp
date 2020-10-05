@@ -65,6 +65,11 @@ bool VoxbloxMap::isLineTraversableInActiveSubmap(
   if (line_length <= voxblox::kFloatEpsilon) {
     return isTraversableInActiveSubmap(start_point, traversability_radius,
                                        optimistic);
+  } else if (kMaxLineTraversabilityCheckLength < line_length) {
+    LOG(WARNING) << "Requested traversability check for segment exceeding "
+                 << kMaxLineTraversabilityCheckLength
+                 << "m. Returning false to avoid long wait.";
+    return false;
   }
 
   const Point line_direction = (end_point - start_point) / line_length;

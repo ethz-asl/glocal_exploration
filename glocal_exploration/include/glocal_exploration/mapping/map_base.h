@@ -8,7 +8,8 @@
 
 #include <voxblox/core/layer.h>
 
-#include "glocal_exploration/common.h"
+#include <glocal_exploration/common.h>
+#include <glocal_exploration/state/waypoint.h>
 
 namespace glocal_exploration {
 
@@ -34,6 +35,7 @@ class MapBase {
   /* General and Accessors */
   virtual FloatingPoint getVoxelSize() const = 0;
   virtual FloatingPoint getTraversabilityRadius() const = 0;
+  virtual std::vector<WayPoint> getPoseHistory() const = 0;
 
   /* Local planner */
   bool isTraversableInActiveSubmap(const Point& position) {

@@ -38,6 +38,8 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
     int max_replan_attempts_to_chosen_frontier = 3;
     FloatingPoint sensor_vertical_fov_rad = 0.5;
 
+    FloatingPoint backtracking_distance_m = 5.f;  // Set to -1 to disable.
+
     // Frontier evaluator.
     SubmapFrontierEvaluator::Config submap_frontier_config;
     int max_closest_frontier_search_time_sec = 25;

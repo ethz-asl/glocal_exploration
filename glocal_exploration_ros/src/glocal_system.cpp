@@ -46,6 +46,10 @@ GlocalSystem::GlocalSystem(const ros::NodeHandle& nh,
     : nh_(nh),
       nh_private_(nh_private),
       config_(config.checkValid()),
+      current_position_(Point::Zero()),
+      current_orientation_(Eigen::Quaterniond::Identity()),
+      target_position_(Point::Zero()),
+      target_yaw_(0.f),
       collision_check_period_(config.collision_check_period_s),
       collision_check_last_timestamp_(0) {
   LOG_IF(INFO, config_.verbosity >= 1) << "\n" + config_.toString();

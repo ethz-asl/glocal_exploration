@@ -36,6 +36,10 @@ class VoxbloxMap : public MapBase {
   FloatingPoint getTraversabilityRadius() const override {
     return config_.traversability_radius;
   }
+  std::vector<WayPoint> getPoseHistory() const override {
+    LOG(ERROR) << "Pose history not implemented for voxblox maps.";
+    return std::vector<WayPoint>(0);
+  }
 
   /* Local planner */
   bool isTraversableInActiveSubmap(
@@ -104,6 +108,8 @@ class VoxbloxMap : public MapBase {
   // cached constants
   FloatingPoint c_block_size_;
   FloatingPoint c_voxel_size_;
+
+  static constexpr FloatingPoint kMaxLineTraversabilityCheckLength = 1e2;
 };
 
 }  // namespace glocal_exploration

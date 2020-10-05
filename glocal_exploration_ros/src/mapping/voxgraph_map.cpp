@@ -272,6 +272,11 @@ bool VoxgraphMap::isLineTraversableInActiveSubmap(
   if (line_length <= voxblox::kFloatEpsilon) {
     return isTraversableInActiveSubmap(start_point, traversability_radius,
                                        optimistic);
+  } else if (kMaxLineTraversabilityCheckLength < line_length) {
+    LOG(WARNING) << "Requested traversability check for segment exceeding "
+                 << kMaxLineTraversabilityCheckLength
+                 << "m. Returning false to avoid long wait.";
+    return false;
   }
 
   const Point line_direction = (end_point - start_point) / line_length;
@@ -393,6 +398,11 @@ bool VoxgraphMap::isLineTraversableInGlobalMap(
   const FloatingPoint line_length = (end_point - start_point).norm();
   if (line_length <= voxblox::kFloatEpsilon) {
     return isTraversableInGlobalMap(start_point, traversability_radius);
+  } else if (kMaxLineTraversabilityCheckLength < line_length) {
+    LOG(WARNING) << "Requested traversability check for segment exceeding "
+                 << kMaxLineTraversabilityCheckLength
+                 << "m. Returning false to avoid long wait.";
+    return false;
   }
 
   const Point line_direction = (end_point - start_point) / line_length;
