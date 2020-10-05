@@ -22,3 +22,13 @@ sensors:
     VerticalFOVUpper: 22.5  # deg 
     VerticalFOVLower: -22.5  # deg
     DrawDebugPoints: false
+
+velocity_noise:
+  x:
+    truncate_at_n_stddevs: 3
+  y:
+    truncate_at_n_stddevs: 3
+  z:
+    truncate_at_n_stddevs: 3
+  yaw:
+    truncate_at_n_stddevs: 3
