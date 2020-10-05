@@ -52,12 +52,13 @@ bool MapBase::findSafestNearbyPoint(const FloatingPoint minimum_distance,
   FloatingPoint best_distance_so_far = 0.f;
   Point best_position_so_far = initial_position;
   int step_idx = 1;
+  Point gradient;
   for (; step_idx < kMaxNumSteps; ++step_idx) {
     // Get the distance.
     FloatingPoint distance = 0.f;
-    Point gradient;
     if (!this->getDistanceAndGradientInActiveSubmap(current_position, &distance,
-                                                    &gradient)) {
+                                                    &gradient) &&
+        step_idx == 1) {
       LOG(WARNING) << "Failed to look up distance and gradient "
                       "information at: "
                    << current_position.transpose();

@@ -132,7 +132,7 @@ local_planner:
   # Termination
   reconsideration_time: 2 # s
   termination_max_gain: 300
-  terminaton_min_tree_size: 5
+  terminaton_min_tree_size: 0
   DEBUG_number_of_iterations: -1  # -1 to turn off
   
   # Lidar Model

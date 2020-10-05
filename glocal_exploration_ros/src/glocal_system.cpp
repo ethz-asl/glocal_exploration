@@ -108,29 +108,57 @@ void GlocalSystem::mainLoop() {
 }
 
 void GlocalSystem::loopIteration() {
-  // If the current path became intraversable, run for your life.
-  // Or at least try to.
+  // Collision avoidance.
   ros::Time current_timestamp = ros::Time::now();
   if (collision_check_last_timestamp_ + collision_check_period_ <
       current_timestamp) {
     collision_check_last_timestamp_ = current_timestamp;
 
-    Point safe_position = comm_->currentPose().position;
+    // Check if the line to the upcoming waypoint became intraversable.
+    const FloatingPoint traversability_radius =
+        comm_->map()->getTraversabilityRadius();
+    const Point current_position = comm_->currentPose().position;
+    constexpr bool kOptimistic = true;
     if (!comm_->map()->isLineTraversableInActiveSubmap(
-            comm_->currentPose().position, target_position_) &&
-        comm_->map()->findSafestNearbyPoint(
-            comm_->map()->getTraversabilityRadius(), &safe_position)) {
-      LOG(INFO) << "Attempting to fly to safety and continue from there.";
-      // Rotate by 180deg to reduce unobserved space in the active submap
-      const FloatingPoint new_yaw = comm_->currentPose().yaw + M_PI;
-      const WayPoint safe_waypoint(safe_position, new_yaw);
-      target_position_ = safe_waypoint.position;
-      target_yaw_ = safe_waypoint.yaw;
-      publishTargetPose();
-      comm_->setRequestedWayPointRead();
-      if (comm_->stateMachine()->currentState() ==
-          StateMachine::State::kLocalPlanning) {
-        comm_->localPlanner()->resetPlanner(safe_waypoint);
+            current_position, target_position_, kOptimistic)) {
+      // Only intervene if we're actively flying toward a surface.
+      FloatingPoint distance;
+      Point gradient;
+      if (comm_->map()->getDistanceAndGradientInActiveSubmap(
+              current_position, &distance, &gradient)) {
+        if (gradient.dot(target_position_ - current_position) < 0) {
+          // Try to find a safe position near the current position.
+          bool found_safe_position = true;
+          Point safe_position = current_position;
+          if (!comm_->map()->findSafestNearbyPoint(traversability_radius,
+                                                   &safe_position)) {
+            // Otherwise, try near the previous position.
+            safe_position = comm_->getPreviousWayPoint().position;
+            if (!comm_->map()->findSafestNearbyPoint(traversability_radius,
+                                                     &safe_position) ||
+                !comm_->map()->isLineTraversableInActiveSubmap(
+                    current_position, safe_position, traversability_radius,
+                    nullptr, kOptimistic)) {
+              found_safe_position = false;
+            }
+          }
+          if (found_safe_position) {
+            LOG(WARNING)
+                << "Attempting to fly to safety and continue from there.";
+            // Rotate by 180deg to reduce unobserved space in the active
+            // submap.
+            const FloatingPoint new_yaw = comm_->currentPose().yaw + M_PI;
+            const WayPoint safe_waypoint(safe_position, new_yaw);
+            target_position_ = safe_waypoint.position;
+            target_yaw_ = safe_waypoint.yaw;
+            publishTargetPose();
+            comm_->setRequestedWayPointRead();
+            if (comm_->stateMachine()->currentState() ==
+                StateMachine::State::kLocalPlanning) {
+              comm_->localPlanner()->resetPlanner(safe_waypoint);
+            }
+          }
+        }
       }
     }
   }
