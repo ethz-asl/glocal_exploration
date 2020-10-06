@@ -8,7 +8,10 @@
     doc="Automatically launch Rviz." />
 
     <!-- Planner arguments -->
-    <arg name="planner_config" default="glocal_planner.yaml"/>
+    <arg name="gbplanner_config_file" default="$(find glocal_exploration_ros)/config/gbplanner_config.yaml"/>
+    <arg name="pci_file" default="$(find gbplanner)/config/m100/planner_control_interface_sim_config.yaml"/>
+    <arg name="voxblox_config_file" default="$(find glocal_exploration_ros)/config/gbplanner_voxblox_sim_config.yaml"/>
+
 
     <!-- Airsim arguments -->
     <arg name="airsim_config" default="maze/maze_airsim.yaml"/>
@@ -17,8 +20,8 @@
     <arg name="mav_name" default="airsim_drone"/>
 
     <!-- Experiment arguments -->
-    <arg name="record_data" default="true"/>
-    <arg name="record_visualization" default="true"/>
+    <arg name="record_data" default="false"/>
+    <arg name="record_visualization" default="false"/>
     <arg name="data_path" default="/home/victor/data/automated_tests/gbplanner"/>
     <arg name="time_limit" default="30"/> <!-- min -->
     <arg name="data_interval" default="30"/>  <!-- sec -->
@@ -32,7 +35,8 @@
     <param name="/use_sim_time" value="true" if="$(arg use_airsim_time)"/>
 
     <!-- tf -->
-    <node pkg="tf" type="static_transform_publisher" name="static_tf_mission_odom" args="0 0 0 0 0 0 1 /odom /world 100"/>
+    <node pkg="tf" type="static_transform_publisher" name="static_tf_mission_odom" args="0 0 0 0 0 0 1 /odom /mission 100"/>
+    <node pkg="tf" type="static_transform_publisher" name="static_tf_mission_world" args="0 0 0 0 0 0 1 /mission /world 100"/>
 
     <!-- airsim client -->
     <node name="airsim_simulator" pkg="unreal_airsim" type="airsim_simulator_node" required="true" output="screen" args="-alsologtostderr">
@@ -40,11 +44,7 @@
         <rosparam file="$(find glocal_exploration_ros)/config/$(arg drift_config)"/>
     </node>
 
-    <arg name="gbplanner_config_file" default="$(find glocal_exploration_ros)/config/gbplanner_config.yaml"/>
-    <arg name="pci_file" default="$(find gbplanner)/config/m100/planner_control_interface_sim_config.yaml"/>
-    <arg name="voxblox_config_file" default="$(find glocal_exploration_ros)/config/gbplanner_voxblox_sim_config.yaml"/>
-
-        <!-- Planner -->
+    <!-- Planner -->
     <!-- Graph based planning -->
     <node pkg="gbplanner" type="gbplanner_node" name="gbplanner_node" output="screen" launch-prefix="$(arg launch_prefix)">
         <remap from="odometry" to="/airsim_drone/ground_truth/odometry" />
@@ -61,7 +61,6 @@
         <remap from="odometry" to="/airsim_drone/ground_truth/odometry"/>
         <rosparam command="load" file="$(arg pci_file)" />
     </node>
-
 
     <!-- Experiment startup and Evaluation -->
     <group ns="evaluation">
@@ -88,7 +87,7 @@
 
         <!-- Record visualization topics -->
         <node pkg="rosbag" type="record" name="rosbag_vis_recorder"
-              args="record -o $(arg data_path)/tmp_bags/tmp_bag /clock /rosout /tf /tf_static /glocal/glocal_system/global_planner/executed_path /glocal/glocal_system/global_planner/frontiers /glocal/glocal_system/global_planner/goal_points /glocal/glocal_system/global_planner/planned_path /glocal/glocal_system/local_planner/executed_path /glocal/glocal_system/local_planner/tree /glocal/glocal_system/mapping/separated_mesh /glocal/glocal_system/mapping/mesh" if="$(eval arg('record_data') and arg('record_visualization'))"/>
+              args="record -o $(arg data_path)/tmp_bags/tmp_bag /clock /rosout /tf /tf_static /vis/robot_state /vis/ref_path /vis/planning_global_path /vis/best_planning_paths /vis/shortest_paths /vis/planning_workspace /vis/planning_global_graph /vis/planning_global_path /gbplanner_node/mesh" if="$(eval arg('record_data') and arg('record_visualization'))"/>
     </group>
 
 

@@ -23,16 +23,10 @@
   <arg name="time_limit" default="30"/> <!-- min -->
   <arg name="data_interval" default="30"/>  <!-- sec -->
   <arg name="planner_node_name" default="/glocal_system"/> <!-- Name of GLocal's ROS node -->
-  
-  
 
   <!-- Automatically generated arguments -->
   <arg unless="$(arg debug_mode)" name="launch_prefix" value="" />
   <arg if="$(arg debug_mode)" name="launch_prefix" value="gdb -ex run --args" />
-
-
-
-
   
   <!-- Setup the experiment -->
   <param name="/use_sim_time" value="true" if="$(arg use_airsim_time)"/>

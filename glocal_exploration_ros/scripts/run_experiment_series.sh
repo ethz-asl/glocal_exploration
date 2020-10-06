@@ -31,17 +31,18 @@ function run_experiments() {
 record_visualization=true
 clear_voxblox_maps=true		# Irreversibly remove maps after evaluation to save disk space
 
-n_experiments=10
+n_experiments=5
 frequency=5      #s
-duration=20      #min
+duration=15      #min
 
 # ==========        Run experiments        ==========
 date=$(date '+%Y-%m-%d-%H-%M-%S')
+home_dir='/home/victor'
+launch_pkg="glocal_exploration_ros"  # The Active3D and GBplanner launch files currently are also in here
 
 ## GLocal
-#commit_id=$(git --git-dir=/home/unreal/catkin_ws/src/voxiverse/glocal_exploration/.git rev-parse --verify HEAD)
-#target_dir="/home/unreal/data/automated_tests/glocal/${date}_${commit_id}/"
-#launch_pkg="glocal_exploration_ros"
+#commit_id=$(git --git-dir=${home_dir}/catkin_ws/src/voxiverse/glocal_exploration/.git rev-parse --verify HEAD)
+#target_dir="${home_dir}/data/automated_tests/glocal/${date}_${commit_id}/"
 #launch_file="run_maze"  # run_maze, active_3d_run_maze
 #
 #drift="maze/drift_4"  # drift_0, drift_1, drift_2, drift_3, drift_4
@@ -60,9 +61,8 @@ date=$(date '+%Y-%m-%d-%H-%M-%S')
 #run_experiments
 
 ### Active 3D
-#commit_id=$(git --git-dir=/home/victor/catkin_ws/src/mav_active_3d_planning/.git rev-parse --verify HEAD)
-#target_dir="/home/unreal/data/automated_tests/active_3d/${date}_${commit_id}/"
-#launch_pkg="glocal_exploration_ros"
+#commit_id=$(git --git-dir=${home_dir}/catkin_ws/src/mav_active_3d_planning/.git rev-parse --verify HEAD)
+#target_dir="${home_dir}/data/automated_tests/active_3d/${date}_${commit_id}/"
 #launch_file="active_3d_run_maze"  # run_maze, active_3d_run_maze
 #
 #drift="maze/drift_4"  # drift_0, drift_1, drift_2, drift_3, drift_4
@@ -81,10 +81,9 @@ date=$(date '+%Y-%m-%d-%H-%M-%S')
 #run_experiments
 
 # GLocal
-commit_id=$(git --git-dir=/home/victor/gbplanner_ws/src/exploration/gbplanner_ros/.git rev-parse --verify HEAD)
-target_dir="/home/victor/data/automated_tests/gbplanner/${date}_${commit_id}/"
-launch_pkg="gbplanner"
-launch_file="run_maze"  # run_maze, active_3d_run_maze
+commit_id=$(git --git-dir=${home_dir}/catkin_ws/src/gbplanner/exploration/gbplanner_ros/.git rev-parse --verify HEAD)
+target_dir="${home_dir}/data/automated_tests/gbplanner/${date}_${commit_id}/"
+launch_file="gbplanner_run_maze"  # run_maze, active_3d_run_maze
 
 drift="maze/drift_0"  # drift_0, drift_1, drift_2, drift_3, drift_4
 run_experiments
