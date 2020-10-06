@@ -709,7 +709,7 @@ bool SkeletonPlanner::isFrontierPointObservableFromPosition(
   const FloatingPoint horizontal_offset =
       (frontier_point - skeleton_vertex_point).head<2>().norm();
   return std::abs(std::atan2(vertical_offset, horizontal_offset)) <
-         config_.sensor_vertical_fov_rad / 2;
+         config_.sensor_vertical_fov_rad / 2.f;
 }
 
 }  // namespace glocal_exploration

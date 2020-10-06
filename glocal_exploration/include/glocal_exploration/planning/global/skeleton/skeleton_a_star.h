@@ -1,6 +1,7 @@
 #ifndef GLOCAL_EXPLORATION_PLANNING_GLOBAL_SKELETON_SKELETON_A_STAR_H_
 #define GLOCAL_EXPLORATION_PLANNING_GLOBAL_SKELETON_SKELETON_A_STAR_H_
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <set>
@@ -30,6 +31,15 @@ class SkeletonAStar {
     void checkParams() const override;
     void fromRosParam() override;
     void printFields() const override;
+  };
+
+  struct VisualizationEdges {
+    std::map<GlobalVertexId, GlobalVertexId> parent_map_;
+    std::map<GlobalVertexId, GlobalVertexId> intraversable_edge_map_;
+    void clear() {
+      parent_map_.clear();
+      intraversable_edge_map_.clear();
+    }
   };
 
   SkeletonAStar(const Config& config,
@@ -67,6 +77,11 @@ class SkeletonAStar {
                                           traversability_radius);
   }
 
+  VisualizationEdges getVisualizationEdges() const {
+    std::lock_guard<std::mutex> lock_guard(visualization_data_mutex_);
+    return visualization_edges_;
+  }
+
  protected:
   const Config config_;
 
@@ -83,6 +98,11 @@ class SkeletonAStar {
   static GlobalVertexId popSmallestFromOpen(
       const std::map<GlobalVertexId, FloatingPoint>& f_score_map,
       std::set<GlobalVertexId>* open_set);
+
+  // Persistent only for visualization purposes.
+  // Only used within getPathBetweenVertices().
+  mutable VisualizationEdges visualization_edges_;
+  mutable std::mutex visualization_data_mutex_;
 };
 }  // namespace glocal_exploration
 

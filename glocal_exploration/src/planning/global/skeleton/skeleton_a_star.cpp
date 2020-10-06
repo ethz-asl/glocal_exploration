@@ -8,6 +8,8 @@
 #include <utility>
 #include <vector>
 
+#include "glocal_exploration/utils/execute_on_scope_exit.h"
+
 namespace glocal_exploration {
 
 SkeletonAStar::Config::Config() { setConfigName("SkeletonAStarPlanner"); }
@@ -174,6 +176,15 @@ bool SkeletonAStar::getPathBetweenVertices(
   std::set<GlobalVertexId> open_set;
   std::set<GlobalVertexId> closed_set;
 
+  // Auto copy the visualization data once this method returns.
+  // NOTE: We copy them s.t. it's safe to read them from a separate thread.
+  std::map<GlobalVertexId, GlobalVertexId> intraversable_edge_map;
+  ExecuteOnScopeExit auto_copy_visuals([&]() {
+    std::lock_guard<std::mutex> lock_guard(visualization_data_mutex_);
+    visualization_edges_.parent_map_ = parent_map;
+    visualization_edges_.intraversable_edge_map_ = intraversable_edge_map;
+  });
+
   // Initialize the search with vertices that can be used as graph entry points
   // i.e. vertices that are closest to the start_point and reachable
   for (const GlobalVertexId& current_vertex_id : start_vertex_candidates) {
@@ -291,27 +302,31 @@ bool SkeletonAStar::getPathBetweenVertices(
           const float distance_current_to_nearby_vertex =
               (t_odom_current_vertex - t_odom_nearby_vertex).norm();
           if (distance_current_to_nearby_vertex <
-                  config_.linking_max_distance &&
-              comm_->map()->isLineTraversableInGlobalMap(
-                  t_odom_current_vertex, t_odom_nearby_vertex,
-                  config_.traversability_radius)) {
-            if (closed_set.count(nearby_vertex_global_id) > 0) {
-              continue;
-            }
-            if (open_set.count(nearby_vertex_global_id) == 0) {
-              open_set.insert(nearby_vertex_global_id);
-            }
+              config_.linking_max_distance) {
+            if (comm_->map()->isLineTraversableInGlobalMap(
+                    t_odom_current_vertex, t_odom_nearby_vertex,
+                    config_.traversability_radius)) {
+              if (closed_set.count(nearby_vertex_global_id) > 0) {
+                continue;
+              }
+              if (open_set.count(nearby_vertex_global_id) == 0) {
+                open_set.insert(nearby_vertex_global_id);
+              }
 
-            FloatingPoint tentative_g_score =
-                g_score_map[current_vertex_id] +
-                (t_odom_nearby_vertex - t_odom_current_vertex).norm();
-            if (g_score_map.count(nearby_vertex_global_id) == 0 ||
-                g_score_map[nearby_vertex_global_id] < tentative_g_score) {
-              g_score_map[nearby_vertex_global_id] = tentative_g_score;
-              f_score_map[nearby_vertex_global_id] =
-                  tentative_g_score +
-                  (goal_point - t_odom_nearby_vertex).norm();
-              parent_map[nearby_vertex_global_id] = current_vertex_id;
+              FloatingPoint tentative_g_score =
+                  g_score_map[current_vertex_id] +
+                  (t_odom_nearby_vertex - t_odom_current_vertex).norm();
+              if (g_score_map.count(nearby_vertex_global_id) == 0 ||
+                  g_score_map[nearby_vertex_global_id] < tentative_g_score) {
+                g_score_map[nearby_vertex_global_id] = tentative_g_score;
+                f_score_map[nearby_vertex_global_id] =
+                    tentative_g_score +
+                    (goal_point - t_odom_nearby_vertex).norm();
+                parent_map[nearby_vertex_global_id] = current_vertex_id;
+              }
+            } else {
+              intraversable_edge_map[current_vertex_id] =
+                  nearby_vertex_global_id;
             }
           }
         }
@@ -341,6 +356,7 @@ bool SkeletonAStar::getPathBetweenVertices(
       if (!comm_->map()->isLineTraversableInGlobalMap(
               t_odom_current_vertex, t_odom_neighbor_vertex,
               config_.traversability_radius)) {
+        intraversable_edge_map[current_vertex_id] = neighbor_vertex_id;
         continue;
       }
 

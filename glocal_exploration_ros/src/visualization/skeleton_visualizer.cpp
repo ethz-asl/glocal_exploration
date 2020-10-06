@@ -45,6 +45,8 @@ SkeletonVisualizer::SkeletonVisualizer(
       nh_.advertise<visualization_msgs::Marker>("executed_path", queue_size_);
   planned_path_pub_ =
       nh_.advertise<visualization_msgs::Marker>("planned_path", queue_size_);
+  path_search_pub_ =
+      nh_.advertise<visualization_msgs::Marker>("path_search", queue_size_);
   frontier_pub_ =
       nh_.advertise<sensor_msgs::PointCloud2>("frontiers", queue_size_);
   goals_pub_ =
@@ -66,6 +68,10 @@ void SkeletonVisualizer::visualize() {
   if (config_.visualize_planned_path &&
       planned_path_pub_.getNumSubscribers() > 0) {
     visualizePlannedPath();
+  }
+  if (config_.visualize_path_search &&
+      path_search_pub_.getNumSubscribers() > 0) {
+    visualizePathSearch();
   }
 
   // Frontiers.
@@ -171,6 +177,68 @@ void SkeletonVisualizer::visualizeExecutedPath() {
                       pt);
   msg.points.push_back(pt);
   executed_path_pub_.publish(msg);
+}
+
+void SkeletonVisualizer::visualizePathSearch() {
+  SkeletonAStar::VisualizationEdges visualization_edges =
+      planner_->getVisualizationEdges();
+  // Setup the marker
+  visualization_msgs::Marker marker_msg;
+  marker_msg.header.frame_id = "odom";
+  marker_msg.header.stamp = ros::Time();
+  marker_msg.ns = "a_star_search";
+  marker_msg.id = 0;
+  marker_msg.type = visualization_msgs::Marker::LINE_LIST;
+  marker_msg.action = visualization_msgs::Marker::ADD;
+  marker_msg.pose.position.x = 0.0;
+  marker_msg.pose.position.y = 0.0;
+  marker_msg.pose.position.z = 0.0;
+  marker_msg.pose.orientation.x = 0.0;
+  marker_msg.pose.orientation.y = 0.0;
+  marker_msg.pose.orientation.z = 0.0;
+  marker_msg.pose.orientation.w = 1.0;
+  marker_msg.scale.x = 0.08;
+  marker_msg.color.a = 1.0;
+  marker_msg.color.r = 0.0;
+  marker_msg.color.g = 0.0;
+  marker_msg.color.b = 0.0;
+
+  // Add the parent to child edges
+  std_msgs::ColorRGBA parent_child_edge_color;
+  parent_child_edge_color.r = 0.0;
+  parent_child_edge_color.g = 1.0;
+  parent_child_edge_color.b = 0.0;
+  parent_child_edge_color.a = 1.0;
+  for (const auto& parent_child_edge : visualization_edges.parent_map_) {
+    geometry_msgs::Point parent_position_msg, child_position_msg;
+    if (getVertexPositionMsg(parent_child_edge.first, &parent_position_msg) &&
+        getVertexPositionMsg(parent_child_edge.second, &child_position_msg)) {
+      marker_msg.points.emplace_back(parent_position_msg);
+      marker_msg.colors.emplace_back(parent_child_edge_color);
+      marker_msg.points.emplace_back(child_position_msg);
+      marker_msg.colors.emplace_back(parent_child_edge_color);
+    }
+  }
+
+  // Add the intraversable edges
+  std_msgs::ColorRGBA intraversable_edge_color;
+  intraversable_edge_color.r = 1.0;
+  intraversable_edge_color.g = 0.0;
+  intraversable_edge_color.b = 0.0;
+  intraversable_edge_color.a = 1.0;
+  for (const auto& intraversable_edge :
+       visualization_edges.intraversable_edge_map_) {
+    geometry_msgs::Point start_position_msg, end_position_msg;
+    if (getVertexPositionMsg(intraversable_edge.first, &start_position_msg) &&
+        getVertexPositionMsg(intraversable_edge.second, &end_position_msg)) {
+      marker_msg.points.emplace_back(start_position_msg);
+      marker_msg.colors.emplace_back(intraversable_edge_color);
+      marker_msg.points.emplace_back(end_position_msg);
+      marker_msg.colors.emplace_back(intraversable_edge_color);
+    }
+  }
+
+  path_search_pub_.publish(marker_msg);
 }
 
 void SkeletonVisualizer::visualizeGoalPoints() {
@@ -404,6 +472,29 @@ std::string SkeletonVisualizer::frontierTextFormat(FloatingPoint value) const {
   std::stringstream ss;
   ss << std::fixed << std::setprecision(2) << value;
   return ss.str();
+}
+
+bool SkeletonVisualizer::getVertexPositionMsg(
+    const GlobalVertexId& global_vertex_id,
+    geometry_msgs::Point* position_msg) {
+  CHECK_NOTNULL(position_msg);
+  SkeletonSubmap::ConstPtr submap_ptr =
+      planner_->getSkeletonSubmapCollection().getSubmapConstPtrById(
+          global_vertex_id.submap_id);
+  if (submap_ptr) {
+    const Point t_submap_vertex = submap_ptr->getSkeletonGraph()
+                                      .getVertex(global_vertex_id.vertex_id)
+                                      .point;
+    const Point t_odom_vertex = submap_ptr->getPose() * t_submap_vertex;
+    tf::pointEigenToMsg(t_odom_vertex.cast<double>(), *position_msg);
+    return true;
+  } else {
+    if (global_vertex_id.submap_id != RelativeWayPoint::kOdomFrameId) {
+      LOG(WARNING) << "Could not get pointer to submap with ID: "
+                   << global_vertex_id.submap_id;
+    }
+    return false;
+  }
 }
 
 }  // namespace glocal_exploration

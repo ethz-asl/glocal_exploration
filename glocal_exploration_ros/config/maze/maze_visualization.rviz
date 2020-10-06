@@ -513,8 +513,60 @@ Visualization Manager:
                     Value: true
                     submap_0: true
                     submap_1: true
+                    submap_10: true
+                    submap_11: true
+                    submap_12: true
+                    submap_13: true
+                    submap_14: true
+                    submap_15: true
+                    submap_16: true
+                    submap_17: true
+                    submap_18: true
+                    submap_19: true
                     submap_2: true
+                    submap_20: true
+                    submap_21: true
+                    submap_22: true
+                    submap_23: true
+                    submap_24: true
+                    submap_25: true
+                    submap_26: true
+                    submap_27: true
+                    submap_28: true
+                    submap_29: true
                     submap_3: true
+                    submap_30: true
+                    submap_31: true
+                    submap_32: true
+                    submap_33: true
+                    submap_34: true
+                    submap_35: true
+                    submap_36: true
+                    submap_37: true
+                    submap_38: true
+                    submap_39: true
+                    submap_4: true
+                    submap_40: true
+                    submap_41: true
+                    submap_42: true
+                    submap_43: true
+                    submap_44: true
+                    submap_45: true
+                    submap_46: true
+                    submap_47: true
+                    submap_48: true
+                    submap_49: true
+                    submap_5: true
+                    submap_50: true
+                    submap_51: true
+                    submap_52: true
+                    submap_53: true
+                    submap_54: true
+                    submap_55: true
+                    submap_6: true
+                    submap_7: true
+                    submap_8: true
+                    submap_9: true
                 - Class: voxblox_rviz_plugin/VoxbloxMesh
                   Enabled: false
                   Name: Merged map
@@ -573,7 +625,7 @@ Visualization Manager:
           Marker Topic: /glocal/glocal_system/local_planner/tree
           Name: Tree
           Namespaces:
-            {}
+            "": true
           Queue Size: 100
           Value: true
         - Class: rviz/MarkerArray
@@ -605,7 +657,7 @@ Visualization Manager:
           Marker Topic: /glocal/glocal_system/local_planner/executed_path
           Name: Executed path
           Namespaces:
-            {}
+            "": true
           Queue Size: 100
           Value: true
       Enabled: true
@@ -647,7 +699,7 @@ Visualization Manager:
           Marker Topic: /glocal/glocal_system/global_planner/goal_points
           Name: Goal points
           Namespaces:
-            {}
+            "": true
           Queue Size: 100
           Value: true
         - Class: rviz/Marker
@@ -655,7 +707,7 @@ Visualization Manager:
           Marker Topic: /glocal/glocal_system/global_planner/planned_path
           Name: Planned path
           Namespaces:
-            {}
+            "": true
           Queue Size: 100
           Value: true
         - Class: rviz/Marker
@@ -668,10 +720,18 @@ Visualization Manager:
           Value: false
         - Class: rviz/Marker
           Enabled: true
+          Marker Topic: /glocal/glocal_system/global_planner/path_search
+          Name: A star search
+          Namespaces:
+            a_star_search: true
+          Queue Size: 100
+          Value: true
+        - Class: rviz/Marker
+          Enabled: true
           Marker Topic: /glocal/glocal_system/global_planner/executed_path
           Name: Executed path
           Namespaces:
-            {}
+            "": true
           Queue Size: 100
           Value: true
         - Class: rviz/MarkerArray
@@ -712,25 +772,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 40.073524475097656
+      Distance: 38.64976501464844
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.7660360932350159
-        Y: 1.4659513235092163
-        Z: -0.2579711377620697
+        X: -2.2702443599700928
+        Y: 14.339110374450684
+        Z: 0.7373471260070801
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 1.3347965478897095
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.678177833557129
+      Yaw: 3.57317852973938
     Saved: ~
 Window Geometry:
   Displays:

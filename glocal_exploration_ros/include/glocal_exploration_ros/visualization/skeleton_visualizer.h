@@ -25,6 +25,7 @@ class SkeletonVisualizer : public GlobalPlannerVisualizerBase {
     bool visualize_executed_path = true;
     bool visualize_candidate_goals = true;
     bool visualize_planned_path = true;
+    bool visualize_path_search = true;
     bool visualize_inactive_frontiers = true;
     bool visualize_skeleton_submaps = true;
     bool keep_visualizations = false;  // Keep even after finishing paths.
@@ -46,11 +47,14 @@ class SkeletonVisualizer : public GlobalPlannerVisualizerBase {
   void visualizeInactiveFrontiers();
   void visualizeFrontierText();
   void visualizePlannedPath();
+  void visualizePathSearch();
   void visualizeGoalPoints();
   void visualizeSkeletonSubmaps();
 
  private:
   std::string frontierTextFormat(FloatingPoint value) const;
+  bool getVertexPositionMsg(const GlobalVertexId& global_vertex_id,
+                            geometry_msgs::Point* position_msg);
 
  private:
   const Config config_;
@@ -59,6 +63,7 @@ class SkeletonVisualizer : public GlobalPlannerVisualizerBase {
   ros::Publisher frontier_pub_;
   ros::Publisher executed_path_pub_;
   ros::Publisher planned_path_pub_;
+  ros::Publisher path_search_pub_;
   ros::Publisher goals_pub_;
   ros::Publisher frontier_text_pub_;
   ros::Publisher inactive_frontiers_pub_;

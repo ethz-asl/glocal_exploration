@@ -87,7 +87,7 @@
 
         <!-- Record visualization topics -->
         <node pkg="rosbag" type="record" name="rosbag_vis_recorder"
-              args="record -o $(arg data_path)/tmp_bags/tmp_bag /clock /rosout /tf /tf_static /vis/robot_state /vis/ref_path /vis/planning_global_path /vis/best_planning_paths /vis/shortest_paths /vis/planning_workspace /vis/planning_global_graph /vis/planning_global_path /gbplanner_node/mesh" if="$(eval arg('record_data') and arg('record_visualization'))"/>
+              args="record -o $(arg data_path)/tmp_bags/tmp_bag /clock /rosout /tf /tf_static /vis/robot_state /vis/sampler /vis/ref_path /vis/planning_global_path /vis/best_planning_paths /vis/shortest_paths /vis/planning_workspace /vis/planning_global_graph /vis/planning_global_path /gbplanner_node/mesh" if="$(eval arg('record_data') and arg('record_visualization'))"/>
     </group>
 
 

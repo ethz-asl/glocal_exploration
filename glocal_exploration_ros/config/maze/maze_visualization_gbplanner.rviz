@@ -88,6 +88,9 @@ Visualization Manager:
           Show Axes: true
           Show Names: true
           Tree:
+            mission:
+              world:
+                {}
             odom:
               airsim_drone:
                 {}
@@ -97,9 +100,6 @@ Visualization Manager:
                 {}
               airsim_drone_ground_truth:
                 {}
-              mission:
-                world:
-                  {}
           Update Interval: 0
           Value: true
         - Class: rviz/Axes
@@ -215,13 +215,14 @@ Visualization Manager:
           Queue Size: 100
           Value: false
         - Class: rviz/MarkerArray
-          Enabled: false
+          Enabled: true
           Marker Topic: /vis/sampler
           Name: Sampler
           Namespaces:
-            {}
+            invalid_samples: true
+            valid_samples: true
           Queue Size: 100
-          Value: false
+          Value: true
         - Class: rviz/MarkerArray
           Enabled: true
           Marker Topic: /vis/ref_path
@@ -376,16 +377,16 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 83.74542236328125
+      Distance: 82.09353637695312
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.7364248037338257
-        Y: -2.0169079303741455
-        Z: 2.0185964107513428
+        X: 0.00361295766197145
+        Y: -2.8330278396606445
+        Z: 2.02099347114563
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
@@ -394,7 +395,7 @@ Visualization Manager:
       Pitch: 1.5697963237762451
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.5704096555709839
+      Yaw: 4.678580284118652
     Saved: ~
 Window Geometry:
   Displays:

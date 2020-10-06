@@ -95,6 +95,10 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
     return skeleton_a_star_.getSkeletonSubmapCollection();
   }
 
+  SkeletonAStar::VisualizationEdges getVisualizationEdges() const {
+    return skeleton_a_star_.getVisualizationEdges();
+  }
+
  private:
   // Planning iteration methods.
   void resetPlanner();

@@ -5,7 +5,7 @@ voxel_size: &voxel_size 0.2
 voxels_per_side: &voxels_per_side 16
 truncation_distance: &truncation_distance 0.6
 traversability_radius_local_planner: &traversability_radius_local_planner 1.1
-traversability_radius_global_planner: &traversability_radius_global_planner 1.1
+traversability_radius_global_planner: &traversability_radius_global_planner 1.0
 traversability_radius_path_following: &traversability_radius_path_following 1.0
 max_ray_length: &max_ray_length 10
 
@@ -48,6 +48,7 @@ mapping:
   max_weight: 7280
   use_const_weight: true
   use_weight_dropoff: false
+  use_sparsity_compensation_factor: false
   max_consecutive_ray_collisions: 1  # Only affects the fast integrator
   pointcloud_queue_size: 2
   # Integrator settings projective integrator
@@ -189,4 +190,4 @@ global_planner:
     max_num_start_vertex_candidates: 30
     max_num_end_vertex_candidates: 5
     linking_num_nearest_neighbors: 3
-    linking_max_distance: 5.0
+    linking_max_distance: 3.0
