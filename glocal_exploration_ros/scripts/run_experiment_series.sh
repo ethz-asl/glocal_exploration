@@ -37,7 +37,7 @@ duration=15      #min
 
 # ==========        Run experiments        ==========
 date=$(date '+%Y-%m-%d-%H-%M-%S')
-home_dir='/home/unreal'
+home_dir='/home/victor'
 launch_pkg="glocal_exploration_ros"  # The Active3D and GBplanner launch files currently are also in here
 
 # GLocal
