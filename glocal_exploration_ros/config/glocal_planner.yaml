@@ -5,7 +5,7 @@ voxel_size: &voxel_size 0.2
 voxels_per_side: &voxels_per_side 16
 truncation_distance: &truncation_distance 0.6
 traversability_radius_local_planner: &traversability_radius_local_planner 1.1
-traversability_radius_global_planner: &traversability_radius_global_planner 1.0
+traversability_radius_global_planner: &traversability_radius_global_planner 1.1
 traversability_radius_path_following: &traversability_radius_path_following 1.0
 max_ray_length: &max_ray_length 10
 
@@ -44,8 +44,12 @@ mapping:
   min_ray_length_m: 1.0
   max_ray_length_m: *max_ray_length
   # When tuning the max weight, note that it makes integration and deintegration
-  # assymetric. Among others, good values therefore depend on the window length.
-  max_weight: 7280
+  # assymetric. Either choose full symmetry by setting a near-unlimited max
+  # weight, or full assymetry by setting a max weight well below maximum weight
+  # that could theoretically be reached within the sliding window length.
+  # Setting it right on the limit causes issues because both optimistic and
+  # regular traversability checks would fail in areas the robot traversed.
+  max_weight: 1000000
   use_const_weight: true
   use_weight_dropoff: false
   use_sparsity_compensation_factor: false

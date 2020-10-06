@@ -33,7 +33,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ESDF slice
+    SyncSource: Frontiers
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -410,7 +410,7 @@ Visualization Manager:
               Color: 255; 255; 255
               Color Transformer: Intensity
               Decay Time: 0
-              Enabled: true
+              Enabled: false
               Invert Rainbow: false
               Max Color: 255; 255; 255
               Max Intensity: 2
@@ -427,7 +427,7 @@ Visualization Manager:
               Unreliable: false
               Use Fixed Frame: true
               Use rainbow: true
-              Value: true
+              Value: false
             - Alpha: 0.20000000298023224
               Autocompute Intensity Bounds: false
               Autocompute Value Bounds:
@@ -539,30 +539,8 @@ Visualization Manager:
                     submap_31: true
                     submap_32: true
                     submap_33: true
-                    submap_34: true
-                    submap_35: true
-                    submap_36: true
-                    submap_37: true
-                    submap_38: true
-                    submap_39: true
                     submap_4: true
-                    submap_40: true
-                    submap_41: true
-                    submap_42: true
-                    submap_43: true
-                    submap_44: true
-                    submap_45: true
-                    submap_46: true
-                    submap_47: true
-                    submap_48: true
-                    submap_49: true
                     submap_5: true
-                    submap_50: true
-                    submap_51: true
-                    submap_52: true
-                    submap_53: true
-                    submap_54: true
-                    submap_55: true
                     submap_6: true
                     submap_7: true
                     submap_8: true
@@ -719,13 +697,13 @@ Visualization Manager:
           Queue Size: 100
           Value: false
         - Class: rviz/Marker
-          Enabled: true
+          Enabled: false
           Marker Topic: /glocal/glocal_system/global_planner/path_search
           Name: A star search
           Namespaces:
-            a_star_search: true
+            {}
           Queue Size: 100
-          Value: true
+          Value: false
         - Class: rviz/Marker
           Enabled: true
           Marker Topic: /glocal/glocal_system/global_planner/executed_path
@@ -772,25 +750,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 38.64976501464844
+      Distance: 90.30125427246094
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -2.2702443599700928
-        Y: 14.339110374450684
-        Z: 0.7373471260070801
+        X: 0.17640379071235657
+        Y: 0.21786215901374817
+        Z: 0.5659483671188354
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.3347965478897095
+      Pitch: 1.5697963237762451
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.57317852973938
+      Yaw: 4.656353950500488
     Saved: ~
 Window Geometry:
   Displays:

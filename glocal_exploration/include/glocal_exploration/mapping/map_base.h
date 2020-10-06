@@ -8,8 +8,9 @@
 
 #include <voxblox/core/layer.h>
 
-#include <glocal_exploration/common.h>
-#include <glocal_exploration/state/waypoint.h>
+#include "glocal_exploration/common.h"
+#include "glocal_exploration/mapping/neighborhood_offsets.h"
+#include "glocal_exploration/state/waypoint.h"
 
 namespace glocal_exploration {
 
@@ -69,7 +70,9 @@ class MapBase {
   bool findNearbyTraversablePoint(const FloatingPoint traversability_radius,
                                   Point* position) const;
   bool findSafestNearbyPoint(const FloatingPoint minimum_distance,
-                             Point* position) const;
+                             Point* position);
+  bool performGradientAscentFromStartPoint(const FloatingPoint minimum_distance,
+                                           Point* position) const;
 
   // Voxels are referred in the planner by their center points.
   virtual Point getVoxelCenterInLocalArea(const Point& position) const = 0;
@@ -108,6 +111,7 @@ class MapBase {
 
  protected:
   const std::shared_ptr<Communicator> comm_;
+  NeighborhoodOffsets safe_nearby_point_search_offsets_;
 };
 
 }  // namespace glocal_exploration

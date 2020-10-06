@@ -1,6 +1,7 @@
 #include "glocal_exploration/mapping/map_base.h"
 
 #include <algorithm>
+#include <vector>
 
 namespace glocal_exploration {
 
@@ -41,7 +42,53 @@ bool MapBase::findNearbyTraversablePoint(
 }
 
 bool MapBase::findSafestNearbyPoint(const FloatingPoint minimum_distance,
-                                    Point* position) const {
+                                    Point* position) {
+  CHECK_NOTNULL(position);
+  const Point initial_position = *position;
+
+  // Start by trying gradient ascent from the current position.
+  if (performGradientAscentFromStartPoint(minimum_distance, position)) {
+    return true;
+  }
+
+  // If this fails, try nearby start points.
+  // Setup.
+  const bool kOptimistic = true;
+  const FloatingPoint traversability_radius = getTraversabilityRadius();
+  const std::vector<FloatingPoint> scales{getVoxelSize(), 2 * getVoxelSize(),
+                                          3 * getVoxelSize()};
+  // Search.
+  FloatingPoint best_distance = 0.f;
+  Point best_position = initial_position;
+  for (const FloatingPoint scale : scales) {
+    for (const Point& offset :
+         safe_nearby_point_search_offsets_.getVertices()) {
+      Point start_point = initial_position + scale * offset;
+      if (isLineTraversableInActiveSubmap(initial_position, start_point,
+                                          traversability_radius, nullptr,
+                                          kOptimistic)) {
+        if (performGradientAscentFromStartPoint(minimum_distance,
+                                                &start_point)) {
+          FloatingPoint new_distance = 0.f;
+          if (getDistanceInActiveSubmap(start_point, &new_distance) &&
+              best_distance < new_distance) {
+            best_distance = new_distance;
+            best_position = start_point;
+          }
+        }
+      }
+    }
+    if (minimum_distance < best_distance) {
+      *position = best_position;
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool MapBase::performGradientAscentFromStartPoint(
+    const FloatingPoint minimum_distance, Point* position) const {
   CHECK_NOTNULL(position);
   const Point initial_position = *position;
 
@@ -50,18 +97,16 @@ bool MapBase::findSafestNearbyPoint(const FloatingPoint minimum_distance,
 
   Point current_position = initial_position;
   FloatingPoint best_distance_so_far = 0.f;
+  constexpr FloatingPoint kMaxMapDistance = 1.9;
   Point best_position_so_far = initial_position;
   int step_idx = 1;
   Point gradient;
-  for (; step_idx < kMaxNumSteps; ++step_idx) {
+  for (; step_idx <= kMaxNumSteps; ++step_idx) {
     // Get the distance.
     FloatingPoint distance = 0.f;
     if (!this->getDistanceAndGradientInActiveSubmap(current_position, &distance,
                                                     &gradient) &&
         step_idx == 1) {
-      LOG(WARNING) << "Failed to look up distance and gradient "
-                      "information at: "
-                   << current_position.transpose();
       return false;
     }
 
@@ -69,8 +114,9 @@ bool MapBase::findSafestNearbyPoint(const FloatingPoint minimum_distance,
     if (best_distance_so_far < distance) {
       best_distance_so_far = distance;
       best_position_so_far = current_position;
-    } else if (distance + voxel_size / 2 < best_distance_so_far ||
-               step_idx == kMaxNumSteps - 1) {
+    } else if (kMaxMapDistance <= distance ||
+               distance + voxel_size / 2 < best_distance_so_far ||
+               step_idx == kMaxNumSteps) {
       if (this->isTraversableInActiveSubmap(current_position,
                                             minimum_distance)) {
         LOG(INFO) << "Found a safe point near initial position ("
@@ -88,9 +134,6 @@ bool MapBase::findSafestNearbyPoint(const FloatingPoint minimum_distance,
     current_position += step_size * gradient;
   }
 
-  LOG(INFO) << "Could not find a safer point near initial position ("
-            << initial_position.transpose() << "), attempted " << step_idx
-            << " gradient ascent steps.";
   return false;
 }
 

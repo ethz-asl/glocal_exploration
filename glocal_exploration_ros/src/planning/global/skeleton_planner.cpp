@@ -205,77 +205,76 @@ bool SkeletonPlanner::computeGoalPoint() {
     clusterFrontiers();
   }
 
-  // Find reachable skeleton vertices that we can use to initialize
-  // the Astar search.
+  // Search the closest reachable frontier.
   const Point current_robot_position = comm_->currentPose().position;
   Point start_point = current_robot_position;
-  std::vector<GlobalVertexId> start_vertex_candidates;
-  if (!searchSkeletonStartVertices(&start_point, &start_vertex_candidates)) {
-    return false;
-  }
-
-  // Sort the frontiers by euclidean distance.
-  for (auto& frontier : frontier_data_) {
-    frontier.euclidean_distance =
-        (current_robot_position - frontier.centroid).norm();
-  }
-  std::sort(frontier_data_.begin(), frontier_data_.end(),
-            [](const FrontierSearchData& lhs, const FrontierSearchData& rhs) {
-              return lhs.euclidean_distance < rhs.euclidean_distance;
-            });
-
-  // Compute paths to frontiers to determine the closest reachable one. Start
-  // with closest and use euclidean distance as lower bound to prune candidates.
+  int path_counter = 0;
   int unobservable_frontier_counter = 0;
   const int total_frontiers = frontier_data_.size();
-  int path_counter = 0;
-  FloatingPoint shortest_path = std::numeric_limits<FloatingPoint>::max();
   bool found_a_valid_path = false;
-  bool time_exceeded = false;
-  for (auto& candidate : frontier_data_) {
-    if (!time_exceeded &&
-        config_.max_closest_frontier_search_time_sec <
-            std::chrono::duration_cast<std::chrono::seconds>(
-                std::chrono::high_resolution_clock::now() - t_start)
-                .count()) {
-      LOG_IF(INFO, config_.verbosity >= 1)
-          << "Maximum closest frontier searching time exceeded. Will continue "
-             "with the frontiers we found so far.";
-      time_exceeded = true;
+  std::vector<GlobalVertexId> start_vertex_candidates;
+  if (searchSkeletonStartVertices(&start_point, &start_vertex_candidates)) {
+    // Sort the frontiers by euclidean distance.
+    for (auto& frontier : frontier_data_) {
+      frontier.euclidean_distance =
+          (current_robot_position - frontier.centroid).norm();
     }
+    std::sort(frontier_data_.begin(), frontier_data_.end(),
+              [](const FrontierSearchData& lhs, const FrontierSearchData& rhs) {
+                return lhs.euclidean_distance < rhs.euclidean_distance;
+              });
 
-    if (time_exceeded || candidate.euclidean_distance >= shortest_path) {
-      // These points can never be closer than what we already have.
-      candidate.path_distance = std::numeric_limits<FloatingPoint>::max();
-      candidate.reachability = FrontierSearchData::kUnchecked;
-    } else {
-      // Try to find a path via linked skeleton planning.
-      path_counter++;
-      std::vector<RelativeWayPoint> way_points;
-      bool frontier_is_observable = false;
-      if (computePathToFrontier(start_point, start_vertex_candidates,
-                                candidate.centroid, candidate.frontier_points,
-                                &way_points, &frontier_is_observable)) {
-        // Frontier is reachable, save path and compute path length.
-        candidate.way_points = way_points;
-        candidate.path_distance =
-            (way_points[0].getGlobalPosition() - current_robot_position).norm();
-        for (size_t i = 1; i < way_points.size(); ++i) {
-          candidate.path_distance += (way_points[i].getGlobalPosition() -
-                                      way_points[i - 1].getGlobalPosition())
-                                         .norm();
-        }
-        shortest_path = std::min(shortest_path, candidate.path_distance);
-        candidate.reachability = FrontierSearchData::kReachable;
-        found_a_valid_path = true;
-      } else {
-        // Inaccessible frontier.
+    // Compute paths to frontiers to determine the closest reachable one. Start
+    // with closest and use euclidean distance as lower bound to prune
+    // candidates.
+    FloatingPoint shortest_path = std::numeric_limits<FloatingPoint>::max();
+    bool time_exceeded = false;
+    for (auto& candidate : frontier_data_) {
+      if (!time_exceeded &&
+          config_.max_closest_frontier_search_time_sec <
+              std::chrono::duration_cast<std::chrono::seconds>(
+                  std::chrono::high_resolution_clock::now() - t_start)
+                  .count()) {
+        LOG_IF(INFO, config_.verbosity >= 1)
+            << "Maximum closest frontier searching time exceeded. Will "
+               "continue with the frontiers we found so far.";
+        time_exceeded = true;
+      }
+
+      if (time_exceeded || candidate.euclidean_distance >= shortest_path) {
+        // These points can never be closer than what we already have.
         candidate.path_distance = std::numeric_limits<FloatingPoint>::max();
-        if (frontier_is_observable) {
-          candidate.reachability = FrontierSearchData::kUnreachable;
+        candidate.reachability = FrontierSearchData::kUnchecked;
+      } else {
+        // Try to find a path via linked skeleton planning.
+        path_counter++;
+        std::vector<RelativeWayPoint> way_points;
+        bool frontier_is_observable = false;
+        if (computePathToFrontier(start_point, start_vertex_candidates,
+                                  candidate.centroid, candidate.frontier_points,
+                                  &way_points, &frontier_is_observable)) {
+          // Frontier is reachable, save path and compute path length.
+          candidate.way_points = way_points;
+          candidate.path_distance =
+              (way_points[0].getGlobalPosition() - current_robot_position)
+                  .norm();
+          for (size_t i = 1; i < way_points.size(); ++i) {
+            candidate.path_distance += (way_points[i].getGlobalPosition() -
+                                        way_points[i - 1].getGlobalPosition())
+                                           .norm();
+          }
+          shortest_path = std::min(shortest_path, candidate.path_distance);
+          candidate.reachability = FrontierSearchData::kReachable;
+          found_a_valid_path = true;
         } else {
-          ++unobservable_frontier_counter;
-          candidate.reachability = FrontierSearchData::kInvalidGoal;
+          // Inaccessible frontier.
+          candidate.path_distance = std::numeric_limits<FloatingPoint>::max();
+          if (frontier_is_observable) {
+            candidate.reachability = FrontierSearchData::kUnreachable;
+          } else {
+            ++unobservable_frontier_counter;
+            candidate.reachability = FrontierSearchData::kInvalidGoal;
+          }
         }
       }
     }
