@@ -174,7 +174,7 @@ global_planner:
   path_verification_min_distance: 1.0
   goal_search_steps: 5.0
   goal_search_step_size: 1.0
-  backtracking_distance_m: 15.0  # Set to -1 to disable
+  backtracking_distance_m: 5.0  # Set to -1 to disable
   
   # Submap Frontiers Evaluator
   min_frontier_size: 20

@@ -37,28 +37,28 @@ duration=15      #min
 
 # ==========        Run experiments        ==========
 date=$(date '+%Y-%m-%d-%H-%M-%S')
-home_dir='/home/victor'
+home_dir='/home/unreal'
 launch_pkg="glocal_exploration_ros"  # The Active3D and GBplanner launch files currently are also in here
 
-## GLocal
-#commit_id=$(git --git-dir=${home_dir}/catkin_ws/src/voxiverse/glocal_exploration/.git rev-parse --verify HEAD)
-#target_dir="${home_dir}/data/automated_tests/glocal/${date}_${commit_id}/"
-#launch_file="run_maze"  # run_maze, active_3d_run_maze
-#
-#drift="maze/drift_4"  # drift_0, drift_1, drift_2, drift_3, drift_4
-#run_experiments
-#
-#drift="maze/drift_3"  # drift_0, drift_1, drift_2, drift_3, drift_4
-#run_experiments
-#
-#drift="maze/drift_2"  # drift_0, drift_1, drift_2, drift_3, drift_4
-#run_experiments
-#
-#drift="maze/drift_1"  # drift_0, drift_1, drift_2, drift_3, drift_4
-#run_experiments
-#
-#drift="maze/drift_0"  # drift_0, drift_1, drift_2, drift_3, drift_4
-#run_experiments
+# GLocal
+commit_id=$(git --git-dir=${home_dir}/catkin_ws/src/voxiverse/glocal_exploration/.git rev-parse --verify HEAD)
+target_dir="${home_dir}/data/automated_tests/glocal/${date}_${commit_id}/"
+launch_file="run_maze"  # run_maze, active_3d_run_maze
+
+drift="maze/drift_4"  # drift_0, drift_1, drift_2, drift_3, drift_4
+run_experiments
+
+drift="maze/drift_3"  # drift_0, drift_1, drift_2, drift_3, drift_4
+run_experiments
+
+drift="maze/drift_2"  # drift_0, drift_1, drift_2, drift_3, drift_4
+run_experiments
+
+drift="maze/drift_1"  # drift_0, drift_1, drift_2, drift_3, drift_4
+run_experiments
+
+drift="maze/drift_0"  # drift_0, drift_1, drift_2, drift_3, drift_4
+run_experiments
 
 ### Active 3D
 #commit_id=$(git --git-dir=${home_dir}/catkin_ws/src/mav_active_3d_planning/.git rev-parse --verify HEAD)
@@ -79,23 +79,23 @@ launch_pkg="glocal_exploration_ros"  # The Active3D and GBplanner launch files c
 #
 #drift="maze/drift_0"  # drift_0, drift_1, drift_2, drift_3, drift_4
 #run_experiments
-
-# GLocal
-commit_id=$(git --git-dir=${home_dir}/catkin_ws/src/gbplanner/exploration/gbplanner_ros/.git rev-parse --verify HEAD)
-target_dir="${home_dir}/data/automated_tests/gbplanner/${date}_${commit_id}/"
-launch_file="gbplanner_run_maze"  # run_maze, active_3d_run_maze
-
-drift="maze/drift_0"  # drift_0, drift_1, drift_2, drift_3, drift_4
-run_experiments
-
-drift="maze/drift_1"  # drift_0, drift_1, drift_2, drift_3, drift_4
-run_experiments
-
-drift="maze/drift_2"  # drift_0, drift_1, drift_2, drift_3, drift_4
-run_experiments
-
+#
+### GLocal
+#commit_id=$(git --git-dir=${home_dir}/catkin_ws/src/gbplanner/exploration/gbplanner_ros/.git rev-parse --verify HEAD)
+#target_dir="${home_dir}/data/automated_tests/gbplanner/${date}_${commit_id}/"
+#launch_file="gbplanner_run_maze"  # run_maze, active_3d_run_maze
+#
+#drift="maze/drift_0"  # drift_0, drift_1, drift_2, drift_3, drift_4
+#run_experiments
+#
+#drift="maze/drift_1"  # drift_0, drift_1, drift_2, drift_3, drift_4
+#run_experiments
+#
+#drift="maze/drift_2"  # drift_0, drift_1, drift_2, drift_3, drift_4
+#run_experiments
+#
 #drift="maze/drift_3"  # drift_0, drift_1, drift_2, drift_3, drift_4
 #run_experiments
-
+#
 #drift="maze/drift_4"  # drift_0, drift_1, drift_2, drift_3, drift_4
 #run_experiments

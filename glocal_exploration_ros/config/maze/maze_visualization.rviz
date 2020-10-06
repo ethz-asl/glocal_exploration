@@ -539,8 +539,30 @@ Visualization Manager:
                     submap_31: true
                     submap_32: true
                     submap_33: true
+                    submap_34: true
+                    submap_35: true
+                    submap_36: true
+                    submap_37: true
+                    submap_38: true
+                    submap_39: true
                     submap_4: true
+                    submap_41: true
+                    submap_42: true
+                    submap_43: true
+                    submap_44: true
+                    submap_45: true
+                    submap_46: true
+                    submap_47: true
+                    submap_48: true
+                    submap_49: true
                     submap_5: true
+                    submap_50: true
+                    submap_51: true
+                    submap_52: true
+                    submap_53: true
+                    submap_54: true
+                    submap_55: true
+                    submap_56: true
                     submap_6: true
                     submap_7: true
                     submap_8: true
@@ -750,25 +772,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 90.30125427246094
+      Distance: 80.19050598144531
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.17640379071235657
-        Y: 0.21786215901374817
-        Z: 0.5659483671188354
+        X: 2.571732521057129
+        Y: 4.718803405761719
+        Z: 0.606596052646637
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 1.5597963333129883
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.656353950500488
+      Yaw: 4.6163530349731445
     Saved: ~
 Window Geometry:
   Displays:
