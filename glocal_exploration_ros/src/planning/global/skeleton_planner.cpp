@@ -282,17 +282,29 @@ bool SkeletonPlanner::computeGoalPoint() {
       // This is mainly done to avoid traveling back and forth in subsequent
       // backtracking attempts.
       auto oldest_adjacent_crumb = past_poses.cend();
+      const FloatingPoint traversability_radius =
+          comm_->map()->getTraversabilityRadius();
+      const FloatingPoint max_traversability_check_distance =
+          2 * traversability_radius;
+      const bool kOptimistic = true;
       for (auto past_pose = past_poses.cbegin(); past_pose != past_poses.cend();
            ++past_pose) {
-        if ((past_pose->position - current_robot_position).norm() <
-            comm_->map()->getTraversabilityRadius()) {
+        const FloatingPoint distance_to_past_pose =
+            (past_pose->position - current_robot_position).norm();
+        if (max_traversability_check_distance < distance_to_past_pose) {
+          continue;
+        }
+        if (distance_to_past_pose < traversability_radius ||
+            comm_->map()->isLineTraversableInActiveSubmap(
+                current_robot_position, past_pose->position,
+                traversability_radius, nullptr, kOptimistic)) {
           oldest_adjacent_crumb = past_pose;
           break;
         }
       }
 
       Point t_odom_previous_crumb = Point::Zero();
-      const FloatingPoint min_offset = comm_->map()->getTraversabilityRadius();
+      const FloatingPoint min_offset = traversability_radius;
       for (auto past_pose = oldest_adjacent_crumb;
            past_poses.cbegin() <= past_pose; --past_pose) {
         const Point t_odom_current_crumb = past_pose->position;
