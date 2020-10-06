@@ -22,6 +22,7 @@ from xmlrpc.client import ServerProxy
 # msgs
 from std_msgs.msg import Bool
 from std_srvs.srv import SetBool
+from std_srvs.srv import Trigger
 from voxblox_msgs.srv import FilePath
 
 
@@ -138,8 +139,10 @@ class EvalData(object):
             '~time_limit', 0.0)  # Maximum sim duration in minutes, 0 for inf
 
         # Name of the node whose resource usage we measure
-        self.planner_node_name = rospy.get_param(
-            '~planner_node_name', '/glocal_system')
+        self.planner_node_name = rospy.get_param('~planner_node_name',
+                                                 '/glocal_system')
+        self.run_planner_srv_type = rospy.get_param('~planner_start_srv_type',
+                                                    'SetBool')
 
         self.eval_walltime_0 = None
         self.eval_rostime_0 = None
@@ -196,9 +199,10 @@ class EvalData(object):
                 'TotalMemoryPercent', 'PlannerWallTime', 'PlannerCpuTime',
                 'PlannerCpuPercent', 'PlannerMemoryPercent'
             ])
-            self.eval_writer.writerow(
-                ['Unit', 's', 's', 'm', 'deg', 'm', 'deg', 'm', 'MHz', 's', 's',
-                 'Percent', 'Percent', 's', 's', 'Percent', 'Percent'])
+            self.eval_writer.writerow([
+                'Unit', 's', 's', 'm', 'deg', 'm', 'deg', 'm', 'MHz', 's', 's',
+                'Percent', 'Percent', 's', 's', 'Percent', 'Percent'
+            ])
             self.eval_log_file = open(
                 os.path.join(self.eval_directory, "data_log.txt"), 'a')
 
@@ -262,8 +266,16 @@ class EvalData(object):
             rospy.loginfo(
                 "[ExperimentManager]: Waiting for planner to be ready... done."
             )
-        self.run_planner_srv = rospy.ServiceProxy(self.ns_planner, SetBool)
-        self.run_planner_srv(True)
+        if ('SetBool' in self.run_planner_srv_type):
+            self.run_planner_srv = rospy.ServiceProxy(self.ns_planner, SetBool)
+            self.run_planner_srv(True)
+        elif ('Trigger' in self.run_planner_srv_type):
+            self.run_planner_srv = rospy.ServiceProxy(self.ns_planner, Trigger)
+            self.run_planner_srv()
+        else:
+            rospy.logfatal(
+                "Planner service type should be SetBool or Trigger, "
+                "but is: %s" % self.run_planner_srv_type)
 
         # Setup first measurements
         self.eval_walltime_0 = time.time()
@@ -318,7 +330,10 @@ class EvalData(object):
         # Check whether the planner is still alive
         try:
             # If planner is running calling this service again does nothing
-            self.run_planner_srv(True)
+            if ('SetBool' in self.run_planner_srv_type):
+                self.run_planner_srv(True)
+            elif ('Trigger' in self.run_planner_srv_type):
+                self.run_planner_srv()
         except:
             # Usually this means the planner died
             self.stop_experiment("Planner Node died.")

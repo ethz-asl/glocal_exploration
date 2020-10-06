@@ -17,7 +17,7 @@ function run_experiments() {
   for (( i=1; i<=n_experiments; i++ ))
   do
     # run experiment
-    roslaunch glocal_exploration_ros $launch_file.launch data_path:=$run_target_dir record_data:=true time_limit:=$duration data_interval:=$frequency drift_config:=$drift.yaml record_visualization:=$record_visualization
+    roslaunch $launch_pkg $launch_file.launch data_path:=$run_target_dir record_data:=true time_limit:=$duration data_interval:=$frequency drift_config:=$drift.yaml record_visualization:=$record_visualization
     # evaluate
     roslaunch glocal_exploration_ros evaluate_experiment.launch target_directory:=$run_target_dir method:=recent series:=false clear_voxblox_maps:=$clear_voxblox_maps evaluate:=true
   done
@@ -31,35 +31,38 @@ function run_experiments() {
 record_visualization=true
 clear_voxblox_maps=true		# Irreversibly remove maps after evaluation to save disk space
 
-n_experiments=5
+n_experiments=10
 frequency=5      #s
-duration=15      #min
+duration=20      #min
 
 # ==========        Run experiments        ==========
 date=$(date '+%Y-%m-%d-%H-%M-%S')
-commit_id=$(git --git-dir=/home/unreal/catkin_ws/src/voxiverse/glocal_exploration/.git rev-parse --verify HEAD)
 
-# GLocal
-target_dir="/home/unreal/data/glocal/automated_tests/${date}_${commit_id}/glocal/"
-launch_file="run_maze"  # run_maze, active_3d_run_maze
-
-drift="maze/drift_4"  # drift_0, drift_1, drift_2, drift_3, drift_4
-run_experiments
-
-drift="maze/drift_3"  # drift_0, drift_1, drift_2, drift_3, drift_4
-run_experiments
-
-drift="maze/drift_2"  # drift_0, drift_1, drift_2, drift_3, drift_4
-run_experiments
-
-drift="maze/drift_1"  # drift_0, drift_1, drift_2, drift_3, drift_4
-run_experiments
-
-drift="maze/drift_0"  # drift_0, drift_1, drift_2, drift_3, drift_4
-run_experiments
+## GLocal
+#commit_id=$(git --git-dir=/home/unreal/catkin_ws/src/voxiverse/glocal_exploration/.git rev-parse --verify HEAD)
+#target_dir="/home/unreal/data/automated_tests/glocal/${date}_${commit_id}/"
+#launch_pkg="glocal_exploration_ros"
+#launch_file="run_maze"  # run_maze, active_3d_run_maze
+#
+#drift="maze/drift_4"  # drift_0, drift_1, drift_2, drift_3, drift_4
+#run_experiments
+#
+#drift="maze/drift_3"  # drift_0, drift_1, drift_2, drift_3, drift_4
+#run_experiments
+#
+#drift="maze/drift_2"  # drift_0, drift_1, drift_2, drift_3, drift_4
+#run_experiments
+#
+#drift="maze/drift_1"  # drift_0, drift_1, drift_2, drift_3, drift_4
+#run_experiments
+#
+#drift="maze/drift_0"  # drift_0, drift_1, drift_2, drift_3, drift_4
+#run_experiments
 
 ### Active 3D
-#target_dir="/home/unreal/data/glocal/automated_tests/${date}_${commit_id}/active_3d/"
+#commit_id=$(git --git-dir=/home/victor/catkin_ws/src/mav_active_3d_planning/.git rev-parse --verify HEAD)
+#target_dir="/home/unreal/data/automated_tests/active_3d/${date}_${commit_id}/"
+#launch_pkg="glocal_exploration_ros"
 #launch_file="active_3d_run_maze"  # run_maze, active_3d_run_maze
 #
 #drift="maze/drift_4"  # drift_0, drift_1, drift_2, drift_3, drift_4
@@ -75,4 +78,25 @@ run_experiments
 #run_experiments
 #
 #drift="maze/drift_0"  # drift_0, drift_1, drift_2, drift_3, drift_4
+#run_experiments
+
+# GLocal
+commit_id=$(git --git-dir=/home/victor/gbplanner_ws/src/exploration/gbplanner_ros/.git rev-parse --verify HEAD)
+target_dir="/home/victor/data/automated_tests/gbplanner/${date}_${commit_id}/"
+launch_pkg="gbplanner"
+launch_file="run_maze"  # run_maze, active_3d_run_maze
+
+drift="maze/drift_0"  # drift_0, drift_1, drift_2, drift_3, drift_4
+run_experiments
+
+drift="maze/drift_1"  # drift_0, drift_1, drift_2, drift_3, drift_4
+run_experiments
+
+drift="maze/drift_2"  # drift_0, drift_1, drift_2, drift_3, drift_4
+run_experiments
+
+#drift="maze/drift_3"  # drift_0, drift_1, drift_2, drift_3, drift_4
+#run_experiments
+
+#drift="maze/drift_4"  # drift_0, drift_1, drift_2, drift_3, drift_4
 #run_experiments
