@@ -111,10 +111,14 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
                    std::vector<RelativeWayPoint>* way_points);
   int num_replan_attempts_to_chosen_frontier_;
   bool is_backtracking_;
-  bool computePathToFrontier(const Point& frontier_centroid,
-                             const std::vector<Point>& frontier_points,
-                             std::vector<RelativeWayPoint>* way_points,
-                             bool* frontier_is_observable = nullptr);
+  bool searchSkeletonStartVertices(
+      Point* start_point, std::vector<GlobalVertexId>* start_vertex_candidates);
+  bool computePathToFrontier(
+      const Point& start_point,
+      const std::vector<GlobalVertexId>& start_vertex_candidates,
+      const Point& frontier_centroid, const std::vector<Point>& frontier_points,
+      std::vector<RelativeWayPoint>* way_points,
+      bool* frontier_is_observable = nullptr);
   bool isFrontierPointObservableFromPosition(
       const Point& frontier_point, const Point& skeleton_vertex_point);
   void clusterFrontiers();

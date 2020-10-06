@@ -205,21 +205,29 @@ bool SkeletonPlanner::computeGoalPoint() {
     clusterFrontiers();
   }
 
-  // Try to find feasible goal near centroid and remove infeasible frontiers.
+  // Find reachable skeleton vertices that we can use to initialize
+  // the Astar search.
   const Point current_robot_position = comm_->currentPose().position;
+  Point start_point = current_robot_position;
+  std::vector<GlobalVertexId> start_vertex_candidates;
+  if (!searchSkeletonStartVertices(&start_point, &start_vertex_candidates)) {
+    return false;
+  }
+
+  // Sort the frontiers by euclidean distance.
   for (auto& frontier : frontier_data_) {
     frontier.euclidean_distance =
         (current_robot_position - frontier.centroid).norm();
   }
+  std::sort(frontier_data_.begin(), frontier_data_.end(),
+            [](const FrontierSearchData& lhs, const FrontierSearchData& rhs) {
+              return lhs.euclidean_distance < rhs.euclidean_distance;
+            });
 
   // Compute paths to frontiers to determine the closest reachable one. Start
   // with closest and use euclidean distance as lower bound to prune candidates.
   int unobservable_frontier_counter = 0;
   const int total_frontiers = frontier_data_.size();
-  std::sort(frontier_data_.begin(), frontier_data_.end(),
-            [](const FrontierSearchData& lhs, const FrontierSearchData& rhs) {
-              return lhs.euclidean_distance < rhs.euclidean_distance;
-            });
   int path_counter = 0;
   FloatingPoint shortest_path = std::numeric_limits<FloatingPoint>::max();
   bool found_a_valid_path = false;
@@ -245,7 +253,8 @@ bool SkeletonPlanner::computeGoalPoint() {
       path_counter++;
       std::vector<RelativeWayPoint> way_points;
       bool frontier_is_observable = false;
-      if (computePathToFrontier(candidate.centroid, candidate.frontier_points,
+      if (computePathToFrontier(start_point, start_vertex_candidates,
+                                candidate.centroid, candidate.frontier_points,
                                 &way_points, &frontier_is_observable)) {
         // Frontier is reachable, save path and compute path length.
         candidate.way_points = way_points;
@@ -580,22 +589,21 @@ bool SkeletonPlanner::computePath(const Point& goal,
   return false;
 }
 
-bool SkeletonPlanner::computePathToFrontier(
-    const Point& frontier_centroid, const std::vector<Point>& frontier_points,
-    std::vector<RelativeWayPoint>* way_points, bool* frontier_is_observable) {
-  CHECK_NOTNULL(way_points);
+bool SkeletonPlanner::searchSkeletonStartVertices(
+    Point* start_point, std::vector<GlobalVertexId>* start_vertex_candidates) {
+  CHECK_NOTNULL(start_point);
+  CHECK_NOTNULL(start_vertex_candidates);
 
   const std::shared_ptr<MapBase> map = comm_->map();
   const FloatingPoint traversability_radius =
       skeleton_a_star_.getTraversabilityRadius();
 
   // Ensure the start point is valid
-  Point start_point = comm_->currentPose().position;
   const bool current_position_is_intraversable =
-      !map->isTraversableInActiveSubmap(start_point, traversability_radius);
+      !map->isTraversableInActiveSubmap(*start_point, traversability_radius);
   if (current_position_is_intraversable) {
     if (!comm_->map()->findSafestNearbyPoint(traversability_radius,
-                                             &start_point)) {
+                                             start_point)) {
       LOG(WARNING) << "Skeleton planner: The active submap is not traversable "
                       "at the current pose. Could not find a nearby safe "
                       "start position.";
@@ -605,9 +613,9 @@ bool SkeletonPlanner::computePathToFrontier(
 
   // Search the N nearest reachable start vertices on the skeleton graphs.
   // First try to find vertices that are reachable in the active submap.
-  std::vector<GlobalVertexId> start_vertex_candidates =
+  *start_vertex_candidates =
       skeleton_a_star_.searchClosestReachableSkeletonVertices(
-          start_point,
+          *start_point,
           skeleton_a_star_.getConfig().max_num_start_vertex_candidates,
           [&](const Point& start_point, const Point& end_point) {
             return map->isLineTraversableInActiveSubmap(start_point, end_point,
@@ -615,22 +623,30 @@ bool SkeletonPlanner::computePathToFrontier(
           });
   // If this fails, search vertices that are reachable in the global map to give
   // the path follower a chance to try to reach them.
-  if (start_vertex_candidates.empty()) {
-    start_vertex_candidates =
+  if (start_vertex_candidates->empty()) {
+    *start_vertex_candidates =
         skeleton_a_star_.searchClosestReachableSkeletonVertices(
-            start_point,
+            *start_point,
             skeleton_a_star_.getConfig().max_num_start_vertex_candidates,
             [&](const Point& start_point, const Point& end_point) {
               return map->isLineTraversableInGlobalMap(start_point, end_point,
                                                        traversability_radius);
             });
-    if (start_vertex_candidates.empty()) {
+    if (start_vertex_candidates->empty()) {
       LOG(INFO)
           << "Could not find any reachable skeleton vertices near start point ("
-          << start_point.transpose() << "). Both in the local and global map.";
+          << start_point->transpose() << "). Both in the local and global map.";
       return false;
     }
   }
+}
+
+bool SkeletonPlanner::computePathToFrontier(
+    const Point& start_point,
+    const std::vector<GlobalVertexId>& start_vertex_candidates,
+    const Point& frontier_centroid, const std::vector<Point>& frontier_points,
+    std::vector<RelativeWayPoint>* way_points, bool* frontier_is_observable) {
+  CHECK_NOTNULL(way_points);
 
   // Search the N skeleton vertices that are closest to the frontier centroid,
   // and from which at least M frontier points can be observed.
@@ -680,8 +696,9 @@ bool SkeletonPlanner::computePathToFrontier(
   // Convert the path from vertex IDs to waypoints
   skeleton_a_star_.convertVertexToWaypointPath(vertex_path, frontier_centroid,
                                                way_points);
-  // Set the start point to the safe point if applicable
-  if (current_position_is_intraversable) {
+  // Add the start point to the plan if it differs from the current position
+  if (comm_->map()->getTraversabilityRadius() <
+      (start_point - comm_->currentPose().position).norm()) {
     way_points->emplace(way_points->begin(), RelativeWayPoint(start_point));
   }
   // Set the last waypoint to a safe point between the last skeleton vertex
@@ -690,7 +707,7 @@ bool SkeletonPlanner::computePathToFrontier(
   if (!way_points->empty()) {
     const RelativeWayPoint& last_vertex_waypoint = way_points->back();
     Point t_odom_last_traversable_point;
-    map->isLineTraversableInGlobalMap(
+    comm_->map()->isLineTraversableInGlobalMap(
         last_vertex_waypoint.getGlobalPosition(), frontier_centroid,
         skeleton_a_star_.getTraversabilityRadius(),
         &t_odom_last_traversable_point);
