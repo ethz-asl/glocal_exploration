@@ -52,7 +52,7 @@ VoxgraphMap::VoxgraphMap(const Config& config,
   // Setup the local area
   local_area_ = std::make_unique<VoxgraphLocalArea>(
       voxblox::getTsdfMapConfigFromRosParam(nh_private));
-  voxblox_server_->setExternalNewPoseCallback(
+  voxblox_server_->setExternalNewEsdfCallback(
       [&] { local_area_needs_update_ = true; });
   local_area_pub_ = nh_private.advertise<pcl::PointCloud<pcl::PointXYZI>>(
       "local_area", 1, true);
@@ -204,6 +204,19 @@ bool VoxgraphMap::isTraversableInGlobalMap(
     const Point& position, const FloatingPoint traversability_radius) {
   if (!comm_->regionOfInterest()->contains(position)) {
     return false;
+  }
+
+  // Discard early if the point isn't traversable in the local area.
+  // NOTE: It's not worth it to update the local area just for this. So only
+  //       do it if it already happens to be ready.
+  if (!local_area_needs_update_) {
+    // NOTE: We can only check whether the local area is not occupied. Since the
+    //       local area only consists of a TSDF (no ESDF) and the traversability
+    //       radius generally exceeds the TSDF truncation distance.
+    if (local_area_->getVoxelStateAtPosition(position) ==
+        VoxelState::kOccupied) {
+      return false;
+    }
   }
 
   // Check the submaps that overlap with the queried position

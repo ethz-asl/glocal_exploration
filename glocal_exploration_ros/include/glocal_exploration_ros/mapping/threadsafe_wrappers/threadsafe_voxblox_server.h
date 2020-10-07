@@ -45,10 +45,20 @@ class ThreadsafeVoxbloxServer : public voxblox::EsdfServer {
   void updateEsdf() override {
     voxblox::EsdfServer::updateEsdf();
     *safe_esdf_map_->getEsdfLayerPtr() = esdf_map_->getEsdfLayer();
+
+    // Call the external callback, if it has been set
+    if (external_new_esdf_callback_) {
+      external_new_esdf_callback_();
+    }
   }
   void updateEsdfBatch(bool full_euclidean = false) override {
     voxblox::EsdfServer::updateEsdfBatch();
     *safe_esdf_map_->getEsdfLayerPtr() = esdf_map_->getEsdfLayer();
+
+    // Call the external callback, if it has been set
+    if (external_new_esdf_callback_) {
+      external_new_esdf_callback_();
+    }
   }
 
   void newPoseCallback(const voxblox::Transformation& T_G_C) override {
@@ -62,6 +72,9 @@ class ThreadsafeVoxbloxServer : public voxblox::EsdfServer {
 
   void setExternalNewPoseCallback(Function callback) {
     external_new_pose_callback_ = std::move(callback);
+  }
+  void setExternalNewEsdfCallback(Function callback) {
+    external_new_esdf_callback_ = std::move(callback);
   }
 
   std::vector<geometry_msgs::PoseStamped> getPoseHistory() {
@@ -79,6 +92,7 @@ class ThreadsafeVoxbloxServer : public voxblox::EsdfServer {
   voxblox::EsdfMap::Ptr safe_esdf_map_;
 
   Function external_new_pose_callback_;
+  Function external_new_esdf_callback_;
 
   ros::CallbackQueue callback_queue_;
   ros::AsyncSpinner spinner_;
