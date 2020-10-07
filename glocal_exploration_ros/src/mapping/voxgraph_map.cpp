@@ -206,15 +206,6 @@ bool VoxgraphMap::isTraversableInGlobalMap(
     return false;
   }
 
-  // Discard early if the point isn't traversable in the local area
-  updateLocalAreaIfNeeded();
-  // NOTE: We can only check whether the local area is not occupied. Since the
-  //       local area only consists of a TSDF (no ESDF) and the traversability
-  //       radius generally exceeds the TSDF truncation distance.
-  if (local_area_->getVoxelStateAtPosition(position) == VoxelState::kOccupied) {
-    return false;
-  }
-
   // Check the submaps that overlap with the queried position
   bool traversable_anywhere = false;
   for (const voxgraph::SubmapID submap_id :
