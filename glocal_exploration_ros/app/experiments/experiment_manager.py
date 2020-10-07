@@ -92,32 +92,47 @@ class ResourceMonitor(object):
         self.total_cpu_percent = psutil.cpu_percent()
         self.total_memory_percent = psutil.virtual_memory().percent
 
-        self.node_wall_time = psutil._timer() - self.node_process.create_time()
-        self.node_cpu_time = \
-            self.node_process.cpu_times().system + \
-            self.node_process.cpu_times().children_system + \
-            self.node_process.cpu_times().user + \
-            self.node_process.cpu_times().children_user
-        self.node_cpu_percent = self.node_process.cpu_percent()
-        self.node_memory_percent = self.node_process.memory_percent()
+        try:
+            self.node_wall_time = psutil._timer(
+            ) - self.node_process.create_time()
+            self.node_cpu_time = \
+                self.node_process.cpu_times().system + \
+                self.node_process.cpu_times().children_system + \
+                self.node_process.cpu_times().user + \
+                self.node_process.cpu_times().children_user
+            self.node_cpu_percent = self.node_process.cpu_percent()
+            self.node_memory_percent = self.node_process.memory_percent()
 
-        if self.verbose:
-            rospy.loginfo(
-                'Resource usage of node %s with PID: %i\n'
-                '--CPU frequency: %iMHz\n'
-                '--Total wall time: %is\n'
-                '--Total CPU time: %is\n'
-                '--Total CPU percent: %0.2f%%\n'
-                '--Total memory percent: %0.2f%%\n'
-                '--Node wall time: %is\n'
-                '--Node CPU time: %is\n'
-                '--Node CPU percent: %0.2f%%\n'
-                '--Node memory percent: %0.2f%%\n' %
-                (self.node_name, self.node_process.pid, self.cpu_frequency,
-                 self.total_wall_time, self.total_cpu_time,
-                 self.total_cpu_percent, self.total_memory_percent,
-                 self.node_wall_time, self.node_cpu_time,
-                 self.node_cpu_percent, self.node_memory_percent))
+            if self.verbose:
+                rospy.loginfo(
+                    'Resource usage of node %s with PID: %i\n'
+                    '--CPU frequency: %iMHz\n'
+                    '--Total wall time: %is\n'
+                    '--Total CPU time: %is\n'
+                    '--Total CPU percent: %0.2f%%\n'
+                    '--Total memory percent: %0.2f%%\n'
+                    '--Node wall time: %is\n'
+                    '--Node CPU time: %is\n'
+                    '--Node CPU percent: %0.2f%%\n'
+                    '--Node memory percent: %0.2f%%\n' %
+                    (self.node_name, self.node_process.pid, self.cpu_frequency,
+                     self.total_wall_time, self.total_cpu_time,
+                     self.total_cpu_percent, self.total_memory_percent,
+                     self.node_wall_time, self.node_cpu_time,
+                     self.node_cpu_percent, self.node_memory_percent))
+
+        except psutil.NoSuchProcess:
+            rospy.logwarn("Process for node %s no longer exists" %
+                          self.node_name)
+            self.cpu_frequency = 0
+            self.total_wall_time = 0
+            self.total_cpu_time = 0
+            self.total_cpu_percent = 0
+            self.total_memory_percent = 0
+            self.node_wall_time = 0
+            self.node_cpu_time = 0
+            self.node_cpu_percent = 0
+            self.node_memory_percent = 0
 
 
 class EvalData(object):
