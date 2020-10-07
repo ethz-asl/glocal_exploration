@@ -10,12 +10,12 @@
     <!-- Planner arguments -->
     <arg name="gbplanner_config_file" default="$(find glocal_exploration_ros)/config/gbplanner_config.yaml"/>
     <arg name="pci_file" default="$(find gbplanner)/config/m100/planner_control_interface_sim_config.yaml"/>
-    <arg name="voxblox_config_file" default="$(find glocal_exploration_ros)/config/gbplanner_voxblox_sim_config.yaml"/>
+    <arg name="voxblox_config_file" default="$(find glocal_exploration_ros)/config/gbplanner_voxblox_config.yaml"/>
 
 
     <!-- Airsim arguments -->
     <arg name="airsim_config" default="maze/maze_airsim.yaml"/>
-    <arg name="drift_config" default="maze/drift_0.yaml"/>
+    <arg name="drift_config" default="maze/drift_2.yaml"/>
     <arg name="use_airsim_time" default="true"/>
     <arg name="mav_name" default="airsim_drone"/>
 
@@ -47,7 +47,7 @@
     <!-- Planner -->
     <!-- Graph based planning -->
     <node pkg="gbplanner" type="gbplanner_node" name="gbplanner_node" output="screen" launch-prefix="$(arg launch_prefix)">
-        <remap from="odometry" to="/airsim_drone/ground_truth/odometry" />
+        <remap from="odometry" to="/airsim_drone/simulated/odometry" />
         <remap from="/pointcloud" to="/airsim_drone/Lidar" />
         <rosparam command="load" file="$(arg gbplanner_config_file)" />
         <rosparam command="load" file="$(arg voxblox_config_file)" />
@@ -58,7 +58,7 @@
         <remap from="command/trajectory" to="m100/command/trajectory" />
         <remap from="planner_server" to="gbplanner" />
         <remap from="planner_homing_server" to="gbplanner/homing" />
-        <remap from="odometry" to="/airsim_drone/ground_truth/odometry"/>
+        <remap from="odometry" to="/airsim_drone/simulated/odometry"/>
         <rosparam command="load" file="$(arg pci_file)" />
     </node>
 

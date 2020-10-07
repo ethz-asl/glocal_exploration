@@ -1,0 +1,36 @@
+# Grid settings
+tsdf_voxel_size: 0.2
+tsdf_voxels_per_side: 16
+# Integrator settings general
+method: "projective"
+truncation_distance: 0.6
+min_ray_length_m: 1.0
+max_ray_length_m: 10
+max_weight: 1000
+use_const_weight: true
+use_weight_dropoff: false
+use_sparsity_compensation_factor: false
+max_consecutive_ray_collisions: 1  # Only affects the fast integrator
+pointcloud_queue_size: 10
+# Integrator settings projective integrator
+sensor_horizontal_resolution: 200
+sensor_vertical_resolution: 32
+sensor_vertical_field_of_view_degrees: 45
+integrator_threads: 1
+use_missing_points_for_clearing: true
+# Visualization
+verbose: false
+color_mode: "lambert" #normals
+#  slice_level: -0.5
+slice_level_follow_robot: true
+publish_pointclouds: false
+publish_traversable: false
+publish_slices: false
+publish_pointclouds_on_update: false
+update_mesh_every_n_sec: 1.0
+
+use_tf_transforms: true
+publish_tsdf_map: true
+publish_esdf_map: true
+allow_clear: true
+publish_map_incremental: true

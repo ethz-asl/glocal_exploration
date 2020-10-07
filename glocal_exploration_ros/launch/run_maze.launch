@@ -12,7 +12,7 @@
   
   <!-- Airsim arguments -->
   <arg name="airsim_config" default="maze/maze_airsim.yaml"/>
-  <arg name="drift_config" default="maze/drift_4.yaml"/>
+  <arg name="drift_config" default="maze/drift_2.yaml"/>
   <arg name="use_airsim_time" default="true"/>
   <arg name="mav_name" default="airsim_drone"/>
   

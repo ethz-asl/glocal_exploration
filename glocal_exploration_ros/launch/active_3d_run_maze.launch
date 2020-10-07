@@ -12,7 +12,7 @@
   
   <!-- Airsim arguments -->
   <arg name="airsim_config" default="maze/maze_airsim.yaml"/>
-  <arg name="drift_config" default="maze/drift_none.yaml"/>
+  <arg name="drift_config" default="maze/drift_2.yaml"/>
   <arg name="use_airsim_time" default="true"/>
   <arg name="mav_name" default="airsim_drone"/>
   
@@ -52,18 +52,7 @@
      <!-- Voxblox -->
     <node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr">
       <remap from="pointcloud" to="/airsim_drone/Lidar"/> 
-      <param name="use_tf_transforms" value="true"/>
-      <param name="publish_tsdf_map" value="true" />
-      <param name="publish_esdf_map" value="true" />
-      <param name="tsdf_voxel_size" value="0.2" />
-      <param name="tsdf_voxels_per_side" value="16" />
-      <param name="color_mode" value="normals" />
-      <param name="update_mesh_every_n_sec" value="1.0" />
-      <param name="method" value="fast" />
-      <param name="max_ray_length_m" value="10" />
-      <param name="allow_clear" value="true" />
-      <param name="verbose" value="false" />
-      <param name="publish_map_incremental" value="true" />
+      <rosparam file="$(find glocal_exploration_ros)/config/active_3d_voxblox_config.yaml"/>
     </node>
     
     <!-- Planner -->
