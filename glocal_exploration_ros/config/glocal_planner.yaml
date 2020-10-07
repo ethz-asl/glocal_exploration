@@ -49,7 +49,7 @@ mapping:
   # that could theoretically be reached within the sliding window length.
   # Setting it right on the limit causes issues because both optimistic and
   # regular traversability checks would fail in areas the robot traversed.
-  max_weight: 100
+  max_weight: 1000
   use_const_weight: true
   use_weight_dropoff: false
   use_sparsity_compensation_factor: false
