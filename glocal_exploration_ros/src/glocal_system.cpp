@@ -130,23 +130,11 @@ void GlocalSystem::loopIteration() {
       Point gradient;
       if (comm_->map()->getDistanceAndGradientInActiveSubmap(
               current_position, &distance, &gradient)) {
-        if (gradient.dot(target_position_ - current_position) < 0) {
+        if (gradient.dot(target_position_ - current_position) < 0.f) {
           // Try to find a safe position near the current position.
-          bool found_safe_position = true;
           Point safe_position = current_position;
-          if (!comm_->map()->findSafestNearbyPoint(traversability_radius,
-                                                   &safe_position)) {
-            // Otherwise, try near the previous position.
-            safe_position = comm_->getPreviousWayPoint().position;
-            if (!comm_->map()->findSafestNearbyPoint(traversability_radius,
-                                                     &safe_position) ||
-                !comm_->map()->isLineTraversableInActiveSubmap(
-                    current_position, safe_position, traversability_radius,
-                    nullptr, kOptimistic)) {
-              found_safe_position = false;
-            }
-          }
-          if (found_safe_position) {
+          if (comm_->map()->findSafestNearbyPoint(traversability_radius,
+                                                  &safe_position)) {
             LOG(WARNING)
                 << "Attempting to fly to safety and continue from there.";
             // Rotate by 180deg to reduce unobserved space in the active

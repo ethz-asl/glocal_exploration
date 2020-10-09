@@ -283,7 +283,7 @@ bool SkeletonPlanner::computeGoalPoint() {
   // Select result.
   if (!found_a_valid_path) {
     // Backtrack if enabled.
-    if (0 < config_.backtracking_distance_m) {
+    if (0.f < config_.backtracking_distance_m) {
       way_points_.clear();
       const std::vector<WayPoint> past_poses = comm_->map()->getPoseHistory();
       // Find the oldest pose history crumb that we can directly connect to.
@@ -352,6 +352,10 @@ bool SkeletonPlanner::computeGoalPoint() {
         num_replan_attempts_to_chosen_frontier_ = 0;
         is_backtracking_ = true;
         return true;
+      } else {
+        LOG_IF(WARNING, config_.verbosity >= 2)
+            << "Backtracking is enabled, but generating the backtracking path "
+               "failed.";
       }
     }
     // Otherwise just fall back to local planning.

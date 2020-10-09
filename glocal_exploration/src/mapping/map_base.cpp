@@ -53,7 +53,6 @@ bool MapBase::findSafestNearbyPoint(const FloatingPoint minimum_distance,
 
   // If this fails, try nearby start points.
   // Setup.
-  const bool kOptimistic = true;
   const FloatingPoint traversability_radius = getTraversabilityRadius();
   const std::vector<FloatingPoint> scales{getVoxelSize(), 2 * getVoxelSize(),
                                           3 * getVoxelSize()};
@@ -66,12 +65,15 @@ bool MapBase::findSafestNearbyPoint(const FloatingPoint minimum_distance,
       Point start_point = initial_position + scale * offset;
       if (isLineTraversableInActiveSubmap(initial_position, start_point,
                                           traversability_radius, nullptr,
-                                          kOptimistic)) {
+                                          /* optimistic= */ true)) {
         if (performGradientAscentFromStartPoint(minimum_distance,
                                                 &start_point)) {
           FloatingPoint new_distance = 0.f;
           if (getDistanceInActiveSubmap(start_point, &new_distance) &&
-              best_distance < new_distance) {
+              best_distance < new_distance &&
+              isLineTraversableInActiveSubmap(initial_position, start_point,
+                                              traversability_radius, nullptr,
+                                              /* optimistic= */ false)) {
             best_distance = new_distance;
             best_position = start_point;
           }

@@ -54,12 +54,12 @@ mapping:
   use_weight_dropoff: false
   use_sparsity_compensation_factor: false
   max_consecutive_ray_collisions: 1  # Only affects the fast integrator
-  pointcloud_queue_size: 10
+  pointcloud_queue_size: 2
   # Integrator settings projective integrator
   sensor_horizontal_resolution: 200
   sensor_vertical_resolution: 32
   sensor_vertical_field_of_view_degrees: 45
-  integrator_threads: 1
+  integrator_threads: 4
   use_missing_points_for_clearing: true
   # Integrator settings temporal window (for compatibility with voxgraph)
   pointcloud_deintegration_queue_length: 140

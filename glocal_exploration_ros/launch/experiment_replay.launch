@@ -1,8 +1,8 @@
 <launch>
   <param name="/use_sim_time" value="true"/>
 
-  <arg name="data_directory" default="/home/victor/data/glocal/automated_tests" />
-  <arg name="bag_name" default="2020-10-04_0621ee4a8fa8076bd50e0fbc2d100349010d840a/maze/drift_4/20201004_195853/visualization.bag" />
+  <arg name="data_directory" default="/home/victor/data/automated_tests" />
+  <arg name="bag_name" default="glocal/2020-10-08-01-19-24_4a4bd9124fd007faf33812dd847b4489188f5b3e/maze/drift_2/20201008_035120/visualization.bag" />
   <arg name="rate" default="5"/>
 	<arg name="rviz_file" default="$(find glocal_exploration_ros)/config/maze/maze_visualization.rviz" />
 
