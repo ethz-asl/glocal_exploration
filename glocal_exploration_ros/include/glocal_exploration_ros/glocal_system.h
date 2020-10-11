@@ -67,6 +67,7 @@ class GlocalSystem {
   bool startExploration();
   void loopIteration();
   void publishTargetPose();
+  void performCollisionAvoidance();
 
   // Variables.
   Point current_position_;  // current/goal poses are in odom frame.
@@ -78,7 +79,9 @@ class GlocalSystem {
 
   // Collision avoidance
   ros::Duration collision_check_period_;
+  ros::Timer collision_check_timer_;
   ros::Time collision_check_last_timestamp_;
+  bool signal_collision_avoidance_triggered_;
 };
 
 }  // namespace glocal_exploration
