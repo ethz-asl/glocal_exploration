@@ -467,7 +467,7 @@ bool SkeletonPlanner::verifyNextWayPoints() {
 
   // Start by checking if the current position is intraversable.
   if (!comm_->map()->isTraversableInActiveSubmap(
-          current_position, traversability_radius, is_backtracking_)) {
+          current_position, traversability_radius, /* optimistic= */ true)) {
     LOG_IF(INFO, config_.verbosity >= 2)
         << "Current position is intraversable.";
     // Attempt find a nearby traversable point and move to it.
@@ -490,7 +490,8 @@ bool SkeletonPlanner::verifyNextWayPoints() {
   Point last_traversable_point;
   if (!comm_->map()->isLineTraversableInActiveSubmap(
           current_position, way_points_[0].getGlobalPosition(),
-          traversability_radius, &last_traversable_point, is_backtracking_)) {
+          traversability_radius, &last_traversable_point,
+          /* optimistic= */ true)) {
     LOG_IF(INFO, config_.verbosity >= 2)
         << "Next global path segment is intraversable.";
     // As a first remedy, try to find a new path to the current frontier.
