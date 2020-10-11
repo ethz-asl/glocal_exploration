@@ -48,17 +48,17 @@ launch_file="run_maze"  # run_maze, active_3d_run_maze
 drift="maze/drift_4"  # drift_0, drift_1, drift_2, drift_3, drift_4
 run_experiments
 
-drift="maze/drift_3"  # drift_0, drift_1, drift_2, drift_3, drift_4
-run_experiments
-
-drift="maze/drift_2"  # drift_0, drift_1, drift_2, drift_3, drift_4
-run_experiments
-
-drift="maze/drift_1"  # drift_0, drift_1, drift_2, drift_3, drift_4
-run_experiments
-
-drift="maze/drift_0"  # drift_0, drift_1, drift_2, drift_3, drift_4
-run_experiments
+#drift="maze/drift_3"  # drift_0, drift_1, drift_2, drift_3, drift_4
+#run_experiments
+#
+#drift="maze/drift_2"  # drift_0, drift_1, drift_2, drift_3, drift_4
+#run_experiments
+#
+#drift="maze/drift_1"  # drift_0, drift_1, drift_2, drift_3, drift_4
+#run_experiments
+#
+#drift="maze/drift_0"  # drift_0, drift_1, drift_2, drift_3, drift_4
+#run_experiments
 
 ### Active 3D
 #commit_id=$(git --git-dir=${home_dir}/catkin_ws/src/mav_active_3d_planning/.git rev-parse --verify HEAD)

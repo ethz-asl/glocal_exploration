@@ -19,17 +19,17 @@ replan_timeout_velocity: 1.0
 
 region_of_interest:
   type: bounding_box
-  x_min: -20
-  x_max: 20
-  y_min: -20
-  y_max: 20
-  z_min: -1.5
-  z_max: 1.5
+  x_min: -200
+  x_max: 200
+  y_min: -200
+  y_max: 200
+  z_min: -15
+  z_max: 15
 
 mapping:
   type: voxgraph
 
-  clearing_radius: 1.3
+  clearing_radius: 1.2
   traversability_radius: *traversability_radius_path_following
   verbosity: 4
 
@@ -49,7 +49,7 @@ mapping:
   # that could theoretically be reached within the sliding window length.
   # Setting it right on the limit causes issues because both optimistic and
   # regular traversability checks would fail in areas the robot traversed.
-  max_weight: 1000
+  max_weight: 500
   use_const_weight: true
   use_weight_dropoff: false
   use_sparsity_compensation_factor: false
@@ -174,10 +174,11 @@ global_planner:
   path_verification_min_distance: 1.0
   goal_search_steps: 5.0
   goal_search_step_size: 1.0
-  backtracking_distance_m: 5.0  # Set to -1 to disable
+  backtracking_distance_m: 15.0  # Set to -1 to disable
+  max_replan_attempts_to_chosen_frontier: 10
   
   # Submap Frontiers Evaluator
-  min_frontier_size: 20
+  min_frontier_size: 200
   submaps_are_frozen: true
   
   # Visualization
@@ -191,7 +192,8 @@ global_planner:
   # A star search along linked sparse skeleton graph submaps
   skeleton_a_star:
     traversability_radius: *traversability_radius_global_planner
-    max_num_start_vertex_candidates: 30
+    max_num_a_star_iterations: 10000
+    max_num_start_vertex_candidates: 10
     max_num_end_vertex_candidates: 5
     linking_num_nearest_neighbors: 3
     linking_max_distance: 3.0
