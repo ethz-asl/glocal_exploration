@@ -54,6 +54,7 @@ class GlocalSystem {
   // Subscribers and publishers.
   ros::Subscriber odom_sub_;
   ros::Publisher target_pub_;
+  ros::Publisher total_planning_cpu_time_pub_;
   ros::ServiceServer run_srv_;
 
   // Components.
@@ -76,6 +77,7 @@ class GlocalSystem {
   FloatingPoint target_yaw_;             // rad
   FloatingPoint last_waypoint_timeout_;  // s
   ros::Time last_waypoint_published_;
+  double total_planning_cpu_time_s_;
 
   // Collision avoidance
   ros::Duration collision_check_period_;

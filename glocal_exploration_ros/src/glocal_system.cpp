@@ -3,6 +3,7 @@
 #include <memory>
 
 #include <geometry_msgs/Pose.h>
+#include <std_msgs/Float32.h>
 #include <tf2/utils.h>
 
 #include "glocal_exploration_ros/conversions/ros_component_factory.h"
@@ -50,6 +51,7 @@ GlocalSystem::GlocalSystem(const ros::NodeHandle& nh,
       current_orientation_(Eigen::Quaterniond::Identity()),
       target_position_(Point::Zero()),
       target_yaw_(0.f),
+      total_planning_cpu_time_s_(0.0),
       collision_check_period_(config.collision_check_period_s),
       collision_check_last_timestamp_(0),
       signal_collision_avoidance_triggered_(false) {
@@ -63,6 +65,8 @@ GlocalSystem::GlocalSystem(const ros::NodeHandle& nh,
   collision_check_timer_ = nh_.createTimer(
       collision_check_period_,
       std::bind(&GlocalSystem::performCollisionAvoidance, this));
+  total_planning_cpu_time_pub_ =
+      nh_.advertise<std_msgs::Float32>("total_planning_cpu_time", 1);
   collision_avoidance_pub_ = nh_private_.advertise<geometry_msgs::PointStamped>(
       "collision_avoidance", 1);
 }
@@ -118,6 +122,14 @@ void GlocalSystem::mainLoop() {
 }
 
 void GlocalSystem::loopIteration() {
+  // Start tracking the planning CPU time
+  // NOTE: This way of measuring the CPU usage of the planners assumes that they
+  //       are single threaded, which is the case in our current implementation.
+  struct timespec start_cpu_time;
+  clockid_t current_thread_clock_id;
+  pthread_getcpuclockid(pthread_self(), &current_thread_clock_id);
+  clock_gettime(current_thread_clock_id, &start_cpu_time);
+
   // Actions.
   switch (comm_->stateMachine()->currentState()) {
     case StateMachine::State::kLocalPlanning: {
@@ -150,6 +162,19 @@ void GlocalSystem::loopIteration() {
       comm_->localPlanner()->resetPlanner(safe_waypoint);
     }
     signal_collision_avoidance_triggered_ = false;
+  }
+
+  // Stop tracking the planning CPU time
+  struct timespec stop_cpu_time;
+  clock_gettime(current_thread_clock_id, &stop_cpu_time);
+  total_planning_cpu_time_s_ +=
+      static_cast<double>(stop_cpu_time.tv_sec - start_cpu_time.tv_sec) +
+      static_cast<double>(stop_cpu_time.tv_nsec - start_cpu_time.tv_nsec) *
+          1e-9;
+  if (0 < total_planning_cpu_time_pub_.getNumSubscribers()) {
+    std_msgs::Float32 total_planning_cpu_time_msg;
+    total_planning_cpu_time_msg.data = total_planning_cpu_time_s_;
+    total_planning_cpu_time_pub_.publish(total_planning_cpu_time_msg);
   }
 }
 
