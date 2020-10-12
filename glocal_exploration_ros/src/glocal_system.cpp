@@ -3,6 +3,7 @@
 #include <memory>
 
 #include <geometry_msgs/Pose.h>
+#include <std_msgs/Float32.h>
 #include <tf2/utils.h>
 
 #include "glocal_exploration_ros/conversions/ros_component_factory.h"
@@ -50,8 +51,10 @@ GlocalSystem::GlocalSystem(const ros::NodeHandle& nh,
       current_orientation_(Eigen::Quaterniond::Identity()),
       target_position_(Point::Zero()),
       target_yaw_(0.f),
+      total_planning_cpu_time_s_(0.0),
       collision_check_period_(config.collision_check_period_s),
-      collision_check_last_timestamp_(0) {
+      collision_check_last_timestamp_(0),
+      signal_collision_avoidance_triggered_(false) {
   LOG_IF(INFO, config_.verbosity >= 1) << "\n" + config_.toString();
   // build communicator and components
   buildComponents(nh_private_);
@@ -59,6 +62,13 @@ GlocalSystem::GlocalSystem(const ros::NodeHandle& nh,
   // ROS
   target_pub_ = nh_.advertise<geometry_msgs::Pose>("command/pose", 10);
   odom_sub_ = nh_.subscribe("odometry", 1, &GlocalSystem::odomCallback, this);
+  collision_check_timer_ = nh_.createTimer(
+      collision_check_period_,
+      std::bind(&GlocalSystem::performCollisionAvoidance, this));
+  total_planning_cpu_time_pub_ =
+      nh_.advertise<std_msgs::Float32>("total_planning_cpu_time", 1);
+  collision_avoidance_pub_ = nh_private_.advertise<geometry_msgs::PointStamped>(
+      "collision_avoidance", 1);
 }
 
 void GlocalSystem::buildComponents(const ros::NodeHandle& nh) {
@@ -112,48 +122,13 @@ void GlocalSystem::mainLoop() {
 }
 
 void GlocalSystem::loopIteration() {
-  // Collision avoidance.
-  ros::Time current_timestamp = ros::Time::now();
-  if (collision_check_last_timestamp_ + collision_check_period_ <
-      current_timestamp) {
-    collision_check_last_timestamp_ = current_timestamp;
-
-    // Check if the line to the upcoming waypoint became intraversable.
-    const FloatingPoint traversability_radius =
-        comm_->map()->getTraversabilityRadius();
-    const Point current_position = comm_->currentPose().position;
-    constexpr bool kOptimistic = true;
-    if (!comm_->map()->isLineTraversableInActiveSubmap(
-            current_position, target_position_, kOptimistic)) {
-      // Only intervene if we're actively flying toward a surface.
-      FloatingPoint distance;
-      Point gradient;
-      if (comm_->map()->getDistanceAndGradientInActiveSubmap(
-              current_position, &distance, &gradient)) {
-        if (gradient.dot(target_position_ - current_position) < 0.f) {
-          // Try to find a safe position near the current position.
-          Point safe_position = current_position;
-          if (comm_->map()->findSafestNearbyPoint(traversability_radius,
-                                                  &safe_position)) {
-            LOG(WARNING)
-                << "Attempting to fly to safety and continue from there.";
-            // Rotate by 180deg to reduce unobserved space in the active
-            // submap.
-            const FloatingPoint new_yaw = comm_->currentPose().yaw + M_PI;
-            const WayPoint safe_waypoint(safe_position, new_yaw);
-            target_position_ = safe_waypoint.position;
-            target_yaw_ = safe_waypoint.yaw;
-            publishTargetPose();
-            comm_->setRequestedWayPointRead();
-            if (comm_->stateMachine()->currentState() ==
-                StateMachine::State::kLocalPlanning) {
-              comm_->localPlanner()->resetPlanner(safe_waypoint);
-            }
-          }
-        }
-      }
-    }
-  }
+  // Start tracking the planning CPU time
+  // NOTE: This way of measuring the CPU usage of the planners assumes that they
+  //       are single threaded, which is the case in our current implementation.
+  struct timespec start_cpu_time;
+  clockid_t current_thread_clock_id;
+  pthread_getcpuclockid(pthread_self(), &current_thread_clock_id);
+  clock_gettime(current_thread_clock_id, &start_cpu_time);
 
   // Actions.
   switch (comm_->stateMachine()->currentState()) {
@@ -170,12 +145,36 @@ void GlocalSystem::loopIteration() {
   }
 
   // Move requests.
-  if (comm_->newWayPointIsRequested()) {
+  if (comm_->newWayPointIsRequested() &&
+      !signal_collision_avoidance_triggered_) {
     const WayPoint& next_point = comm_->getRequestedWayPoint();
     target_position_ = next_point.position;
     target_yaw_ = next_point.yaw;
     publishTargetPose();
     comm_->setRequestedWayPointRead();
+  }
+
+  // Reset the local planner in case collision avoidance was triggered.
+  if (signal_collision_avoidance_triggered_) {
+    if (comm_->stateMachine()->currentState() ==
+        StateMachine::State::kLocalPlanning) {
+      const WayPoint safe_waypoint(target_position_, target_yaw_);
+      comm_->localPlanner()->resetPlanner(safe_waypoint);
+    }
+    signal_collision_avoidance_triggered_ = false;
+  }
+
+  // Stop tracking the planning CPU time
+  struct timespec stop_cpu_time;
+  clock_gettime(current_thread_clock_id, &stop_cpu_time);
+  total_planning_cpu_time_s_ +=
+      static_cast<double>(stop_cpu_time.tv_sec - start_cpu_time.tv_sec) +
+      static_cast<double>(stop_cpu_time.tv_nsec - start_cpu_time.tv_nsec) *
+          1e-9;
+  if (0 < total_planning_cpu_time_pub_.getNumSubscribers()) {
+    std_msgs::Float32 total_planning_cpu_time_msg;
+    total_planning_cpu_time_msg.data = total_planning_cpu_time_s_;
+    total_planning_cpu_time_pub_.publish(total_planning_cpu_time_msg);
   }
 }
 
@@ -284,6 +283,63 @@ bool GlocalSystem::runSrvCallback(std_srvs::SetBool::Request& req,
                                   std_srvs::SetBool::Response& res) {
   res.success = startExploration();
   return true;
+}
+
+void GlocalSystem::performCollisionAvoidance() {
+  ros::Time current_timestamp = ros::Time::now();
+  if (1.2 * collision_check_period_.toSec() <
+      std::abs((current_timestamp - collision_check_last_timestamp_).toSec())) {
+    LOG(INFO)
+        << "Collision checking is not running at its requested frequency. "
+           "The requested period is "
+        << collision_check_period_.toSec()
+        << "s, but the time since last call is "
+        << (current_timestamp - collision_check_last_timestamp_).toSec()
+        << "s.";
+  }
+  collision_check_last_timestamp_ = current_timestamp;
+
+  // Check if the line to the upcoming waypoint became intraversable.
+  const FloatingPoint traversability_radius =
+      comm_->map()->getTraversabilityRadius();
+  const Point current_position = comm_->currentPose().position;
+  constexpr bool kOptimistic = true;
+  if (!comm_->map()->isLineTraversableInActiveSubmap(
+          current_position, target_position_, kOptimistic)) {
+    // Only intervene if we're actively flying toward a surface.
+    FloatingPoint distance;
+    Point gradient;
+    if (comm_->map()->getDistanceAndGradientInActiveSubmap(
+            current_position, &distance, &gradient)) {
+      if (gradient.dot(target_position_ - current_position) < 0.f) {
+        // Try to find a safe position near the current position.
+        Point safe_position = current_position;
+        if (comm_->map()->findSafestNearbyPoint(traversability_radius,
+                                                &safe_position)) {
+          LOG(WARNING)
+              << "Attempting to fly to safety and continue from there.";
+          // Rotate by 180deg to reduce unobserved space in the active
+          // submap.
+          const FloatingPoint new_yaw = comm_->currentPose().yaw + M_PI;
+          const WayPoint safe_waypoint(safe_position, new_yaw);
+          target_position_ = safe_waypoint.position;
+          target_yaw_ = safe_waypoint.yaw;
+          publishTargetPose();
+          comm_->setRequestedWayPointRead();
+          signal_collision_avoidance_triggered_ = true;
+
+          // Visualize the goal point chosen by the collision avoidance
+          geometry_msgs::PointStamped goal_point_msg;
+          goal_point_msg.header.frame_id = "odom";
+          goal_point_msg.header.stamp = current_timestamp;
+          goal_point_msg.point.x = safe_waypoint.position.x();
+          goal_point_msg.point.y = safe_waypoint.position.y();
+          goal_point_msg.point.z = safe_waypoint.position.z();
+          collision_avoidance_pub_.publish(goal_point_msg);
+        }
+      }
+    }
+  }
 }
 
 }  // namespace glocal_exploration

@@ -29,7 +29,7 @@ region_of_interest:
 mapping:
   type: voxgraph
 
-  clearing_radius: 1.2
+  clearing_radius: 1.1
   traversability_radius: *traversability_radius_path_following
   verbosity: 4
 
@@ -100,7 +100,7 @@ mapping:
   measurements:
     submap_registration:
       enabled: true
-      sampling_ratio: 0.05
+      sampling_ratio: 0.04
       registration_method: "explicit_to_implicit"
       information_matrix:
         x_x:     1.0

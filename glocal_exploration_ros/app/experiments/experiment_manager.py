@@ -9,6 +9,7 @@ import os
 import re
 import subprocess
 import math
+from xmlrpc.client import ServerProxy
 import numpy as np
 import psutil
 
@@ -17,10 +18,9 @@ import rospy
 import tf
 import rosnode
 import rosgraph
-from xmlrpc.client import ServerProxy
 
 # msgs
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Float32
 from std_srvs.srv import SetBool
 from std_srvs.srv import Trigger
 from voxblox_msgs.srv import FilePath
@@ -66,7 +66,8 @@ class ResourceMonitor(object):
             return None
 
         target_node = ServerProxy(target_node_api)
-        target_node_pid = rosnode._succeed(target_node.getPid(caller_id))
+        target_node_pid = rosnode._succeed(
+            target_node.getPid(caller_id))  # NOLINT
         rospy.loginfo('Registered %s node PID %i for resource '
                       'usage tracking' % (node_name, target_node_pid))
         return psutil.Process(target_node_pid)
@@ -156,6 +157,8 @@ class EvalData(object):
         # Name of the node whose resource usage we measure
         self.planner_node_name = rospy.get_param('~planner_node_name',
                                                  '/glocal_system')
+        self.glocal_planning_cpu_time_topic = rospy.get_param(
+            '~total_planning_cpu_time', '/glocal/total_planning_cpu_time')
         self.run_planner_srv_type = rospy.get_param('~planner_start_srv_type',
                                                     'SetBool')
 
@@ -189,6 +192,7 @@ class EvalData(object):
             self.initial_point_offset = None
             self.planner_resource_monitor = ResourceMonitor(
                 self.planner_node_name, verbose=False)
+            self.glocal_planning_cpu_time_s = 0.0
 
             # Setup data directory
             if not os.path.isdir(os.path.join(self.eval_directory,
@@ -212,11 +216,12 @@ class EvalData(object):
                 'RotationDriftEstimated', 'DistanceTraveled', 'CpuFrequency',
                 'TotalWallTime', 'TotalCpuTime', 'TotalCpuPercent',
                 'TotalMemoryPercent', 'PlannerWallTime', 'PlannerCpuTime',
-                'PlannerCpuPercent', 'PlannerMemoryPercent'
+                'PlannerCpuPercent', 'PlannerMemoryPercent',
+                'GlocalPlanningCpuTime'
             ])
             self.eval_writer.writerow([
                 'Unit', 's', 's', 'm', 'deg', 'm', 'deg', 'm', 'MHz', 's', 's',
-                'Percent', 'Percent', 's', 's', 'Percent', 'Percent'
+                'Percent', 'Percent', 's', 's', 'Percent', 'Percent', 's'
             ])
             self.eval_log_file = open(
                 os.path.join(self.eval_directory, "data_log.txt"), 'a')
@@ -226,6 +231,11 @@ class EvalData(object):
                                                   Bool,
                                                   self.collision_callback,
                                                   queue_size=10)
+            self.glocal_planning_cpu_time_sub = rospy.Subscriber(
+                self.glocal_planning_cpu_time_topic,
+                Float32,
+                self.glocal_planning_cpu_time_callback,
+                queue_size=1)
             self.tf_listener = tf.TransformListener()
 
             # Finish
@@ -281,10 +291,10 @@ class EvalData(object):
             rospy.loginfo(
                 "[ExperimentManager]: Waiting for planner to be ready... done."
             )
-        if ('SetBool' in self.run_planner_srv_type):
+        if 'SetBool' in self.run_planner_srv_type:
             self.run_planner_srv = rospy.ServiceProxy(self.ns_planner, SetBool)
             self.run_planner_srv(True)
-        elif ('Trigger' in self.run_planner_srv_type):
+        elif 'Trigger' in self.run_planner_srv_type:
             self.run_planner_srv = rospy.ServiceProxy(self.ns_planner, Trigger)
             self.run_planner_srv()
         else:
@@ -345,9 +355,9 @@ class EvalData(object):
         # Check whether the planner is still alive
         try:
             # If planner is running calling this service again does nothing
-            if ('SetBool' in self.run_planner_srv_type):
+            if 'SetBool' in self.run_planner_srv_type:
                 self.run_planner_srv(True)
-            elif ('Trigger' in self.run_planner_srv_type):
+            elif 'Trigger' in self.run_planner_srv_type:
                 self.run_planner_srv()
         except:
             # Usually this means the planner died
@@ -414,7 +424,8 @@ class EvalData(object):
             self.planner_resource_monitor.node_wall_time,
             self.planner_resource_monitor.node_cpu_time,
             self.planner_resource_monitor.node_cpu_percent,
-            self.planner_resource_monitor.node_memory_percent
+            self.planner_resource_monitor.node_memory_percent,
+            self.glocal_planning_cpu_time_s
         ])
         # Immediately write the data to disk to avoid losing anything if the
         # experiment gets interupted
@@ -504,6 +515,9 @@ class EvalData(object):
         if not self.collided:
             self.collided = True
             self.stop_experiment("Collision detected!")
+
+    def glocal_planning_cpu_time_callback(self, msg):
+        self.glocal_planning_cpu_time_s = msg.data
 
 
 if __name__ == '__main__':
