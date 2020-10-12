@@ -63,6 +63,8 @@ GlocalSystem::GlocalSystem(const ros::NodeHandle& nh,
   collision_check_timer_ = nh_.createTimer(
       collision_check_period_,
       std::bind(&GlocalSystem::performCollisionAvoidance, this));
+  collision_avoidance_pub_ = nh_private_.advertise<geometry_msgs::PointStamped>(
+      "collision_avoidance", 1);
 }
 
 void GlocalSystem::buildComponents(const ros::NodeHandle& nh) {
@@ -300,6 +302,15 @@ void GlocalSystem::performCollisionAvoidance() {
           publishTargetPose();
           comm_->setRequestedWayPointRead();
           signal_collision_avoidance_triggered_ = true;
+
+          // Visualize the goal point chosen by the collision avoidance
+          geometry_msgs::PointStamped goal_point_msg;
+          goal_point_msg.header.frame_id = "odom";
+          goal_point_msg.header.stamp = current_timestamp;
+          goal_point_msg.point.x = safe_waypoint.position.x();
+          goal_point_msg.point.y = safe_waypoint.position.y();
+          goal_point_msg.point.z = safe_waypoint.position.z();
+          collision_avoidance_pub_.publish(goal_point_msg);
         }
       }
     }

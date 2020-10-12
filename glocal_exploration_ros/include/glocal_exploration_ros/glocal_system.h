@@ -82,6 +82,7 @@ class GlocalSystem {
   ros::Timer collision_check_timer_;
   ros::Time collision_check_last_timestamp_;
   bool signal_collision_avoidance_triggered_;
+  ros::Publisher collision_avoidance_pub_;
 };
 
 }  // namespace glocal_exploration
