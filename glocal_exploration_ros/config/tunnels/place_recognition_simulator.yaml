@@ -1,5 +1,0 @@
-update_period: 1.0
-recognizeable_areas:
-  - center_position: [1, 2, 3]
-    detection_probability: 0.1
-    detection_radius: 5.0

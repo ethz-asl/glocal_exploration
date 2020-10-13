@@ -28,12 +28,12 @@ system_constraints:
 trajectory_generator:
   collision_optimistic: false
   bounding_volume:
-    x_min: -20.0
-    x_max: 20.0
-    y_min: -20.0
-    y_max: 20.0
-    z_min: -1.5
-    z_max: 1.5
+    x_min: -200
+    x_max: 200
+    y_min: -200
+    y_max: 200
+    z_min: -100
+    z_max: 100
     
   clearing_radius: 1.0
 
@@ -79,12 +79,12 @@ trajectory_evaluator:
       type: "NaiveEvaluator" # FrontierEvaluator
       visualize_sensor_view: true
       bounding_volume:
-        x_min: -20.0
-        x_max: 20.0
-        y_min: -20.0
-        y_max: 20.0
-        z_min: -1.5
-        z_max: 1.5
+        x_min: -200
+        x_max: 200
+        y_min: -200
+        y_max: 200
+        z_min: -100
+        z_max: 100
 
       sensor_model:
         type: "IterativeRayCasterLidar"

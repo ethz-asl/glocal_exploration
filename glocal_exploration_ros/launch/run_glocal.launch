@@ -8,31 +8,26 @@
        doc="Automatically launch Rviz." />
 
   <!-- Planner arguments -->
-  <arg name="planner_config" default="glocal_planner.yaml"/>
+  <arg name="planner_config" default="planners/glocal.yaml"/>
   
   <!-- Airsim arguments -->
-  <arg name="airsim_config" default="maze/maze_airsim.yaml"/>
-  <arg name="drift_config" default="maze/drift_2.yaml"/>
+  <arg name="airsim_config" default="simulation/airsim.yaml"/>
+  <arg name="drift_config" default="simulation/drift_2.yaml"/>
   <arg name="use_airsim_time" default="true"/>
   <arg name="mav_name" default="airsim_drone"/>
   
   <!-- Experiment arguments -->
-  <arg name="record_data" default="true"/>
+  <arg name="record_data" default="false"/>
   <arg name="record_visualization" default="false"/>
   <arg name="data_path" default="/home/lukas/Documents/Glocal/Data"/>
   <arg name="time_limit" default="30"/> <!-- min -->
   <arg name="data_interval" default="30"/>  <!-- sec -->
-  <arg name="planner_node_name" default="/active_3d_planner/planner_node"/> <!-- Name of Active 3D's ROS node -->
-  
-  
+  <arg name="planner_node_name" default="/glocal_system"/> <!-- Name of GLocal's ROS node -->
+  <arg name="place_recognition_simulator_config" default="" doc="Path to place recognition simulator config. Leave blank to disable." />
 
   <!-- Automatically generated arguments -->
   <arg unless="$(arg debug_mode)" name="launch_prefix" value="" />
   <arg if="$(arg debug_mode)" name="launch_prefix" value="gdb -ex run --args" />
-
-
-
-
   
   <!-- Setup the experiment -->
   <param name="/use_sim_time" value="true" if="$(arg use_airsim_time)"/>
@@ -47,47 +42,33 @@
      <rosparam file="$(find glocal_exploration_ros)/config/$(arg drift_config)"/>
   </node>
 
-  <!-- Planner -->
-  <group ns="active_3d_planner">
-     <!-- Voxblox -->
-    <node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr">
-      <remap from="pointcloud" to="/airsim_drone/Lidar"/> 
-      <rosparam file="$(find glocal_exploration_ros)/config/active_3d_voxblox_config.yaml"/>
+  <!-- Place recognition simulator (for voxgraph external loop closures) -->
+  <group ns="place_recognition_simulator">
+    <node name="place_recognition_simulator" pkg="glocal_exploration_ros" type="place_recognition_simulator.py">
+      <rosparam command="load" file="$(find glocal_exploration_ros)/config/$(arg place_recognition_simulator_config)" />
     </node>
-    
-    <!-- Planner -->
-    <node name="planner_node" pkg="active_3d_planning_app_reconstruction" type="reconstruction_planner_node" output="screen" >
-      <remap from="planner_node/esdf_map_in" to="voxblox_node/esdf_map_out" />
-      <remap from="planner_node/tsdf_map_in" to="voxblox_node/tsdf_map_out" />
-      <param name="use_tf_transforms" value="false" />
-      <param name="tsdf_voxel_size" value="0.2" />
-      <param name="tsdf_voxels_per_side" value="16" />
-      <param name="update_mesh_every_n_sec" value="0.0" />   
-      <param name="publish_traversable" value="false" />         
-    
+  </group>
+
+  <!-- Planner -->
+  <group ns="glocal">
+    <node name="glocal_system" pkg="glocal_exploration_ros" type="glocal_system_node"
+          output="screen" launch-prefix="$(arg launch_prefix)">
+      <rosparam command="load" file="$(find glocal_exploration_ros)/config/$(arg planner_config)"/>
+      <remap from="~pointcloud" to="/$(arg mav_name)/Lidar" />
       <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
-      <param name="verbose" value="true" />
-      <param name="visualize" value="true" />
-      <param name="log_performance" value="false" />
-      
-      <!-- Modular Config -->    
-      <rosparam command="load" file="$(find glocal_exploration_ros)/config/active_3d_planner.yaml"/>
-    </node>     
-    
-      <!-- adaptor -->
-  <node name="airsim_adaptor" pkg="active_3d_planning_app_reconstruction" type="airsim_adaptor.py" output="screen">
-    <remap from="trajectory_in" to="command/trajectory" />
-    <remap from="command_pose_out" to="/airsim_drone/command/pose" />
-  </node>
+      <remap from="command/pose" to="/$(arg mav_name)/command/pose" />
+      <remap from="~/global_planner/submap_in" to="~/mapping/submap_esdfs" />
+      <remap from="~/global_planner/submap_pose_in" to="~/mapping/submap_poses" />
+    </node>  
   </group>
   
   
   <!-- Experiment startup and Evaluation -->
   <group ns="evaluation">
     <!-- Manager -->
-    <node name="experiment_manager" pkg="glocal_exploration_ros" type="experiment_manager.py" output="screen" required="true">
+    <node name="experiment_manager" pkg="glocal_exploration_ros" type="experiment_manager.py" output="screen" required="true">                
       <remap from="collision" to="/$(arg mav_name)/collision" />
-      <param name="ns_planner" value="/active_3d_planner/planner_node/toggle_running" />
+      <param name="ns_planner" value="/glocal/glocal_system/toggle_running" />
       <param name="ns_voxblox" value="voxblox_gt" />
       <param name="evaluate" value="$(arg record_data)" />
       <param name="eval_directory" value="$(arg data_path)" />
@@ -100,19 +81,19 @@
     
     <!-- Ground truth reconstruction -->
     <node name="voxblox_gt" pkg="voxblox_ros" type="esdf_server" if="$(arg record_data)">
-      <rosparam command="load" file="$(find glocal_exploration_ros)/config/voxblox_ground_truth.yaml"/>
+      <rosparam command="load" file="$(find glocal_exploration_ros)/config/evaluation/voxblox_ground_truth.yaml"/>
       <remap from="pointcloud" to="/$(arg mav_name)/Lidar"/>
     </node>
     
     <!-- Record visualization topics -->
     <node pkg="rosbag" type="record" name="rosbag_vis_recorder"
-       args="record -o $(arg data_path)/tmp_bags/tmp_bag /rosout /clock /tf" if="$(eval arg('record_data') and arg('record_visualization'))"/>
+       args="record -o $(arg data_path)/tmp_bags/tmp_bag /clock /rosout /tf /tf_static /glocal/glocal_system/global_planner/executed_path /glocal/glocal_system/global_planner/frontiers /glocal/glocal_system/global_planner/goal_points /glocal/glocal_system/global_planner/planned_path /glocal/glocal_system/local_planner/executed_path /glocal/glocal_system/local_planner/tree /glocal/glocal_system/mapping/separated_mesh /glocal/glocal_system/mapping/mesh /place_recognition_simulator/loop_closure_vis /place_recognition_simulator/recognizeable_areas" if="$(eval arg('record_data') and arg('record_visualization'))"/>
   </group>
   
   
   <!-- Visualization -->
   <group if="$(arg show_rviz)">
-    <arg name="rviz_file" default="$(find glocal_exploration_ros)/config/maze/maze_visualization_active_3d.rviz" />
+    <arg name="rviz_file" default="$(find glocal_exploration_ros)/config/visualization/glocal.rviz" />
    <node type="rviz" name="rviz" pkg="rviz" args="-d $(arg rviz_file)"/>
   </group>
 </launch>

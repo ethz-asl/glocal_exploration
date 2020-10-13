@@ -8,9 +8,9 @@
     doc="Automatically launch Rviz." />
 
     <!-- Planner arguments -->
-    <arg name="gbplanner_config_file" default="$(find glocal_exploration_ros)/config/gbplanner_config.yaml"/>
+    <arg name="gbplanner_config_file" default="$(find glocal_exploration_ros)/config/planners/gbplanner.yaml"/>
     <arg name="pci_file" default="$(find gbplanner)/config/m100/planner_control_interface_sim_config.yaml"/>
-    <arg name="voxblox_config_file" default="$(find glocal_exploration_ros)/config/gbplanner_voxblox_config.yaml"/>
+    <arg name="voxblox_config_file" default="$(find glocal_exploration_ros)/config/voxblox/gbplanner.yaml"/>
 
 
     <!-- Airsim arguments -->
@@ -81,7 +81,7 @@
 
         <!-- Ground truth reconstruction -->
         <node name="voxblox_gt" pkg="voxblox_ros" type="esdf_server" if="$(arg record_data)">
-            <rosparam command="load" file="$(find glocal_exploration_ros)/config/voxblox_ground_truth.yaml"/>
+            <rosparam command="load" file="$(find glocal_exploration_ros)/config/evaluation/voxblox_ground_truth.yaml"/>
             <remap from="pointcloud" to="/$(arg mav_name)/Lidar"/>
         </node>
 
@@ -93,7 +93,7 @@
 
     <!-- Visualization -->
     <group if="$(arg show_rviz)">
-        <arg name="rviz_file" default="$(find glocal_exploration_ros)/config/maze/maze_visualization_gbplanner.rviz" />
+        <arg name="rviz_file" default="$(find glocal_exploration_ros)/config/visualization/gbplanner.rviz" />
         <node type="rviz" name="rviz" pkg="rviz" args="-d $(arg rviz_file)"/>
     </group>
 </launch>
