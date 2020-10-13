@@ -91,4 +91,9 @@ clear_voxblox_maps=true # Irreversibly remove maps after evaluation to save disk
 # ========== Run ==========
 # Run one batch of experiments for each planner and drift level combination
 experiment_date=$(date '+%Y-%m-%d-%H-%M-%S')
+
+n_experiments=2
+run_all_combinations
+
+n_experiments=10
 run_all_combinations
