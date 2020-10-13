@@ -1,121 +1,139 @@
 <launch>
-  <!-- General arguments -->
-  <arg name="debug_mode"
-       default="false"
-       doc="Run the mapper in debug mode." />
-  <arg name="show_rviz"
-       default="true"
-       doc="Automatically launch Rviz." />
+    <!-- General arguments -->
+    <arg name="debug_mode"
+         default="false"
+         doc="Run the mapper in debug mode."/>
+    <arg name="show_rviz"
+         default="true"
+         doc="Automatically launch Rviz."/>
 
-  <!-- Planner arguments -->
-  <arg name="planner_config" default="glocal_planner.yaml"/>
-  
-  <!-- Airsim arguments -->
-  <arg name="airsim_config" default="simulation/airsim.yaml"/>
-  <arg name="drift_config" default="simulation/drift_2.yaml"/>
-  <arg name="use_airsim_time" default="true"/>
-  <arg name="mav_name" default="airsim_drone"/>
-  
-  <!-- Experiment arguments -->
-  <arg name="record_data" default="true"/>
-  <arg name="record_visualization" default="false"/>
-  <arg name="data_path" default="/home/lukas/Documents/Glocal/Data"/>
-  <arg name="time_limit" default="30"/> <!-- min -->
-  <arg name="data_interval" default="30"/>  <!-- sec -->
-  <!-- NOTE: Active3d uses exactly 100% CPU due to how it's implemented
-             (verified in experiments), but runs voxblox separately.
-             We thus measure voxblox and add the known values for Active3d. -->
-  <arg name="planner_node_name" default="/active_3d_planner/voxblox_node"/>
+    <!-- Planner arguments -->
+    <arg name="planner_config" default="experiments/maze/planners/active_3d.yaml"/>
 
-  
+    <!-- Airsim arguments -->
+    <arg name="airsim_config" default="experiments/general/airsim.yaml"/>
+    <arg name="drift_config" default="experiments/general/drift/drift_2.yaml"/>
+    <arg name="use_airsim_time" default="true"/>
+    <arg name="mav_name" default="airsim_drone"/>
 
-  <!-- Automatically generated arguments -->
-  <arg unless="$(arg debug_mode)" name="launch_prefix" value="" />
-  <arg if="$(arg debug_mode)" name="launch_prefix" value="gdb -ex run --args" />
+    <!-- Experiment arguments -->
+    <arg name="record_data" default="true"/>
+    <arg name="record_visualization" default="false"/>
+    <arg name="data_path" default="/home/lukas/Documents/Glocal/Data"/>
+    <arg name="time_limit" default="30"/> <!-- min -->
+    <arg name="data_interval" default="30"/>  <!-- sec -->
+    <!-- NOTE: Active3d uses exactly 100% CPU due to how it's implemented
+               (verified in experiments), but runs voxblox separately.
+               We thus measure voxblox and add the known values for Active3d. -->
+    <arg name="planner_node_name" default="/active_3d_planner/voxblox_node"/>
 
+    <!-- Automatically generated arguments -->
+    <arg unless="$(arg debug_mode)" name="launch_prefix" value=""/>
+    <arg if="$(arg debug_mode)" name="launch_prefix"
+         value="gdb -ex run --args"/>
 
 
 
-  
-  <!-- Setup the experiment -->
-  <param name="/use_sim_time" value="true" if="$(arg use_airsim_time)"/>
-  
-  <!-- tf -->
-  <node pkg="tf" type="static_transform_publisher" name="static_tf_mission_odom" args="0 0 0 0 0 0 1 /odom /mission 100"/>
-  <node pkg="tf" type="static_transform_publisher" name="static_tf_mission_world" args="0 0 0 0 0 0 1 /mission /world 100"/>
-  
-  <!-- airsim client -->
-  <node name="airsim_simulator" pkg="unreal_airsim" type="airsim_simulator_node" required="true" output="screen" args="-alsologtostderr">
-     <rosparam file="$(find glocal_exploration_ros)/config/$(arg airsim_config)"/>
-     <rosparam file="$(find glocal_exploration_ros)/config/$(arg drift_config)"/>
-  </node>
+    <!-- Setup the experiment -->
+    <param name="/use_sim_time" value="true" if="$(arg use_airsim_time)"/>
 
-  <!-- Planner -->
-  <group ns="active_3d_planner">
-     <!-- Voxblox -->
-    <node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr">
-      <remap from="pointcloud" to="/airsim_drone/Lidar"/> 
-      <rosparam file="$(find glocal_exploration_ros)/config/voxblox/active_3d.yaml"/>
+    <!-- tf -->
+    <node pkg="tf" type="static_transform_publisher"
+          name="static_tf_mission_odom"
+          args="0 0 0 0 0 0 1 /odom /mission 100"/>
+    <node pkg="tf" type="static_transform_publisher"
+          name="static_tf_mission_world"
+          args="0 0 0 0 0 0 1 /mission /world 100"/>
+
+    <!-- airsim client -->
+    <node name="airsim_simulator" pkg="unreal_airsim"
+          type="airsim_simulator_node" required="true" output="screen"
+          args="-alsologtostderr">
+        <rosparam
+                file="$(find glocal_exploration_ros)/config/$(arg airsim_config)"/>
+        <rosparam
+                file="$(find glocal_exploration_ros)/config/$(arg drift_config)"/>
     </node>
-    
+
     <!-- Planner -->
-    <node name="planner_node" pkg="active_3d_planning_app_reconstruction" type="reconstruction_planner_node" output="screen" >
-      <remap from="planner_node/esdf_map_in" to="voxblox_node/esdf_map_out" />
-      <remap from="planner_node/tsdf_map_in" to="voxblox_node/tsdf_map_out" />
-      <param name="use_tf_transforms" value="false" />
-      <param name="tsdf_voxel_size" value="0.2" />
-      <param name="tsdf_voxels_per_side" value="16" />
-      <param name="update_mesh_every_n_sec" value="0.0" />   
-      <param name="publish_traversable" value="false" />         
-    
-      <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
-      <param name="verbose" value="true" />
-      <param name="visualize" value="true" />
-      <param name="log_performance" value="false" />
-      
-      <!-- Modular Config -->    
-      <rosparam command="load" file="$(find glocal_exploration_ros)/config/planners/active_3d.yaml"/>
-    </node>     
-    
-      <!-- adaptor -->
-  <node name="airsim_adaptor" pkg="active_3d_planning_app_reconstruction" type="airsim_adaptor.py" output="screen">
-    <remap from="trajectory_in" to="command/trajectory" />
-    <remap from="command_pose_out" to="/airsim_drone/command/pose" />
-  </node>
-  </group>
-  
-  
-  <!-- Experiment startup and Evaluation -->
-  <group ns="evaluation">
-    <!-- Manager -->
-    <node name="experiment_manager" pkg="glocal_exploration_ros" type="experiment_manager.py" output="screen" required="true">
-      <remap from="collision" to="/$(arg mav_name)/collision" />
-      <param name="ns_planner" value="/active_3d_planner/planner_node/toggle_running" />
-      <param name="ns_voxblox" value="voxblox_gt" />
-      <param name="evaluate" value="$(arg record_data)" />
-      <param name="eval_directory" value="$(arg data_path)" />
-      <param name="time_limit" value="$(arg time_limit)" />
-      <param name="eval_frequency" value="$(arg data_interval)" />
-      <param name="planner_node_name" value="$(arg planner_node_name)" />
+    <group ns="active_3d_planner">
+        <!-- Voxblox -->
+        <node name="voxblox_node" pkg="voxblox_ros" type="esdf_server"
+              output="screen" args="-alsologtostderr">
+            <remap from="pointcloud" to="/airsim_drone/Lidar"/>
+            <rosparam
+                    file="$(find glocal_exploration_ros)/config/experiments/general/voxblox/active_3d.yaml"/>
+        </node>
 
-      <param name="startup_timeout" value="30.0" />
-    </node>
-    
-    <!-- Ground truth reconstruction -->
-    <node name="voxblox_gt" pkg="voxblox_ros" type="esdf_server" if="$(arg record_data)">
-      <rosparam command="load" file="$(find glocal_exploration_ros)/config/evaluation/voxblox_ground_truth.yaml"/>
-      <remap from="pointcloud" to="/$(arg mav_name)/Lidar"/>
-    </node>
-    
-    <!-- Record visualization topics -->
-    <node pkg="rosbag" type="record" name="rosbag_vis_recorder"
-       args="record -o $(arg data_path)/tmp_bags/tmp_bag /rosout /clock /tf" if="$(eval arg('record_data') and arg('record_visualization'))"/>
-  </group>
-  
-  
-  <!-- Visualization -->
-  <group if="$(arg show_rviz)">
-    <arg name="rviz_file" default="$(find glocal_exploration_ros)/config/visualization/active_3d.rviz" />
-   <node type="rviz" name="rviz" pkg="rviz" args="-d $(arg rviz_file)"/>
-  </group>
+        <!-- Planner -->
+        <node name="planner_node" pkg="active_3d_planning_app_reconstruction"
+              type="reconstruction_planner_node" output="screen">
+            <remap from="planner_node/esdf_map_in"
+                   to="voxblox_node/esdf_map_out"/>
+            <remap from="planner_node/tsdf_map_in"
+                   to="voxblox_node/tsdf_map_out"/>
+            <param name="use_tf_transforms" value="false"/>
+            <param name="tsdf_voxel_size" value="0.2"/>
+            <param name="tsdf_voxels_per_side" value="16"/>
+            <param name="update_mesh_every_n_sec" value="0.0"/>
+            <param name="publish_traversable" value="false"/>
+
+            <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry"/>
+            <param name="verbose" value="true"/>
+            <param name="visualize" value="true"/>
+            <param name="log_performance" value="false"/>
+
+            <!-- Modular Config -->
+            <rosparam command="load"
+                      file="$(find glocal_exploration_ros)/config/$(arg planner_config)"/>
+        </node>
+
+        <!-- adaptor -->
+        <node name="airsim_adaptor" pkg="active_3d_planning_app_reconstruction"
+              type="airsim_adaptor.py" output="screen">
+            <remap from="trajectory_in" to="command/trajectory"/>
+            <remap from="command_pose_out" to="/airsim_drone/command/pose"/>
+        </node>
+    </group>
+
+
+    <!-- Experiment startup and Evaluation -->
+    <group ns="evaluation">
+        <!-- Manager -->
+        <node name="experiment_manager" pkg="glocal_exploration_ros"
+              type="experiment_manager.py" output="screen" required="true">
+            <remap from="collision" to="/$(arg mav_name)/collision"/>
+            <param name="ns_planner"
+                   value="/active_3d_planner/planner_node/toggle_running"/>
+            <param name="ns_voxblox" value="voxblox_gt"/>
+            <param name="evaluate" value="$(arg record_data)"/>
+            <param name="eval_directory" value="$(arg data_path)"/>
+            <param name="time_limit" value="$(arg time_limit)"/>
+            <param name="eval_frequency" value="$(arg data_interval)"/>
+            <param name="planner_node_name" value="$(arg planner_node_name)"/>
+
+            <param name="startup_timeout" value="30.0"/>
+        </node>
+
+        <!-- Ground truth reconstruction -->
+        <node name="voxblox_gt" pkg="voxblox_ros" type="esdf_server"
+              if="$(arg record_data)">
+            <rosparam command="load"
+                      file="$(find glocal_exploration_ros)/config/experiments/general/voxblox/ground_truth.yaml"/>
+            <remap from="pointcloud" to="/$(arg mav_name)/Lidar"/>
+        </node>
+
+        <!-- Record visualization topics -->
+        <node pkg="rosbag" type="record" name="rosbag_vis_recorder"
+              args="record -o $(arg data_path)/tmp_bags/tmp_bag /rosout /clock /tf"
+              if="$(eval arg('record_data') and arg('record_visualization'))"/>
+    </group>
+
+
+    <!-- Visualization -->
+    <group if="$(arg show_rviz)">
+        <arg name="rviz_file"
+             default="$(find glocal_exploration_ros)/config/visualization/active_3d.rviz"/>
+        <node type="rviz" name="rviz" pkg="rviz" args="-d $(arg rviz_file)"/>
+    </group>
 </launch>
