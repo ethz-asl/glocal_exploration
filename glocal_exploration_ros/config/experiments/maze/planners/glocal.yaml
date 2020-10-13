@@ -49,17 +49,17 @@ mapping:
   # that could theoretically be reached within the sliding window length.
   # Setting it right on the limit causes issues because both optimistic and
   # regular traversability checks would fail in areas the robot traversed.
-  max_weight: 500
+  max_weight: 1000
   use_const_weight: true
   use_weight_dropoff: false
   use_sparsity_compensation_factor: false
   max_consecutive_ray_collisions: 1  # Only affects the fast integrator
-  pointcloud_queue_size: 10
+  pointcloud_queue_size: 2
   # Integrator settings projective integrator
   sensor_horizontal_resolution: 200
   sensor_vertical_resolution: 32
   sensor_vertical_field_of_view_degrees: 45
-  integrator_threads: 1
+  integrator_threads: 4
   use_missing_points_for_clearing: true
   # Integrator settings temporal window (for compatibility with voxgraph)
   pointcloud_deintegration_queue_length: 140
@@ -182,7 +182,7 @@ global_planner:
   goal_search_steps: 5.0
   goal_search_step_size: 1.0
   backtracking_distance_m: 5.0  # Set to -1 to disable
-  max_replan_attempts_to_chosen_frontier: 6
+  max_replan_attempts_to_chosen_frontier: 3
   
   # Submap Frontiers Evaluator
   min_frontier_size: 100
