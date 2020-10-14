@@ -14,6 +14,7 @@ function run_all_combinations() {
 
     # Set the params for the current environment and planner
     launch_file="run_${planner}"
+    planner_config="experiments/${environment}/planners/${planner}.yaml"
     evaluation_config="experiments/${environment}/evaluation.yaml"
     if [[ $environment == "tunnels" ]]; then
       place_recognition_config="experiments/${environment}/place_recognition.yaml" # Leave blank to disable
@@ -46,7 +47,7 @@ function run_experiment_batch() {
   # Run the experiments
   for ((i = 1; i <= n_experiments; i++)); do
     # run experiment
-    roslaunch glocal_exploration_ros $launch_file.launch data_path:=$target_dir record_data:=true time_limit:=$duration data_interval:=$evaluation_frequency drift_config:=$drift_config record_visualization:=$record_visualization place_recognition_simulator_config:=$place_recognition_config
+    roslaunch glocal_exploration_ros $launch_file.launch planner_config:=$planner_config data_path:=$target_dir record_data:=true time_limit:=$duration data_interval:=$evaluation_frequency drift_config:=$drift_config record_visualization:=$record_visualization place_recognition_simulator_config:=$place_recognition_config
     # evaluate
     roslaunch glocal_exploration_ros evaluate_experiment.launch target_directory:=$target_dir evaluation_config:=$evaluation_config method:=recent series:=false clear_voxblox_maps:=$clear_voxblox_maps evaluate:=true
   done
@@ -63,23 +64,23 @@ function run_experiment_batch() {
 home_dir="/home/victor"
 
 # Unreal environment
-environment="maze"
+environment="tunnels"
 # Options: "maze", "tunnels"
 
 # Experiment runs
 n_experiments=2
 evaluation_frequency=5  #s
-duration=15             #min
+duration=20             #min
 
 
 # ========== Experiment params: Varying from batch to batch ==========
 # NOTE: One batch will be run for each combination of the params in this section.
 # Planners to run
-declare -a planners=("glocal" "active_3d" "gbplanner")
+declare -a planners=("glocal" "active_3d")
 # Options: "glocal" "active_3d" "gbplanner"
 
 # Drift levels to use
-declare -a drift_levels=("drift_4" "drift_3" "drift_2" "drift_1" "drift_0")
+declare -a drift_levels=("drift_2" "drift_0")
 # Options: "drift_4" "drift_3" "drift_2" "drift_1" "drift_0"
 
 
