@@ -24,6 +24,8 @@ class SkeletonAStar {
     int max_num_start_vertex_candidates = 5;
     int max_num_end_vertex_candidates = 30;
     int linking_num_nearest_neighbors = 3;
+    int linking_max_num_submaps = 20;
+    int linking_max_num_links = 30;
     FloatingPoint linking_max_distance = 2.f;
     int max_num_a_star_iterations = 5e3;
 

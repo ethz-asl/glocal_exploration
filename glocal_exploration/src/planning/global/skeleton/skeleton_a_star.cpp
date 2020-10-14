@@ -22,6 +22,7 @@ void SkeletonAStar::Config::checkParams() const {
                "max_num_end_vertex_candidates");
   checkParamGT(linking_num_nearest_neighbors, 0,
                "linking_num_nearest_neighbors");
+  checkParamGT(linking_max_num_submaps, 0, "linking_max_num_submaps");
   checkParamGT(linking_max_distance, 0.f, "linking_max_distance");
   checkParamGT(max_num_a_star_iterations, 0, "max_num_a_star_iterations");
 }
@@ -31,6 +32,7 @@ void SkeletonAStar::Config::fromRosParam() {
   rosParam("max_num_start_vertex_candidates", &max_num_start_vertex_candidates);
   rosParam("max_num_end_vertex_candidates", &max_num_end_vertex_candidates);
   rosParam("linking_num_nearest_neighbors", &linking_num_nearest_neighbors);
+  rosParam("linking_max_num_submaps", &linking_max_num_submaps);
   rosParam("linking_max_distance", &linking_max_distance);
   rosParam("max_num_a_star_iterations", &max_num_a_star_iterations);
 }
@@ -41,6 +43,7 @@ void SkeletonAStar::Config::printFields() const {
              max_num_start_vertex_candidates);
   printField("max_num_end_vertex_candidates", max_num_end_vertex_candidates);
   printField("linking_num_nearest_neighbors", linking_num_nearest_neighbors);
+  printField("linking_max_num_submaps", linking_max_num_submaps);
   printField("linking_max_distance", linking_max_distance);
   printField("max_num_a_star_iterations", max_num_a_star_iterations);
 }
@@ -272,6 +275,8 @@ bool SkeletonAStar::getPathBetweenVertices(
     const Point t_odom_current_vertex =
         current_submap->getPose() * current_vertex.point;
     if (current_vertex.edge_list.size() <= 3) {
+      int num_linked_submaps = 0;
+      int num_links_total = 0;
       for (const SubmapId submap_id :
            comm_->map()->getSubmapIdsAtPosition(t_odom_current_vertex)) {
         // Avoid linking the current vertex against vertices of its own submap
@@ -285,6 +290,12 @@ bool SkeletonAStar::getPathBetweenVertices(
           continue;
         }
 
+        // Limit the maximum number of submaps that can be linked to
+        if (config_.linking_max_num_submaps < num_linked_submaps ||
+            config_.linking_max_num_links < num_links_total) {
+          break;
+        }
+
         voxblox::Point t_nearby_submap_current_vertex =
             (nearby_submap->getPose().inverse() * t_odom_current_vertex);
         std::vector<VertexIdElement> nearest_vertex_ids;
@@ -292,6 +303,7 @@ bool SkeletonAStar::getPathBetweenVertices(
             t_nearby_submap_current_vertex,
             config_.linking_num_nearest_neighbors, &nearest_vertex_ids);
 
+        bool linked_submap = false;
         for (const VertexIdElement& nearby_vertex_id : nearest_vertex_ids) {
           const GlobalVertexId nearby_vertex_global_id{submap_id,
                                                        nearby_vertex_id};
@@ -306,6 +318,8 @@ bool SkeletonAStar::getPathBetweenVertices(
             if (comm_->map()->isLineTraversableInGlobalMap(
                     t_odom_current_vertex, t_odom_nearby_vertex,
                     config_.traversability_radius)) {
+              ++num_links_total;
+              linked_submap = true;
               if (closed_set.count(nearby_vertex_global_id) > 0) {
                 continue;
               }
@@ -329,6 +343,9 @@ bool SkeletonAStar::getPathBetweenVertices(
                   nearby_vertex_global_id;
             }
           }
+        }
+        if (linked_submap) {
+          ++num_linked_submaps;
         }
       }
     }

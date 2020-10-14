@@ -200,7 +200,9 @@ global_planner:
   skeleton_a_star:
     traversability_radius: *traversability_radius_global_planner
     max_num_a_star_iterations: 10000
-    max_num_start_vertex_candidates: 10
+    max_num_start_vertex_candidates: 5
     max_num_end_vertex_candidates: 5
     linking_num_nearest_neighbors: 3
+    linking_max_num_submaps: 10
+    linking_max_num_links: 20
     linking_max_distance: 3.0
