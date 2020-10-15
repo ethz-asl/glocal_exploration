@@ -61,12 +61,12 @@ Visualization Manager:
       Reference Frame: <Fixed Frame>
       Value: true
     - Class: rviz/Axes
-      Enabled: false
+      Enabled: true
       Length: 0.5
       Name: Drone GT
       Radius: 0.15000000596046448
       Reference Frame: airsim_drone_ground_truth
-      Value: false
+      Value: true
     - Class: rviz/Axes
       Enabled: true
       Length: 0.5
@@ -381,7 +381,7 @@ Visualization Manager:
               Color: 239; 41; 41
               Color Transformer: FlatColor
               Decay Time: 0
-              Enabled: true
+              Enabled: false
               Invert Rainbow: false
               Max Color: 255; 255; 255
               Max Intensity: 4096
@@ -398,7 +398,7 @@ Visualization Manager:
               Unreliable: false
               Use Fixed Frame: true
               Use rainbow: true
-              Value: true
+              Value: false
             - Alpha: 0.5
               Autocompute Intensity Bounds: false
               Autocompute Value Bounds:
@@ -540,18 +540,7 @@ Visualization Manager:
                     submap_31: true
                     submap_32: true
                     submap_33: true
-                    submap_34: true
-                    submap_35: true
-                    submap_36: true
-                    submap_37: true
-                    submap_38: true
-                    submap_39: true
                     submap_4: true
-                    submap_40: true
-                    submap_41: true
-                    submap_42: true
-                    submap_43: true
-                    submap_44: true
                     submap_5: true
                     submap_6: true
                     submap_7: true
@@ -759,7 +748,7 @@ Visualization Manager:
               Marker Topic: /place_recognition_simulator/loop_closure_vis
               Name: Detected associations
               Namespaces:
-                {}
+                place_recognition_association: true
               Queue Size: 100
               Value: true
             - Class: rviz/MarkerArray
@@ -767,7 +756,7 @@ Visualization Manager:
               Marker Topic: /place_recognition_simulator/recognizeable_areas
               Name: Recognizeable areas
               Namespaces:
-                {}
+                recognizeable_areas: true
               Queue Size: 100
               Value: true
           Enabled: true
@@ -802,25 +791,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 73.63800048828125
+      Distance: 135.1803741455078
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 5.120136260986328
-        Y: 6.79236364364624
-        Z: 2.7709500789642334
+        X: 12.289324760437012
+        Y: 5.143805980682373
+        Z: 2.5220484733581543
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 1.399796485900879
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.548580646514893
+      Yaw: 4.6835784912109375
     Saved: ~
 Window Geometry:
   Displays:

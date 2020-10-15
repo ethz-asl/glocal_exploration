@@ -7,7 +7,7 @@
 #-------------------------------------------------------------------------------
 RobotParams:
   type:               kAerialRobot
-  size:               [1.1, 1.1, 0.6]
+  size:               [1.4, 1.4, 0.8]
   size_extension_min: [0.1, 0.1, 0.2] # minimum extension allowed to operate.
   size_extension:     [0.4, 0.4, 0.4]
   center_offset:      [0.0, 0.0, 0.0]
