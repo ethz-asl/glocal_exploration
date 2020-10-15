@@ -98,6 +98,18 @@ class PlaceRecognitionSimulator(object):
                             r_previous_current = \
                                 tf.transformations.quaternion_from_matrix(T_previous_current)
 
+                            # Simulate imperfect relative poses
+                            stddev_xy = 0.15
+                            stddev_z = 0.05
+                            stddev_yaw = 0.05
+                            t_previous_current[0] += np.random.normal(0.0, stddev_xy)
+                            t_previous_current[1] += np.random.normal(0.0, stddev_xy)
+                            t_previous_current[2] += np.random.normal(0.0, stddev_z)
+
+                            yaw_noise = np.random.normal(0.0, stddev_yaw)
+                            yaw_noise_quat = tf.transformations.quaternion_from_euler(0.0, 0.0, yaw_noise)
+                            r_previous_current = tf.transformations.quaternion_multiply(r_previous_current, yaw_noise_quat)
+
                             loop_closure_msg.transform.translation.x = t_previous_current[0]
                             loop_closure_msg.transform.translation.y = t_previous_current[1]
                             loop_closure_msg.transform.translation.z = t_previous_current[2]

@@ -119,10 +119,10 @@ mapping:
       information_zz: 2500.0
     loop_closure:
       information_matrix:
-        x_x: 100.0
-        y_y: 100.0
+        x_x: 200.0
+        y_y: 200.0
         z_z: 200.0
-        yaw_yaw: 200.0
+        yaw_yaw: 100.0
 
   mesh_min_weight: 1.0
   submap_mesh_color_mode: lambert_color
@@ -183,6 +183,7 @@ global_planner:
   goal_search_step_size: 1.0
   backtracking_distance_m: 15.0  # Set to -1 to disable
   max_replan_attempts_to_chosen_frontier: 10
+  max_closest_frontier_search_time_sec: 30
   
   # Submap Frontiers Evaluator
   min_frontier_size: 200
@@ -203,6 +204,6 @@ global_planner:
     max_num_start_vertex_candidates: 5
     max_num_end_vertex_candidates: 5
     linking_num_nearest_neighbors: 3
-    linking_max_num_submaps: 10
-    linking_max_num_links: 20
+    linking_max_num_submaps: 20
+    linking_max_num_links: 40
     linking_max_distance: 3.0

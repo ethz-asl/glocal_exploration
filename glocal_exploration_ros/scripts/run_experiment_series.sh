@@ -95,6 +95,8 @@ experiment_date=$(date '+%Y-%m-%d-%H-%M-%S')
 
 n_experiments=2
 run_all_combinations
-
-n_experiments=10
+run_all_combinations
+run_all_combinations
+run_all_combinations
+run_all_combinations
 run_all_combinations
