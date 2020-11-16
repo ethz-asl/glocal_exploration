@@ -11,10 +11,10 @@ max_ray_length: &max_ray_length 10
 
 # General params
 verbosity: 4
-replan_position_threshold: 0.3  # m, use higher values to compensate drift
-replan_yaw_threshold: 5   # deg
-replan_timeout_constant: 2.0  # turn down to compensate drift more quickly
-replan_timeout_velocity: 1.0
+replan_position_threshold: 0.1  # m, use higher values to compensate drift
+replan_yaw_threshold: 3   # deg
+replan_timeout_constant: 5.0  # turn down to compensate drift more quickly
+replan_timeout_velocity: 1.5
 
 
 region_of_interest:
@@ -157,10 +157,10 @@ local_planner:
   downsampling_factor: 3
   num_yaw_samples: 4
   T_baselink_sensor:  # 15 deg pitch
-   - [0.9659258,  0.0000000,  0.2588190, 0.0]
-   - [0.0000000,  1.0000000,  0.0000000, 0.0]
-   - [-0.2588190, 0.0000000,  0.9659258, 0.0]
-   - [0.0,        0.0,        0.0,       1.0]
+   - [1.0,  0.0,  0.0,  0.0190]
+   - [0.0, -1.0,  0.0,  0.0123]
+   - [0.0,  0.0, -1.0, -0.0796]
+   - [0.0,  0.0,  0.0,  1.0000]
    
   # Visualization
   visualize_tree: true
