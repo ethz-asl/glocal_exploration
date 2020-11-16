@@ -63,9 +63,6 @@
       <arg name="dist_observer_config_file_name" value="disturbance_observer_mbzirc2020" />
     </include>
 
-    <include file="$(arg dir_launch_files)/cpu_monitoring_noliro.launch">
-      <arg name="mav_name" value="$(arg mav_name)" />
-    </include>
 
     <!-- ============= Sensor Drivers ============= -->
     <include file="$(arg dir_sensor_launch_files)/versavis_cam.launch">
@@ -73,10 +70,6 @@
       <arg name="auto_reset_cam_topics" value="$(arg auto_reset_cam_topics)" />
       <arg name="cam0_serial" default="19367007" />
       <arg name="imu_offset_us" value="21719"/>
-    </include>
-    
-    <include file="$(arg dir_sensor_launch_files)/piksi.launch">
-      <arg name="mav_name" value="$(arg mav_name)" />
     </include>
 
     <include file="$(arg dir_sensor_launch_files)/ouster_lidar.launch">
@@ -103,8 +96,8 @@
     </node>
   
     <!-- Trajectory Adaptor -->
-    <node name="trajecotry_adaptor" pkg="active_3d_planning_app_reconstruction"
-          type="trajecotry_adaptor" output="screen">
+    <node name="trajectory_adaptor" pkg="active_3d_planning_app_reconstruction"
+          type="trajectory_adaptor" output="screen">
         <rosparam command="load" file="$(find glocal_exploration_ros)/config/experiments/kiwi/trajectory_adaptor.yaml"/>
         <remap from="odometry_in" to="$(arg odometry_topic)"/>
         <remap from="request_in" to="command/pose"/>
