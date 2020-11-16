@@ -4,9 +4,9 @@
 voxel_size: &voxel_size 0.2
 voxels_per_side: &voxels_per_side 16
 truncation_distance: &truncation_distance 0.6
-traversability_radius_local_planner: &traversability_radius_local_planner 1.5
-traversability_radius_global_planner: &traversability_radius_global_planner 1.4
-traversability_radius_path_following: &traversability_radius_path_following 1.3
+traversability_radius_local_planner: &traversability_radius_local_planner 1.0
+traversability_radius_global_planner: &traversability_radius_global_planner 1.0
+traversability_radius_path_following: &traversability_radius_path_following 1.0
 max_ray_length: &max_ray_length 10
 
 # General params
@@ -54,13 +54,13 @@ mapping:
   use_weight_dropoff: false
   use_sparsity_compensation_factor: false
   max_consecutive_ray_collisions: 1  # Only affects the fast integrator
-  pointcloud_queue_size: 2
+  pointcloud_queue_size: 3
   # Integrator settings projective integrator
-  sensor_horizontal_resolution: 200
-  sensor_vertical_resolution: 32
-  sensor_vertical_field_of_view_degrees: 45
-  integrator_threads: 4
-  use_missing_points_for_clearing: true
+  sensor_horizontal_resolution: 1024
+  sensor_vertical_resolution: 64
+  sensor_vertical_field_of_view_degrees: 33.2
+  integrator_threads: 1
+  use_missing_points_for_clearing: false
   # Integrator settings temporal window (for compatibility with voxgraph)
   pointcloud_deintegration_queue_length: 140
   publish_map_every_n_sec: 6 #10 #20.0
@@ -71,9 +71,9 @@ mapping:
   color_mode: "lambert" #normals
 #  slice_level: -0.5
   slice_level_follow_robot: true
-  publish_pointclouds: false
-  publish_traversable: false
-  publish_slices: false
+  publish_pointclouds: true
+  publish_traversable: true
+  publish_slices: true
   publish_pointclouds_on_update: false
 
 
@@ -124,7 +124,7 @@ mapping:
         z_z: 200.0
         yaw_yaw: 100.0
 
-  mesh_min_weight: 1.0
+  mesh_min_weight: 2.0
   submap_mesh_color_mode: lambert_color
   combined_mesh_color_mode: normals
 
@@ -149,10 +149,10 @@ local_planner:
   
   # Lidar Model
   ray_length: *max_ray_length  # m
-  vertical_fov: 45  # deg
+  vertical_fov: 30  # deg
   horizontal_fov: 360 # deg
-  vertical_resolution: 1000 # 64 / 32
-  horizontal_resolution: 10000 # 1024 / 200
+  vertical_resolution: 64 # 64 / 32
+  horizontal_resolution: 1024 # 1024 / 200
   ray_step: 0.4 # m
   downsampling_factor: 3
   num_yaw_samples: 4
