@@ -10,7 +10,17 @@
   <!-- MAV arguments -->
   <arg name="mav_name" default="kiwi"/>
   <arg name="namespace" default="$(arg mav_name)" />
-  <arg name="mav_startup_params" default="parameters/mavs/loon/px4_config.yaml"/>  <!--TODO-->
+  <!--  <arg name="mav_startup_params" default="parameters/mavs/loon/px4_config.yaml"/> -->
+  <arg name="dir_launch_files" value="$(find mav_startup)/launch/pixhawk/noliro" />
+  <arg name="dir_sensor_launch_files" value="$(find mav_startup)/launch/sensors" />
+
+  <arg name="state_estimator" value="rovio" /> <!-- Options: rovio, loam, vicon -->
+
+  <arg name="auto_reset_cam_topics" default="true" />
+  <arg name="transform_topic" default="rovio/transform" />
+  <arg name="odometry_topic" default="/$(arg mav_name)/msf_core/odometry"/> <!-- odom_predictor/predicted_odometry / msf_core/odometry -->
+  <arg name="global_frame_id" default="world" /> <!-- world vicon map  -->
+  <arg name="local_frame_id" default="odom" />   <!--odom vicon: world -->
 
   <!-- Planner arguments -->
   <arg name="planner_config" default="experiments/kiwi/glocal.yaml"/>
@@ -34,56 +44,58 @@
         
 
   <group ns="$(arg namespace)" >
-    <!-- mavros -->
-    <node pkg="mavros" type="mavros_node" name="mavros" respawn="false" clear_params="true" output="screen">
-      <rosparam command="load" file="$(find mav_startup)/$(arg mav_startup_params)" />
-      <param name="capability_group" value="Core" />    
-<!--      TODO-->
-      <param name="gcs_url" value="udp://@lukas-HP-Pavilion-Notebook" />
-    </node>
+  
+    <!-- ============= Core ============= -->
+    <include file="$(arg dir_launch_files)/mavros_noliro.launch">
+      <arg name="mav_name" value="$(arg mav_name)" />
+    </include>
 
-    <!-- odom predictor -->
-    <node pkg="odom_predictor" type="odom_predictor_node" name="odom_predictor" output="screen">
-      <remap from="odometry" to="rovio/odometry"/>
-      <remap from="imu_bias" to="rovio/imu_biases"/>
-      <remap from="imu" to="mavros/imu/data_raw"/>
-      <param name="capability_group" value="State Estimation" />
-    </node>
+    <include file="$(arg dir_launch_files)/$(arg state_estimator)_noliro.launch" >
+      <arg name="mav_name" value="$(arg mav_name)" />
+      <arg name="local_frame_id" value="$(arg local_frame_id)" />
+      <arg name="global_frame_id" value="$(arg global_frame_id)" />
+    </include>
 
-    <!-- Control -->
-    <node name="mav_nonlinear_mpc" pkg="mav_nonlinear_mpc" type="nonlinear_mpc_node" respawn="false" clear_params="true" output="screen">
-      <remap from="odometry" to="odom_predictor/predicted_odometry" />
-      <remap from="rc" to="mavros/rc/in" />
-      <rosparam file="$(find mav_startup)/parameters/mavs/$(arg mav_name)/nonlinear_mpc.yaml"/>
-      <rosparam file="$(find mav_startup)/parameters/mavs/$(arg mav_name)/disturbance_observer.yaml"/>
-      <param name="simulation" value="false"/>
-      <param name="autopilot_interface" value="mavros"/>
-      <remap from="command/roll_pitch_yawrate_thrust" to="mavros/setpoint_raw/roll_pitch_yawrate_thrust"/>
-      <param name="capability_group" value="Core" />
-    </node>
+    <include file="$(arg dir_launch_files)/mav_nonlinear_mpc_noliro.launch" >
+      <arg name="odometry" value="$(arg odometry_topic)" />
+      <arg name="mav_name" value="$(arg mav_name)" />
+      <arg name="mpc_config_file_name" value="nonlinear_mpc_mbzirc2020" />
+      <arg name="dist_observer_config_file_name" value="disturbance_observer_mbzirc2020" />
+    </include>
 
+    <include file="$(arg dir_launch_files)/cpu_monitoring_noliro.launch">
+      <arg name="mav_name" value="$(arg mav_name)" />
+    </include>
 
-    <!-- Rovio -->
-    <node name="rovio" pkg="rovio" type="rovio_node" output="screen">
-      <param name="filter_config" value="$(find mav_startup)/parameters/mavs/$(arg mav_name)/rovio_filter.info" />
-      <param name="camera0_config" value="$(find mav_startup)/parameters/mavs/$(arg mav_name)/rovio_cam0.yaml" />
-      <remap from="cam0/image_raw" to="/loon/camera/infra1/image_rect_raw"/>
-      <remap from="imu0" to="/loon/mavros/imu/data_raw"/>
-      <param name="world_frame" value="odom"/>
-      <param name="capability_group" value="State Estimation" />
-    </node>
+    <!-- ============= Sensor Drivers ============= -->
+    <include file="$(arg dir_sensor_launch_files)/versavis_cam.launch">
+      <arg name="mav_name" value="$(arg mav_name)" />
+      <arg name="auto_reset_cam_topics" value="$(arg auto_reset_cam_topics)" />
+      <arg name="cam0_serial" default="19367007" />
+      <arg name="imu_offset_us" value="21719"/>
+    </include>
+    
+    <include file="$(arg dir_sensor_launch_files)/piksi.launch">
+      <arg name="mav_name" value="$(arg mav_name)" />
+    </include>
+
+    <include file="$(arg dir_sensor_launch_files)/ouster_lidar.launch">
+      <arg name="mav_name" value="$(arg mav_name)" />
+    </include>
   </group>
   
-  <!-- Planner -->
+  
+  <!-- ============= Mapping & Planning ============= -->
   <group ns="glocal">
+    <!-- Planner -->
     <node name="glocal_system" pkg="glocal_exploration_ros"
           type="glocal_system_node"
           output="screen" launch-prefix="$(arg launch_prefix)">
         <rosparam command="load"
                   file="$(find glocal_exploration_ros)/config/$(arg planner_config)"/>
         <remap from="~pointcloud" to="/$(arg mav_name)/Lidar"/>
-        <remap from="odometry" to="/$(arg mav_name)/odom_predictor/predicted_odometry"/>
-        <remap from="command/pose" to="/$(arg mav_name)/command/pose"/>
+        <remap from="odometry" to="$(arg odometry_topic)"/>
+<!--        <remap from="command/pose" to="/$(arg mav_name)/command/pose"/>-->
         <remap from="~/global_planner/submap_in"
                to="~/mapping/submap_esdfs"/>
         <remap from="~/global_planner/submap_pose_in"
@@ -93,12 +105,9 @@
     <!-- Trajectory Adaptor -->
     <node name="trajecotry_adaptor" pkg="active_3d_planning_app_reconstruction"
           type="trajecotry_adaptor" output="screen">
-        <rosparam command="load"
-                  file="$(find glocal_exploration_ros)/config/experiments/kiwi/trajectory_adaptor.yaml"/>
-<!--        <remap from="~/global_planner/submap_in"-->
-<!--               to="~/mapping/submap_esdfs"/>-->
-<!--        <remap from="~/global_planner/submap_pose_in"-->
-<!--               to="~/mapping/submap_poses"/>-->
+        <rosparam command="load" file="$(find glocal_exploration_ros)/config/experiments/kiwi/trajectory_adaptor.yaml"/>
+        <remap from="odometry_in" to="$(arg odometry_topic)"/>
+        <remap from="request_in" to="command/pose"/>
     </node>
   </group>
 
