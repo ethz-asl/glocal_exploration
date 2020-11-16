@@ -1,0 +1,112 @@
+<launch>
+  <!-- General arguments -->
+  <arg name="debug_mode"
+       default="false"
+       doc="Run the mapper in debug mode."/>
+  <arg name="show_rviz"
+       default="true"
+       doc="Automatically launch Rviz."/>
+       
+  <!-- MAV arguments -->
+  <arg name="mav_name" default="kiwi"/>
+  <arg name="namespace" default="$(arg mav_name)" />
+  <arg name="mav_startup_params" default="parameters/mavs/loon/px4_config.yaml"/>  <!--TODO-->
+
+  <!-- Planner arguments -->
+  <arg name="planner_config" default="experiments/kiwi/glocal.yaml"/>
+
+  <!-- Automatically generated arguments -->
+  <arg unless="$(arg debug_mode)" name="launch_prefix" value=""/>
+  <arg if="$(arg debug_mode)" name="launch_prefix"
+       value="gdb -ex run --args"/>
+
+
+
+
+
+  <!-- static tf -->
+  <node pkg="tf" type="static_transform_publisher"
+        name="static_tf_mission_odom"
+        args="0 0 0 0 0 0 1 /odom /mission 100"/>
+  <node pkg="tf" type="static_transform_publisher"
+        name="static_tf_mission_world"
+        args="0 0 0 0 0 0 1 /mission /world 100"/>
+        
+
+  <group ns="$(arg namespace)" >
+    <!-- mavros -->
+    <node pkg="mavros" type="mavros_node" name="mavros" respawn="false" clear_params="true" output="screen">
+      <rosparam command="load" file="$(find mav_startup)/$(arg mav_startup_params)" />
+      <param name="capability_group" value="Core" />    
+<!--      TODO-->
+      <param name="gcs_url" value="udp://@lukas-HP-Pavilion-Notebook" />
+    </node>
+
+    <!-- odom predictor -->
+    <node pkg="odom_predictor" type="odom_predictor_node" name="odom_predictor" output="screen">
+      <remap from="odometry" to="rovio/odometry"/>
+      <remap from="imu_bias" to="rovio/imu_biases"/>
+      <remap from="imu" to="mavros/imu/data_raw"/>
+      <param name="capability_group" value="State Estimation" />
+    </node>
+
+    <!-- Control -->
+    <node name="mav_nonlinear_mpc" pkg="mav_nonlinear_mpc" type="nonlinear_mpc_node" respawn="false" clear_params="true" output="screen">
+      <remap from="odometry" to="odom_predictor/predicted_odometry" />
+      <remap from="rc" to="mavros/rc/in" />
+      <rosparam file="$(find mav_startup)/parameters/mavs/$(arg mav_name)/nonlinear_mpc.yaml"/>
+      <rosparam file="$(find mav_startup)/parameters/mavs/$(arg mav_name)/disturbance_observer.yaml"/>
+      <param name="simulation" value="false"/>
+      <param name="autopilot_interface" value="mavros"/>
+      <remap from="command/roll_pitch_yawrate_thrust" to="mavros/setpoint_raw/roll_pitch_yawrate_thrust"/>
+      <param name="capability_group" value="Core" />
+    </node>
+
+
+    <!-- Rovio -->
+    <node name="rovio" pkg="rovio" type="rovio_node" output="screen">
+      <param name="filter_config" value="$(find mav_startup)/parameters/mavs/$(arg mav_name)/rovio_filter.info" />
+      <param name="camera0_config" value="$(find mav_startup)/parameters/mavs/$(arg mav_name)/rovio_cam0.yaml" />
+      <remap from="cam0/image_raw" to="/loon/camera/infra1/image_rect_raw"/>
+      <remap from="imu0" to="/loon/mavros/imu/data_raw"/>
+      <param name="world_frame" value="odom"/>
+      <param name="capability_group" value="State Estimation" />
+    </node>
+  </group>
+  
+  <!-- Planner -->
+  <group ns="glocal">
+    <node name="glocal_system" pkg="glocal_exploration_ros"
+          type="glocal_system_node"
+          output="screen" launch-prefix="$(arg launch_prefix)">
+        <rosparam command="load"
+                  file="$(find glocal_exploration_ros)/config/$(arg planner_config)"/>
+        <remap from="~pointcloud" to="/$(arg mav_name)/Lidar"/>
+        <remap from="odometry" to="/$(arg mav_name)/odom_predictor/predicted_odometry"/>
+        <remap from="command/pose" to="/$(arg mav_name)/command/pose"/>
+        <remap from="~/global_planner/submap_in"
+               to="~/mapping/submap_esdfs"/>
+        <remap from="~/global_planner/submap_pose_in"
+               to="~/mapping/submap_poses"/>
+    </node>
+  
+    <!-- Trajectory Adaptor -->
+    <node name="trajecotry_adaptor" pkg="active_3d_planning_app_reconstruction"
+          type="trajecotry_adaptor" output="screen">
+        <rosparam command="load"
+                  file="$(find glocal_exploration_ros)/config/experiments/kiwi/trajectory_adaptor.yaml"/>
+<!--        <remap from="~/global_planner/submap_in"-->
+<!--               to="~/mapping/submap_esdfs"/>-->
+<!--        <remap from="~/global_planner/submap_pose_in"-->
+<!--               to="~/mapping/submap_poses"/>-->
+    </node>
+  </group>
+
+  <!-- Visualization -->
+  <group if="$(arg show_rviz)">
+      <arg name="rviz_file"
+           default="$(find glocal_exploration_ros)/config/visualization/glocal.rviz"/>
+      <node type="rviz" name="rviz" pkg="rviz" args="-d $(arg rviz_file)"/>
+  </group>
+
+</launch>
