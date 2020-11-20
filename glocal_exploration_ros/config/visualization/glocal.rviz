@@ -335,11 +335,11 @@ Visualization Manager:
         - Class: rviz/Group
           Displays:
             - Class: voxblox_rviz_plugin/VoxbloxMesh
-              Enabled: false
+              Enabled: true
               Name: Sliding window
               Topic: /glocal/glocal_system/mapping/mesh
               Unreliable: false
-              Value: false
+              Value: true
               Visible: true
             - Alpha: 1
               Autocompute Intensity Bounds: true
@@ -353,10 +353,10 @@ Visualization Manager:
               Color: 255; 255; 255
               Color Transformer: Intensity
               Decay Time: 0
-              Enabled: false
+              Enabled: true
               Invert Rainbow: false
               Max Color: 255; 255; 255
-              Max Intensity: 3.6784610748291016
+              Max Intensity: 2
               Min Color: 0; 0; 0
               Min Intensity: 1
               Name: Traversable
@@ -370,7 +370,7 @@ Visualization Manager:
               Unreliable: false
               Use Fixed Frame: true
               Use rainbow: true
-              Value: false
+              Value: true
             - Alpha: 1
               Autocompute Intensity Bounds: true
               Autocompute Value Bounds:
@@ -507,27 +507,50 @@ Visualization Manager:
             - Class: rviz/Group
               Displays:
                 - Class: voxblox_rviz_plugin/VoxbloxMultiMesh
-                  Enabled: false
+                  Enabled: true
                   Name: Separate submaps
                   Topic: /glocal/glocal_system/mapping/separated_mesh
                   Unreliable: false
-                  Value: false
+                  Value: true
                   Visible:
                     Value: true
                     submap_0: true
                     submap_1: true
+                    submap_10: true
+                    submap_11: true
+                    submap_12: true
+                    submap_13: true
+                    submap_14: true
+                    submap_15: true
+                    submap_16: true
+                    submap_17: true
+                    submap_18: true
+                    submap_19: true
                     submap_2: true
+                    submap_20: true
+                    submap_21: true
+                    submap_22: true
+                    submap_23: true
+                    submap_24: true
+                    submap_25: true
+                    submap_26: true
+                    submap_27: true
+                    submap_28: true
+                    submap_29: true
                     submap_3: true
+                    submap_30: true
                     submap_4: true
                     submap_5: true
                     submap_6: true
                     submap_7: true
+                    submap_8: true
+                    submap_9: true
                 - Class: voxblox_rviz_plugin/VoxbloxMesh
-                  Enabled: true
+                  Enabled: false
                   Name: Merged map
                   Topic: /glocal/glocal_system/mapping/mesh
                   Unreliable: false
-                  Value: true
+                  Value: false
                   Visible: true
               Enabled: true
               Name: Mesh
@@ -628,7 +651,7 @@ Visualization Manager:
           Marker Topic: /glocal/glocal_system/local_planner/executed_path
           Name: Executed path
           Namespaces:
-            "": true
+            {}
           Queue Size: 100
           Value: true
       Enabled: true
@@ -783,7 +806,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 0.002676168689504266
+      Distance: 0.001007000100798905
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -798,10 +821,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5497971773147583
+      Pitch: 0.6497970819473267
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.30040299892425537
+      Yaw: 0.36040323972702026
     Saved: ~
 Window Geometry:
   Displays:
