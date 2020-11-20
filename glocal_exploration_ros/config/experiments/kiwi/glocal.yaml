@@ -19,12 +19,12 @@ replan_timeout_velocity: 1.5
 
 region_of_interest:
   type: bounding_box
-  x_min: -200
-  x_max: 200
-  y_min: -200
-  y_max: 200
-  z_min: -100
-  z_max: 100
+  x_min: -2.5
+  x_max: 20
+  y_min: -20
+  y_max: 20
+  z_min: 3
+  z_max: 1
 
 mapping:
   type: voxgraph

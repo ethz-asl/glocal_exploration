@@ -1,7 +1,7 @@
 velocity: 1.0 # m/s
 acceleration: 1.0 # m/s2
-yaw_rate: 1.57 # rad/s
-yaw_acceleration: 1.57 # rad/s2
+yaw_rate: 0.50 # rad/s
+yaw_acceleration: 0.50 # rad/s2
 sampling_rate: 20 # Hz
 republish_paths: false
 check_goal_reached: false
