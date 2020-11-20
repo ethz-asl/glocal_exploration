@@ -23,8 +23,8 @@ region_of_interest:
   x_max: 20
   y_min: -20
   y_max: 20
-  z_min: 3
-  z_max: 1
+  z_min: 1
+  z_max: 3
 
 mapping:
   type: voxgraph

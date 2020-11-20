@@ -18,7 +18,7 @@
 
   <arg name="auto_reset_cam_topics" default="true" />
   <arg name="transform_topic" default="rovio/transform" />
-  <arg name="odometry_topic" default="/$(arg mav_name)/msf_core/odometry"/> <!-- odom_predictor/predicted_odometry / msf_core/odometry -->
+  <arg name="odometry_topic" default="/kiwi/msf_core/odometry"/> <!-- odom_predictor/predicted_odometry / msf_core/odometry -->
   <arg name="global_frame_id" default="world" /> <!-- world vicon map  -->
   <arg name="local_frame_id" default="odom" />   <!--odom vicon: world -->
 
@@ -101,6 +101,7 @@
         <rosparam command="load" file="$(find glocal_exploration_ros)/config/experiments/kiwi/trajectory_adaptor.yaml"/>
         <remap from="odometry_in" to="$(arg odometry_topic)"/>
         <remap from="request_in" to="command/pose"/>
+        <remap from="/glocal/command/trajectory" to="/kiwi/command/trajectory"/>
     </node>
   </group>
 
