@@ -18,7 +18,7 @@
 
   <arg name="auto_reset_cam_topics" default="true" />
   <arg name="transform_topic" default="rovio/transform" />
-  <arg name="odometry_topic" default="/$(arg mav_name)/msf_core/odometry"/> <!-- odom_predictor/predicted_odometry / msf_core/odometry -->
+  <arg name="odometry_topic" default="/kiwi/msf_core/odometry"/> <!-- odom_predictor/predicted_odometry / msf_core/odometry -->
   <arg name="global_frame_id" default="world" /> <!-- world vicon map  -->
   <arg name="local_frame_id" default="odom" />   <!--odom vicon: world -->
 
@@ -46,17 +46,17 @@
   <group ns="$(arg namespace)" >
   
     <!-- ============= Core ============= -->
-    <include file="$(arg dir_launch_files)/mavros_noliro.launch">
+    <include if="false" file="$(arg dir_launch_files)/mavros_noliro.launch">
       <arg name="mav_name" value="$(arg mav_name)" />
     </include>
 
-    <include file="$(arg dir_launch_files)/$(arg state_estimator)_noliro.launch" >
+    <include if="false" file="$(arg dir_launch_files)/$(arg state_estimator)_noliro.launch" >
       <arg name="mav_name" value="$(arg mav_name)" />
       <arg name="local_frame_id" value="$(arg local_frame_id)" />
       <arg name="global_frame_id" value="$(arg global_frame_id)" />
     </include>
 
-    <include file="$(arg dir_launch_files)/mav_nonlinear_mpc_noliro.launch" >
+    <include if="false" file="$(arg dir_launch_files)/mav_nonlinear_mpc_noliro.launch" >
       <arg name="odometry" value="$(arg odometry_topic)" />
       <arg name="mav_name" value="$(arg mav_name)" />
       <arg name="mpc_config_file_name" value="nonlinear_mpc_mbzirc2020" />
@@ -65,14 +65,14 @@
 
 
     <!-- ============= Sensor Drivers ============= -->
-    <include file="$(arg dir_sensor_launch_files)/versavis_cam.launch">
+    <include if="false" file="$(arg dir_sensor_launch_files)/versavis_cam.launch">
       <arg name="mav_name" value="$(arg mav_name)" />
       <arg name="auto_reset_cam_topics" value="$(arg auto_reset_cam_topics)" />
       <arg name="cam0_serial" default="19367007" />
       <arg name="imu_offset_us" value="21719"/>
     </include>
 
-    <include file="$(arg dir_sensor_launch_files)/ouster_lidar.launch">
+    <include if="false" file="$(arg dir_sensor_launch_files)/ouster_lidar.launch">
       <arg name="mav_name" value="$(arg mav_name)" />
     </include>
   </group>
@@ -86,7 +86,7 @@
           output="screen" launch-prefix="$(arg launch_prefix)">
         <rosparam command="load"
                   file="$(find glocal_exploration_ros)/config/$(arg planner_config)"/>
-        <remap from="~pointcloud" to="/$(arg mav_name)/Lidar"/>
+        <remap from="~pointcloud" to="/kiwi/lidar_undistortion/pointcloud_corrected"/>
         <remap from="odometry" to="$(arg odometry_topic)"/>
 <!--        <remap from="command/pose" to="/$(arg mav_name)/command/pose"/>-->
         <remap from="~/global_planner/submap_in"
@@ -101,6 +101,7 @@
         <rosparam command="load" file="$(find glocal_exploration_ros)/config/experiments/kiwi/trajectory_adapter.yaml"/>
         <remap from="odometry_in" to="$(arg odometry_topic)"/>
         <remap from="request_in" to="command/pose"/>
+        <remap from="/glocal/command/trajectory" to="/kiwi/command/trajectory"/>
     </node>
   </group>
 
