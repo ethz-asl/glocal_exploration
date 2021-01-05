@@ -95,10 +95,10 @@
                to="~/mapping/submap_poses"/>
     </node>
   
-    <!-- Trajectory Adaptor -->
-    <node name="trajectory_adaptor" pkg="active_3d_planning_app_reconstruction"
-          type="trajectory_adaptor" output="screen">
-        <rosparam command="load" file="$(find glocal_exploration_ros)/config/experiments/kiwi/trajectory_adaptor.yaml"/>
+    <!-- Trajectory Adapter -->
+    <node name="trajectory_adapter" pkg="active_3d_planning_app_reconstruction"
+          type="trajectory_adapter" output="screen">
+        <rosparam command="load" file="$(find glocal_exploration_ros)/config/experiments/kiwi/trajectory_adapter.yaml"/>
         <remap from="odometry_in" to="$(arg odometry_topic)"/>
         <remap from="request_in" to="command/pose"/>
     </node>
