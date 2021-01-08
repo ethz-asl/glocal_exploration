@@ -19,10 +19,10 @@ replan_timeout_velocity: 1.5
 
 region_of_interest:
   type: bounding_box
-  x_min: -2.5
+  x_min: -20
   x_max: 20
   y_min: -20
-  y_max: 20
+  y_max: 7.5
   z_min: 1
   z_max: 4
 
