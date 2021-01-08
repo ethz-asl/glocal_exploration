@@ -24,7 +24,7 @@ region_of_interest:
   y_min: -20
   y_max: 20
   z_min: 1
-  z_max: 3
+  z_max: 4
 
 mapping:
   type: voxgraph

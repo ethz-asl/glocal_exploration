@@ -52,3 +52,6 @@ CATKIN_IGNORE
 
 # Temporary files
 Notes.txt
+
+# Data
+*.bag
