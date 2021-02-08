@@ -61,7 +61,7 @@ function run_experiment_batch() {
 # ========== Experiment params: FIXED ==========
 # NOTE: The params in this section will be used for all batches.
 # Input and output paths
-home_dir="/home/victor"
+home_dir="/home/unreal"
 
 # Unreal environment
 environment="tunnels"
@@ -76,7 +76,7 @@ duration=20             #min
 # ========== Experiment params: Varying from batch to batch ==========
 # NOTE: One batch will be run for each combination of the params in this section.
 # Planners to run
-declare -a planners=("glocal" "active_3d")
+declare -a planners=("gbplanner")
 # Options: "glocal" "active_3d" "gbplanner"
 
 # Drift levels to use
