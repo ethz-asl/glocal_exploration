@@ -39,10 +39,6 @@ class LidarModel : public SensorModel {
                       std::shared_ptr<Communicator> communicator);
   ~LidarModel() override = default;
 
-  // Legacy method
-  bool getVisibleVoxels(const WayPoint& waypoint, std::vector<Point>* centers,
-                        std::vector<MapBase::VoxelState>* states) override;
-
   void getVisibleUnknownVoxels(const WayPoint& waypoint,
                                voxblox::LongIndexSet* voxels) override;
   void getVisibleUnknownVoxelsAndOptimalYaw(
