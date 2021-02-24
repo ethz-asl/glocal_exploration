@@ -1,14 +1,13 @@
 # glocal_exploration
 Efficient local and global exploration on submap collections with changing past pose estimates.
 
-### Time for Voxiverse v0 (:
-* `mav_voxblox_planning` on branch [hotfix/glocal](https://github.com/ethz-asl/mav_voxblox_planning/tree/hotfix/glocal) (alternatively: [devel/voxgraph_planning](https://github.com/ethz-asl/mav_voxblox_planning/tree/devel/voxgraph_planning)).
-* `asldoc-2019-ma-gasserl` branch [feature/glocal](https://github.com/ethz-asl/asldoc-2019-ma-gasserl/tree/feature/glocal).
-* `voxblox` on branch [feature/temporal_window](https://github.com/ethz-asl/voxblox/tree/feature/temporal_window).
-* `voxgraph` on [feature/temporal_window](https://github.com/ethz-asl/voxgraph/tree/feature/temporal_window).
-
-# Maze demo
-These are just preliminary instructions to setup for development.
+# TODO
+[ ] Clean up code
+[ ] Example to run the maze (maybe also tunnels)
+[ ] Update the maze environment in the data rep. (maybe also add tunnels).
+[ ] Add the reference for the paper
+[ ] Add the logo
+[ ] Update repo description + Readme
 
 ## Installation
 * Install unreal_airsim simulator as described [here](https://github.com/ethz-asl/unreal_airsim#Instalation).
