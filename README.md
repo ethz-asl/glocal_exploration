@@ -2,12 +2,12 @@
 Efficient local and global exploration on submap collections with changing past pose estimates.
 
 # TODO
-[ ] Clean up code
-[ ] Example to run the maze (maybe also tunnels)
-[ ] Update the maze environment in the data rep. (maybe also add tunnels).
-[ ] Add the reference for the paper
-[ ] Add the logo
-[ ] Update repo description + Readme
+- [ ] Clean up code
+- [ ] Example to run the maze (maybe also tunnels)
+- [ ] Update the maze environment in the data rep. (maybe also add tunnels).
+- [ ] Add the reference for the paper
+- [ ] Add the logo
+- [ ] Update repo description + Readme
 
 ## Installation
 * Install unreal_airsim simulator as described [here](https://github.com/ethz-asl/unreal_airsim#Instalation).
