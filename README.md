@@ -1,18 +1,91 @@
-# glocal_exploration
-Efficient local and global exploration on submap collections with changing past pose estimates.
-
 # TODO
-- [ ] Clean up code
+- [x] Clean up code
 - [ ] Example to run the maze (maybe also tunnels)
 - [ ] Update the maze environment in the data rep. (maybe also add tunnels).
-- [ ] Add the reference for the paper
+- [x] Add the reference for the paper
 - [ ] Add the logo
 - [ ] Update repo description + Readme
 
+
+# glocal\_exploration
+**GLocal** is a modular system for efficient *Global* and *Local* exploration planning and mapping in large scale environments accounting for past pose corrections due to state estimation drift. 
+
+# Table of Contents
+**Credits**
+* [Paper and Video](#Paper-and-Video)
+
+**Setup**
+* [Installation](#Installation)
+* [Simulation Environment](#Simulation-Environment)
+* [Data Repository](#Data-Repository)
+
+**Examples**
+* [Exploring the Maze](#Exploring-the-Maze)
+
+
+# Credits
+## Paper and Video
+If you find this package useful for your research, please consider citing our paper:
+
+* **NOTE:** Our paper was accepted for publication in IEEE RA-L, the information below will be updated upon publication. To read the paper please refer to ArXiv at the moment.
+
+* Lukas Schmid, Victor Reijgwart, Lionel Ott, Juan Nieto, Roland Siegwart, and Cesar Cadena, "**A Unified Approach for Autonomous Volumetric Exploration of Large Scale Environments under Severe Odometry Drift**", in *IEEE Robotics and Automation Letters*, 2021 \[IEEE | [ArXiv](https://arxiv.org/abs/1909.09548) | Video\]
+  ```bibtex
+  @ARTICLE{schmid2021glocal,
+    author={L. {Schmid} and V. {Reijgwart} and L. {Ott} and J. {Nieto} and R. {Siegwart} and C. {Cadena}},
+    journal={IEEE Robotics and Automation Letters},
+    title={A Unified Approach for Autonomous Volumetric Exploration of Large Scale Environments under Severe Odometry Drift},
+    year={2021},
+    volume={?},
+    number={?},
+    pages={?},
+    doi={?},
+    month={?},
+  }
+  ```
+
+The local exploration planner is largely based on [mav\_active\_3d\_planning](https://github.com/ethz-asl/mav_active_3d_planning):
+* Lukas Schmid, Michael Pantic, Raghav Khanna, Lionel Ott, Roland Siegwart, and Juan Nieto, "**An Efficient Sampling-based Method for Online Informative Path Planning in Unknown Environments**", in *IEEE Robotics and Automation Letters*, vol. 5, no. 2, pp. 1500-1507, April 2020 \[[IEEE](https://ieeexplore.ieee.org/abstract/document/8968434) | [ArXiv](https://arxiv.org/abs/1909.09548) | [Video](https://www.youtube.com/watch?v=lEadqJ1_8Do)\]
+  ```bibtex
+  @ARTICLE{schmid2020activeplanning,
+    author={L. {Schmid} and M. {Pantic} and R. {Khanna} and L. {Ott} and R. {Siegwart} and J. {Nieto}},
+    journal={IEEE Robotics and Automation Letters},
+    title={An Efficient Sampling-Based Method for Online Informative Path Planning in Unknown Environments},
+    year={2020},
+    volume={5},
+    number={2},
+    pages={1500-1507},
+    doi={10.1109/LRA.2020.2969191},
+    month={April},
+  }
+  ```
+
+The global mapping is largely based on [voxgraph](https://github.com/ethz-asl/voxgraph):
+* Victor Reijgwart, Alexander Millane, Helen Oleynikova, Roland Siegwart, Cesar Cadena and Juan Nieto, "**Voxgraph: Globally Consistent, Volumetric Mapping Using Signed Distance Function Submaps**" in *IEEE Robotics and Automation Letters*, vol. 5, no. 1, pp. 227-234, January 2020 \[[IEEE](https://ieeexplore.ieee.org/document/8903279) | [ArXiv](https://arxiv.org/abs/2004.13154) | [Video](https://youtu.be/N9p1_Fkxxro)\]
+  ```bibtex
+  @ARTICLE{reijgwart2020voxgraph,
+    author={V. {Reijgwart} and A. {Millane} and H. {Oleynikova} and R. {Siegwart} and C. {Cadena} and J. {Nieto}},
+  author={V. {Reijgwart} and A. {Millane} and H. {Oleynikova} and R. {Siegwart} and C. {Cadena} and J. {Nieto}},
+  journal={IEEE Robotics and Automation Letters}, 
+  title={Voxgraph: Globally Consistent, Volumetric Mapping Using Signed Distance Function Submaps}, 
+  year={2020},
+  volume={5},
+  number={1},
+  pages={227-234},
+  doi={10.1109/LRA.2019.2953859},
+  month={January},
+  }
+  ```
+
+# Setup
 ## Installation
 * Install unreal_airsim simulator as described [here](https://github.com/ethz-asl/unreal_airsim#Instalation).
 * Run `git clone git@github.com:ethz-asl/glocal_exploration.git`
 * Run `catkin build glocal_exploration_ros`
+
+## Simulation Environment
+
+## Data Repository
 
 ## First time setup
 * Download the Maze from [here](https://www.polybox.ethz.ch/index.php/s/6vhPDINcISbEogg?path=%2FWorlds).
@@ -24,6 +97,7 @@ Efficient local and global exploration on submap collections with changing past 
   ```
   This step needs to be repeated if other AirSim Settings were used.
   
-## Run
+# Examples
+## Exploring the Maze
 * Start the UE4 Editor with Maze Scenario, play in editor (alt+P), shift+f1 to tab out.
 * Run `roslaunch glocal_exploration_ros run_maze.launch`
