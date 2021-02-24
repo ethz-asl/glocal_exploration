@@ -1,0 +1,37 @@
+<launch>
+  <arg name="data_directory" default="/home/lukas/Documents/Glocal/kiwi_experiments" />
+  <arg name="bag_name" default="vicon_filtered.bag" /> 
+  <!-- garage: 2021-01-08-14-48-42, vicon: 2021-01-08-13-23-17-->
+  <arg name="rate" default="1"/>
+	<arg name="rviz_file" default="$(find glocal_exploration_ros)/config/visualization/replay_kiwi.rviz" />
+  <arg name="replay_glocal" default="true"/>
+
+
+	<!-- Play Rosbag and RVIZ (visualization) -->
+	<node pkg="rosbag" type="play" name="player" output="screen" args="-r $(arg rate) $(arg data_directory)/$(arg bag_name)"/>	
+
+  <node type="rviz" name="rviz" pkg="rviz" args="-d $(arg rviz_file)"/>
+  
+	<!-- Kiwi visualizer -->
+<!--	<node pkg="glocal_exploration_ros" type="kiwi_visualizer.py" name="kiwi_vis" output="screen">-->
+<!--    <remap from="~path_in" to="/glocal/glocal_system/global_planner/executed_path"/>-->
+<!--    <remap from="~path_out" to="/glocal/glocal_system/local_planner/executed_path"/>-->
+<!--	</node>-->
+
+	<!-- Path visualizer -->
+<node pkg="glocal_exploration_ros" type="path_visualizer.py" name="path_vis" output="screen">
+    <remap from="~path_in" to="/glocal/glocal_system/local_planner/executed_path"/>
+    <remap from="~path_in_global" to="/glocal/glocal_system/global_planner/executed_path"/>
+</node>
+
+	<!-- GLocal -->
+    <node name="glocal_system_replay" pkg="glocal_exploration_ros" type="glocal_system_node"  output="screen" if="$(arg replay_glocal)">
+        <rosparam command="load" file="$(find glocal_exploration_ros)/config/experiments/kiwi/glocal_replay.yaml"/>
+        <remap from="~pointcloud" to="/lidar_undistortion/pointcloud_corrected"/>
+    </node>
+    
+   <node name="lidar_undistortion" pkg="lidar_undistortion" type="lidar_undistortion_node" output="screen" if="$(arg replay_glocal)">
+    <remap from="pointcloud" to="/kiwi/os1_cloud_node/points"/>
+  </node>
+
+</launch>
