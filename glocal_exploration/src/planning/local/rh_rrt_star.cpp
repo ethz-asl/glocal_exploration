@@ -473,7 +473,7 @@ bool RHRRTStar::selectBestConnection(ViewPoint* view_point) {
     // Make sure there are no loops in the tree.
     bool is_loop = false;
     ViewPoint* current = view_point->getConnectedViewPoint(i);
-    // TODO(schmluk): Iteration counting is currently back up code to detect
+    // NOTE(schmluk): Iteration counting is currently a back up to detect
     // detached segments and prevent the system from getting stuck.
     int it = tree_data_.points.size();
     while (!current->is_root) {
@@ -661,8 +661,8 @@ void RHRRTStar::visualizeGain(const WayPoint& pose, std::vector<Point>* voxels,
   CHECK_NOTNULL(voxels);
   CHECK_NOTNULL(colors);
   CHECK_NOTNULL(scale);
-  // TODO(schmluk): This is neither beautiful nor efficient but it doesn't get
-  //  called often...
+  // NOTE(schmluk): Simply re-compute the view gains for visualization.
+  // This is neither beautiful nor efficient but it doesn't get called often.
 
   // get voxel indices
   voxblox::LongIndexSet voxels_idx;
