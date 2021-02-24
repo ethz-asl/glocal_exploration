@@ -1,5 +1,4 @@
-# Config for the voxblox node that evaluates the ground truth. The settings should be identical to the ones used in glocal.
-# TODO: maybe we can bind this to the other settings or auto-update it.
+# Config for the voxblox node that evaluates the ground truth. These settings should be identical to the ones used in glocal.
 
 # Glocal (shared) parameters:
 tsdf_voxel_size: 0.2

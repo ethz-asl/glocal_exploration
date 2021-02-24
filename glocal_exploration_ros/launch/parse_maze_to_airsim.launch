@@ -12,5 +12,4 @@
         <param name="target_file_path" value="$(arg target)"/>
         <param name="config_file_path" value="$(arg source)"/>
     </node>
-
 </launch>

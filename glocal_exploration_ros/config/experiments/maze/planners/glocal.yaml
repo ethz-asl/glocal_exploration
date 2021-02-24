@@ -16,7 +16,6 @@ replan_yaw_threshold: 5   # deg
 replan_timeout_constant: 2.0  # turn down to compensate drift more quickly
 replan_timeout_velocity: 1.0
 
-
 region_of_interest:
   type: bounding_box
   x_min: -20
@@ -29,6 +28,7 @@ region_of_interest:
 mapping:
   type: voxgraph
 
+  # General mapping params
   clearing_radius: 1.1
   traversability_radius: *traversability_radius_path_following
   verbosity: 4
@@ -63,19 +63,17 @@ mapping:
   use_missing_points_for_clearing: true
   # Integrator settings temporal window (for compatibility with voxgraph)
   pointcloud_deintegration_queue_length: 140
-  publish_map_every_n_sec: 6 #10 #20.0
+  publish_map_every_n_sec: 6
   publish_map_with_trajectory: true
   publish_tsdf_map: true
   # Visualization
   verbose: false
   color_mode: "lambert" #normals
-#  slice_level: -0.5
   slice_level_follow_robot: true
   publish_pointclouds: false
   publish_traversable: false
   publish_slices: false
   publish_pointclouds_on_update: false
-
 
   # VOXGRAPH
   debug: false
@@ -96,7 +94,6 @@ mapping:
     use_weight_dropoff: true
     use_sparsity_compensation_factor: true
     sparsity_compensation_factor: 20.0
-    # integration_order_mode "sorted"
   measurements:
     submap_registration:
       enabled: true
@@ -131,6 +128,7 @@ mapping:
 local_planner:
   type: rh_rrt_star
   verbosity: 4
+  
   # RH-RRT-Star params
   sampling_range: 7 # m
   min_path_length: 1.0 # m
