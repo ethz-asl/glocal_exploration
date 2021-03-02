@@ -8,7 +8,9 @@
 
 
 # glocal\_exploration
-**GLocal** is a modular system for efficient *Global* and *Local* exploration planning and mapping in large scale environments accounting for past pose corrections due to state estimation drift. 
+**GLocal** is a modular system for efficient *Global* and *Local* exploration planning and mapping in large scale environments, accounting for past pose corrections due to state estimation drift. 
+In a submap-based approach, multiple layers of both mapping and planning are combined to achieve robustness to drift while maintaining efficiency in large scale environments.
+
 
 # Table of Contents
 **Credits**
@@ -22,9 +24,7 @@
 **Examples**
 * [Exploring the Maze](#Exploring-the-Maze)
 
-
-# Credits
-## Paper and Video
+# Paper and Video
 If you find this package useful for your research, please consider citing our paper:
 
 * **NOTE:** Our paper was accepted for publication in IEEE RA-L, the information below will be updated upon publication. To read the paper please refer to ArXiv at the moment.
@@ -65,39 +65,127 @@ The global mapping is largely based on [voxgraph](https://github.com/ethz-asl/vo
   ```bibtex
   @ARTICLE{reijgwart2020voxgraph,
     author={V. {Reijgwart} and A. {Millane} and H. {Oleynikova} and R. {Siegwart} and C. {Cadena} and J. {Nieto}},
-  author={V. {Reijgwart} and A. {Millane} and H. {Oleynikova} and R. {Siegwart} and C. {Cadena} and J. {Nieto}},
-  journal={IEEE Robotics and Automation Letters}, 
-  title={Voxgraph: Globally Consistent, Volumetric Mapping Using Signed Distance Function Submaps}, 
-  year={2020},
-  volume={5},
-  number={1},
-  pages={227-234},
-  doi={10.1109/LRA.2019.2953859},
-  month={January},
+    journal={IEEE Robotics and Automation Letters}, 
+    title={Voxgraph: Globally Consistent, Volumetric Mapping Using Signed Distance Function Submaps}, 
+    year={2020},
+    volume={5},
+    number={1},
+    pages={227-234},
+    doi={10.1109/LRA.2019.2953859},
+    month={January},
   }
   ```
 
-# Setup
-## Installation
-* Install unreal_airsim simulator as described [here](https://github.com/ethz-asl/unreal_airsim#Instalation).
-* Run `git clone git@github.com:ethz-asl/glocal_exploration.git`
-* Run `catkin build glocal_exploration_ros`
+# Installation
+Installation instructions for Linux.
 
-## Simulation Environment
+**Prerequisites**
+
+1. If not already done so, install [ROS](http://wiki.ros.org/ROS/Installation) (Desktop-Full is recommended).
+   
+2. If not already done so, create a catkin workspace with [catkin tools](https://catkin-tools.readthedocs.io/en/latest/):
+    ```shell script    
+    # Create a new workspace
+    sudo apt-get install python-catkin-tools
+    mkdir -p ~/catkin_ws/src
+    cd ~/catkin_ws
+    catkin init
+    catkin config --extend /opt/ros/$ROS_DISTRO
+    catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release
+    catkin config --merge-devel
+    ```
+
+**Installation**
+
+1. Move to your catkin workspace:
+    ```shell script
+    cd ~/catkin_ws/src
+    ```
+
+2. Download repo using a SSH key or via HTTPS:
+    ```shell script
+    git clone git@github.com:ethz-asl/glocal_exploration.git # SSH
+    git clone https://github.com/ethz-asl/glocal_exploration.git # HTTPS
+    ```
+
+3. Install system dependencies:
+    ```shell script
+    sudo apt-get install python-wstool python-catkin-tools TODO
+    ```
+   
+4. Download and install package dependencies using SSH or HTTPS ros install:
+    * If you created a new workspace.
+    ```shell script
+    wstool init . ./glocal_exploration/glocal_exploration_ssh.rosinstall # SSH
+    wstool init . ./glocal_exploration/glocal_exploration_https.rosinstall # HTTPS
+    wstool update
+    ```
+
+    * If you use an existing workspace. Notice that some dependencies require specific branches that will be checked out.
+    ```shell script
+    wstool merge -t . ./glocal_exploration/glocal_exploration_ssh.rosinstall # SSH
+    wstool merge -t . ./glocal_exploration/glocal_exploration_https.rosinstall # HTTPS
+    wstool update
+    ```
+
+5. Compile and source:
+    ```shell script
+    catkin build glocal_exploration_ros
+    source ../devel/setup.bash
+    ```
+
+
+## Simulation Setup
+This step installs the simulation framework based on [Unreal Engine](https://www.unrealengine.com/en-US/) (UE4) and [AirSim](https://microsoft.github.io/AirSim/) used in the example.
+Notice that GLocal can be run with any other simulator or physical robot. 
+If you intend to use another simulation framework the simulation setup can be skipped.
+
+1. The demo can be run using a **binary** or using the UE4 **editor**:
+    * If you want to run the binary step 1 can be skipped.
+      
+      (Recommended if you just want to run the demo.)
+    
+    * If you want to use the editor, follow the steps described [here](https://docs.unrealengine.com/en-US/SharingAndReleasing/Linux/BeginnerLinuxDeveloper/SettingUpAnUnrealWorkflow/index.html) to install Unreal Engine.
+
+      (Recommended if you wish to modify or create simulation worlds.)
+    
+
+2. Install AirSim and the unreal_airsim simulator by following [these instructions](https://github.com/ethz-asl/unreal_airsim#Instalation).
+
+
+3. Setup the simulator config by running:
+      ```
+      roslaunch unreal_airsim parse_config_to_airsim.launch
+      ```
+    **Note:** This step needs to be repeated once the simulator config was changed, e.g. after using AirSim for another project or changing the desired setup in `config/experiments/general/airsim.yaml`.
+
+
+4. Download the maze scenario from the [data repository](#Data-Repository):
+    * Binary: download the directory `Worlds/Maze_AirSim/Binary`.
+    * Editor: download the directory `Worlds/Maze_AirSim/Editor`.
+    
+
+#### Optional: Using custom worlds with AirSim
+To make other UE4 projects compatible with the unreal_airsim simulator,
+1. Copy the folder 'Plugins' from `path/to/AirSim/Unreal/Environments/Blocks` to  `path/to/MyUE4Project` (after the plugin was compiled).
+2. In the UE4 Editor open your project and set the game mode to 'AirSimGameMode'.    
+
 
 ## Data Repository
+Related resources, such as experiment scenarios, can be downloaded from [here](https://www.polybox.ethz.ch/index.php/s/6vhPDINcISbEogg).
 
-## First time setup
-* Download the Maze from [here](https://www.polybox.ethz.ch/index.php/s/6vhPDINcISbEogg?path=%2FWorlds).
-* Copy the folder 'Plugins' from `.../AirSim/Unreal/Environments/Blocks` to  `.../Maze/Editor` (after the plugin is compiled).
-* In the UE4 Editor open the Project 'experiment4' (the Maze), and set the game mode to AirSimGameMode.
-* Setup the simulator config: 
-  ```
-  roslaunch unreal_airsim parse_config_to_airsim.launch source:=/home/$USER/catkin_ws/src/glocal_exploration/glocal_exploration_ros/config/maze_airsim.yaml
-  ```
-  This step needs to be repeated if other AirSim Settings were used.
   
 # Examples
 ## Exploring the Maze
-* Start the UE4 Editor with Maze Scenario, play in editor (alt+P), shift+f1 to tab out.
-* Run `roslaunch glocal_exploration_ros run_maze.launch`
+This demo utilizes the unreal_airsim simulator. If not already done so, follow the steps in [Simulation Setup](#Simulation-Setup) to install the simulator.
+
+1. Start the UE4 simulation:
+    * Binary: Execute `Maze_AirSim/Binary/LinuxNoEditor/Engine/Binaries/Linux/UE4Game-Linux-Shipping` TODO
+    * Editor: Open `Maze_AirSim/Editor/Maze.uproject`, play in editor (Alt+P) and tab out of game control (Shift+F1).
+
+
+2. Start the simulator and planner:
+   `roslaunch glocal_exploration_ros run_glocal.launch`
+   
+An RVIZ window should show up visualizing GLocal at work:
+![demo_maze](https://user-images.githubusercontent.com/36043993/109695326-0be30f80-7b8c-11eb-8e40-e6cef5766f28.png)

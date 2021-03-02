@@ -1,4 +1,5 @@
 <launch>
+    <!-- Arguments -->
     <!-- General arguments -->
     <arg name="debug_mode"
          default="false"
@@ -12,14 +13,14 @@
 
     <!-- Airsim arguments -->
     <arg name="airsim_config" default="experiments/general/airsim.yaml"/>
-    <arg name="drift_config" default="experiments/general/drift/drift_2.yaml"/>
+    <arg name="drift_config" default="experiments/general/drift/drift_moderate.yaml"/>
     <arg name="use_airsim_time" default="true"/>
     <arg name="mav_name" default="airsim_drone"/>
 
     <!-- Experiment arguments -->
     <arg name="record_data" default="false"/>
     <arg name="record_visualization" default="false"/>
-    <arg name="data_path" default="/home/lukas/Documents/Glocal/Data"/>
+    <arg name="data_path" default="/home/user/Glocal/Data"/>
     <arg name="time_limit" default="30"/> <!-- min -->
     <arg name="data_interval" default="30"/>  <!-- sec -->
     <arg name="planner_node_name"
@@ -32,6 +33,7 @@
     <arg if="$(arg debug_mode)" name="launch_prefix"
          value="gdb -ex run --args"/>
 
+    <!-- Launch -->
     <!-- Setup the experiment -->
     <param name="/use_sim_time" value="true" if="$(arg use_airsim_time)"/>
 
