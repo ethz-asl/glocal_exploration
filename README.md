@@ -180,8 +180,8 @@ Related resources, such as experiment scenarios, can be downloaded from [here](h
 This demo utilizes the unreal_airsim simulator. If not already done so, follow the steps in [Simulation Setup](#Simulation-Setup) to install the simulator.
 
 1. Start the UE4 simulation:
-    * Binary: Execute `Maze_AirSim/Binary/LinuxNoEditor/Engine/Binaries/Linux/UE4Game-Linux-Shipping` TODO
-    * Editor: Open `Maze_AirSim/Editor/Maze.uproject`, play in editor (Alt+P) and tab out of game control (Shift+F1).
+    * Binary: Execute `Maze_AirSim/Binary/LinuxNoEditor/Engine/Binaries/Linux/UE4Game-Linux-Shipping` and tab out of game control (Alt+Tab).
+    * Editor: Open `Maze_AirSim/Editor/Maze.uproject`,click play in editor (Alt+P), and tab out of game control (Shift+F1).
 
 
 2. Start the simulator and planner:
