@@ -1,13 +1,3 @@
-# TODO
-- [x] Clean up code
-- [x] Example to run the maze (maybe also tunnels)
-- [ ] Update the maze environment in the data rep. (maybe also add tunnels).
-- [x] Add the reference for the paper
-- [x] Add the logo
-- [x] Update repo description + Readme
-- [ ] update the rosinstalls
-
-
 # glocal\_exploration
 **GLocal** is a modular system for efficient *Global* and *Local* exploration planning and mapping in large scale environments, accounting for past pose corrections due to state estimation drift. 
 In a submap-based approach, multiple layers of both mapping and planning are combined to achieve robustness to drift while maintaining efficiency in large scale environments.
@@ -144,12 +134,14 @@ If you intend to use another simulation framework the simulation setup can be sk
 
 1. The demo can be run using a **binary** or using the UE4 **editor**:
     * If you want to run the binary step 1 can be skipped.
-      
+    
       (Recommended if you just want to run the demo.)
     
     * If you want to use the editor, follow the steps described [here](https://docs.unrealengine.com/en-US/SharingAndReleasing/Linux/BeginnerLinuxDeveloper/SettingUpAnUnrealWorkflow/index.html) to install Unreal Engine.
-
+    
       (Recommended if you wish to modify or create simulation worlds.)
+      
+    **NOTE:** We are aware of the binary not running on certain systems due to graphics drivers issues. We recommend using the editor in this case.
     
 
 2. Install AirSim and the unreal_airsim simulator by following [these instructions](https://github.com/ethz-asl/unreal_airsim#Instalation).
