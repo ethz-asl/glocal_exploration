@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "glocal_exploration/common.h"
+#include "glocal_exploration/state/waypoint.h"
 
 namespace glocal_exploration {
 class Communicator;
@@ -20,6 +21,7 @@ class LocalPlannerBase {
 
   // interface
   virtual void executePlanningIteration() = 0;
+  virtual void resetPlanner(const WayPoint& new_origin) = 0;
 
  protected:
   const std::shared_ptr<Communicator> comm_;

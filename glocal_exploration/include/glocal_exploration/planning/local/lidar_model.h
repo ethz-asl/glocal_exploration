@@ -16,15 +16,17 @@ namespace glocal_exploration {
 class LidarModel : public SensorModel {
  public:
   struct Config : public config_utilities::Config<Config> {
-    double ray_length = 5.0;   // m
-    double vertical_fov = 45;  // Total fields of view [deg], expected symmetric
+    FloatingPoint ray_length = 5.f;  // m
+    // Total fields of view [deg], expected symmetric
+    FloatingPoint vertical_fov = 45.f;
     // w.r.t. sensor facing direction
-    double horizontal_fov = 360;
+    FloatingPoint horizontal_fov = 360.f;
     int vertical_resolution = 64;
     int horizontal_resolution = 1024;
-    double ray_step = 0.1;  // m
-    double downsampling_factor =
-        1.0;  // reduce the number of checks by this factor
+    FloatingPoint ray_step = 0.1f;  // m
+    int num_yaw_samples = 4;
+    // reduce the number of checks by this factor
+    FloatingPoint downsampling_factor = 1.f;
     Transformation T_baselink_sensor;
 
     Config();
@@ -37,28 +39,25 @@ class LidarModel : public SensorModel {
                       std::shared_ptr<Communicator> communicator);
   ~LidarModel() override = default;
 
-  // Legacy method
-  bool getVisibleVoxels(const WayPoint& waypoint,
-                        std::vector<Eigen::Vector3d>* centers,
-                        std::vector<MapBase::VoxelState>* states) override;
-
   void getVisibleUnknownVoxels(const WayPoint& waypoint,
                                voxblox::LongIndexSet* voxels) override;
+  void getVisibleUnknownVoxelsAndOptimalYaw(
+      WayPoint* waypoint, voxblox::LongIndexSet* voxels) override;
 
  protected:
   const Config config_;
 
   // cached constants
-  const double kFovX_;  // fov in rad
-  const double kFovY_;
+  const FloatingPoint kFovX_;  // fov in rad
+  const FloatingPoint kFovY_;
   const int kResolutionX_;  // factual resolution that is used for ray casting
   const int kResolutionY_;
   int c_n_sections_;  // number of ray duplications
-  std::vector<double>
+  std::vector<FloatingPoint>
       c_split_distances_;            // distances where rays are duplicated
   std::vector<int> c_split_widths_;  // number of max distance rays that are
   // covered per split
-  double c_voxel_size_inv_;
+  FloatingPoint c_voxel_size_inv_;
 
   // variables
   Eigen::ArrayXXi ray_table_;
@@ -66,8 +65,8 @@ class LidarModel : public SensorModel {
   // methods
   void markNeighboringRays(int x, int y, int segment, int value);
   // x and y are cylindrical image coordinates scaled to [0, 1]
-  void getDirectionVector(Eigen::Vector3d* result, double relative_x,
-                          double relative_y) const;
+  void getDirectionVector(Point* result, FloatingPoint relative_x,
+                          FloatingPoint relative_y) const;
 };
 
 }  // namespace glocal_exploration

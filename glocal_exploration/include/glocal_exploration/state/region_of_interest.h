@@ -14,7 +14,7 @@ class RegionOfInterest {
   RegionOfInterest() = default;
   virtual ~RegionOfInterest() = default;
 
-  virtual bool contains(const Eigen::Vector3d& point) = 0;
+  virtual bool contains(const Point& point) = 0;
 };
 
 /**
@@ -23,22 +23,23 @@ class RegionOfInterest {
 class BoundingBox : public RegionOfInterest {
  public:
   struct Config : public config_utilities::Config<Config> {
-    double x_min = 0.0;
-    double y_min = 0.0;
-    double z_min = 0.0;
-    double x_max = 0.0;
-    double y_max = 0.0;
-    double z_max = 0.0;
+    FloatingPoint x_min = 0.f;
+    FloatingPoint y_min = 0.f;
+    FloatingPoint z_min = 0.f;
+    FloatingPoint x_max = 0.f;
+    FloatingPoint y_max = 0.f;
+    FloatingPoint z_max = 0.f;
 
     Config();
     void checkParams() const override;
     void fromRosParam() override;
+    void printFields() const override;
   };
 
   explicit BoundingBox(const Config& config);
   ~BoundingBox() override = default;
 
-  bool contains(const Eigen::Vector3d& point) override;
+  bool contains(const Point& point) override;
 
  protected:
   const Config config_;

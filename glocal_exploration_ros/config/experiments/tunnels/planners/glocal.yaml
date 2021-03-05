@@ -1,0 +1,209 @@
+# Config for the Glocal System.
+
+# Global (shared) parameters:
+voxel_size: &voxel_size 0.2
+voxels_per_side: &voxels_per_side 16
+truncation_distance: &truncation_distance 0.6
+traversability_radius_local_planner: &traversability_radius_local_planner 1.5
+traversability_radius_global_planner: &traversability_radius_global_planner 1.4
+traversability_radius_path_following: &traversability_radius_path_following 1.3
+max_ray_length: &max_ray_length 10
+
+# General params
+verbosity: 4
+replan_position_threshold: 0.3  # m, use higher values to compensate drift
+replan_yaw_threshold: 5   # deg
+replan_timeout_constant: 2.0  # turn down to compensate drift more quickly
+replan_timeout_velocity: 1.0
+
+
+region_of_interest:
+  type: bounding_box
+  x_min: -200
+  x_max: 200
+  y_min: -200
+  y_max: 200
+  z_min: -100
+  z_max: 100
+
+mapping:
+  type: voxgraph
+
+  # General mapping params
+  clearing_radius: 1.1
+  traversability_radius: *traversability_radius_path_following
+  verbosity: 4
+
+  # VOXBLOX sliding window
+  # Grid settings
+  tsdf_voxel_size: *voxel_size
+  tsdf_voxels_per_side: *voxels_per_side
+  max_block_distance_from_body: 20
+  # Integrator settings general
+  method: "projective"
+  truncation_distance: *truncation_distance
+  min_ray_length_m: 1.0
+  max_ray_length_m: *max_ray_length
+  # When tuning the max weight, note that it makes integration and deintegration
+  # assymetric. Either choose full symmetry by setting a near-unlimited max
+  # weight, or full assymetry by setting a max weight well below maximum weight
+  # that could theoretically be reached within the sliding window length.
+  # Setting it right on the limit causes issues because both optimistic and
+  # regular traversability checks would fail in areas the robot traversed.
+  max_weight: 1000
+  use_const_weight: true
+  use_weight_dropoff: false
+  use_sparsity_compensation_factor: false
+  max_consecutive_ray_collisions: 1  # Only affects the fast integrator
+  pointcloud_queue_size: 2
+  # Integrator settings projective integrator
+  sensor_horizontal_resolution: 200
+  sensor_vertical_resolution: 32
+  sensor_vertical_field_of_view_degrees: 45
+  integrator_threads: 4
+  use_missing_points_for_clearing: true
+  # Integrator settings temporal window (for compatibility with voxgraph)
+  pointcloud_deintegration_queue_length: 140
+  publish_map_every_n_sec: 6 #10 #20.0
+  publish_map_with_trajectory: true
+  publish_tsdf_map: true
+  # Visualization
+  verbose: false
+  color_mode: "lambert" #normals
+  slice_level_follow_robot: true
+  publish_pointclouds: false
+  publish_traversable: false
+  publish_slices: false
+  publish_pointclouds_on_update: false
+
+
+  # VOXGRAPH
+  debug: false
+  submap_topic: "/glocal/glocal_system/mapping/tsdf_map_out"
+  submap_creation_interval: 6
+  loop_closure_topic_queue_length: 1000
+  submap_topic_queue_length: 10
+  publisher_queue_length: 10
+  input_odom_frame: "odom"
+  input_base_link_frame: "imu"
+  output_odom_frame: "odom"
+  output_base_link_frame: "drone_corrected"
+  output_sensor_frame: "lidar_corrected"
+  tsdf_integrator:
+    truncation_distance: *truncation_distance
+    max_ray_length_m: 12.0
+    use_const_weight: true
+    use_weight_dropoff: true
+    use_sparsity_compensation_factor: true
+    sparsity_compensation_factor: 20.0
+  measurements:
+    submap_registration:
+      enabled: true
+      sampling_ratio: 0.04
+      registration_method: "explicit_to_implicit"
+      information_matrix:
+        x_x:     1.0
+        y_y:     1.0
+        z_z:     1.0
+        yaw_yaw: 1.0
+    odometry:
+      enabled: true
+      information_matrix:
+        x_x:     50.0
+        y_y:     50.0
+        z_z:     100.0
+        yaw_yaw: 100.0
+    height:
+      enabled: false
+      information_zz: 2500.0
+    loop_closure:
+      information_matrix:
+        x_x: 200.0
+        y_y: 200.0
+        z_z: 200.0
+        yaw_yaw: 100.0
+
+  mesh_min_weight: 1.0
+  submap_mesh_color_mode: lambert_color
+  combined_mesh_color_mode: normals
+
+local_planner:
+  type: rh_rrt_star
+  verbosity: 4
+  
+  # RH-RRT-Star params
+  sampling_range: 7 # m
+  min_path_length: 1.0 # m
+  min_sampling_distance: 1.0 # m
+  max_path_length: 3.0  # m
+  path_cropping_length: 0.3 # m
+  max_number_of_neighbors: 30
+  maximum_rewiring_iterations: 100
+  traversability_radius: *traversability_radius_local_planner
+  
+  # Termination
+  reconsideration_time: 2 # s
+  termination_max_gain: 300
+  terminaton_min_tree_size: 0
+  DEBUG_number_of_iterations: -1  # -1 to turn off
+  
+  # Lidar Model
+  ray_length: *max_ray_length  # m
+  vertical_fov: 45  # deg
+  horizontal_fov: 360 # deg
+  vertical_resolution: 1000 # 64 / 32
+  horizontal_resolution: 10000 # 1024 / 200
+  ray_step: 0.4 # m
+  downsampling_factor: 3
+  num_yaw_samples: 4
+  T_baselink_sensor:  # 15 deg pitch
+   - [0.9659258,  0.0000000,  0.2588190, 0.0]
+   - [0.0000000,  1.0000000,  0.0000000, 0.0]
+   - [-0.2588190, 0.0000000,  0.9659258, 0.0]
+   - [0.0,        0.0,        0.0,       1.0]
+   
+  # Visualization
+  visualize_tree: true
+  visualize_gain: true
+  visualize_text: true
+  visualize_visible_voxels: true
+  visualize_executed_path: true  
+ 
+global_planner:
+  type: "skeleton"
+  verbosity: 4
+  
+  # Skeleton Planner
+  use_centroid_clustering: true
+  centroid_clustering_radius: 1.0
+  use_path_verification: true
+  safety_distance: 0.3
+  path_verification_min_distance: 1.0
+  goal_search_steps: 5.0
+  goal_search_step_size: 1.0
+  backtracking_distance_m: 25.0  # Set to -1 to disable
+  max_replan_attempts_to_chosen_frontier: 10
+  max_closest_frontier_search_time_sec: 30
+  
+  # Submap Frontiers Evaluator
+  min_frontier_size: 200
+  submaps_are_frozen: true
+  
+  # Visualization
+  visualize_frontiers: true
+  visualize_frontier_text: true
+  visualize_inactive_frontiers: true
+  visualize_executed_path: true
+  visualize_candidate_goals: true
+  visualize_planned_path: true
+ 
+  # A star search along linked sparse skeleton graph submaps
+  skeleton_a_star:
+    traversability_radius: *traversability_radius_global_planner
+    max_num_a_star_iterations: 10000
+    max_num_start_vertex_candidates: 5
+    max_num_end_vertex_candidates: 5
+    linking_num_nearest_neighbors: 3
+    linking_max_num_submaps: 20
+    linking_max_num_links: 40
+    linking_max_distance: 3.0

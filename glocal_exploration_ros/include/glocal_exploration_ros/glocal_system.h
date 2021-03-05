@@ -19,13 +19,18 @@ class GlocalSystem {
  public:
   struct Config : public config_utilities::Config<Config> {
     int verbosity = 1;
-    double replan_position_threshold = 0.2;  // m
-    double replan_yaw_threshold = 10.0;      // deg
-    double waypoint_timeout = 0.0;           // s
+    FloatingPoint replan_position_threshold = 0.2f;  // m
+    FloatingPoint replan_yaw_threshold = 10.f;       // deg
+    FloatingPoint replan_timeout_constant = 0.f;     // s, wait this long always
+    // add timeout time per distance
+    FloatingPoint replan_timeout_velocity = 0.f;
+    // rate at which to check for imminent collisions
+    FloatingPoint collision_check_period_s = 0.1f;
 
     Config();
     void checkParams() const override;
     void fromRosParam() override;
+    void printFields() const override;
   };
 
   // Constructors.
@@ -39,36 +44,47 @@ class GlocalSystem {
   bool runSrvCallback(std_srvs::SetBool::Request& req,    // NOLINT
                       std_srvs::SetBool::Response& res);  // NOLINT
 
-  // spinning is managed explicitly, run this to start the planner.
+  // Spinning is managed explicitly, run this to start the planner.
   void mainLoop();
 
  protected:
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
 
-  // Subscribers and publishers
+  // Subscribers and publishers.
   ros::Subscriber odom_sub_;
   ros::Publisher target_pub_;
+  ros::Publisher total_planning_cpu_time_pub_;
   ros::ServiceServer run_srv_;
 
-  // Components
+  // Components.
   const Config config_;
   std::shared_ptr<Communicator> comm_;
   std::shared_ptr<LocalPlannerVisualizerBase> local_planner_visualizer_;
   std::shared_ptr<GlobalPlannerVisualizerBase> global_planner_visualizer_;
 
-  // methods
+  // Methods.
   void buildComponents(const ros::NodeHandle& nh);
   bool startExploration();
   void loopIteration();
   void publishTargetPose();
+  void performCollisionAvoidance();
 
-  // variables
-  Eigen::Vector3d current_position_;  // current/goal poses are in odom frame.
+  // Variables.
+  Point current_position_;  // current/goal poses are in odom frame.
   Eigen::Quaterniond current_orientation_;
-  Eigen::Vector3d target_position_;
-  double target_yaw_;                     // rad
-  ros::Time time_last_waypoint_started_;  // track waypoint timeout.
+  Point target_position_;
+  FloatingPoint target_yaw_;             // rad
+  FloatingPoint last_waypoint_timeout_;  // s
+  ros::Time last_waypoint_published_;
+  double total_planning_cpu_time_s_;
+
+  // Collision avoidance
+  ros::Duration collision_check_period_;
+  ros::Timer collision_check_timer_;
+  ros::Time collision_check_last_timestamp_;
+  bool signal_collision_avoidance_triggered_;
+  ros::Publisher collision_avoidance_pub_;
 };
 
 }  // namespace glocal_exploration

@@ -21,11 +21,14 @@ class SkeletonVisualizer : public GlobalPlannerVisualizerBase {
   struct Config : public config_utilities::Config<Config> {
     std::string nh_namespace = "skeleton_planner_visualizer";
     bool visualize_frontiers = true;
-    bool visualize_inactive_frontiers = false;
+    bool visualize_frontier_text = true;
     bool visualize_executed_path = true;
     bool visualize_candidate_goals = true;
     bool visualize_planned_path = true;
-    int n_frontier_colors = 20;
+    bool visualize_path_search = true;
+    bool visualize_inactive_frontiers = true;
+    bool visualize_skeleton_submaps = true;
+    bool keep_visualizations = false;  // Keep even after finishing paths.
 
     Config();
     void checkParams() const override;
@@ -41,11 +44,17 @@ class SkeletonVisualizer : public GlobalPlannerVisualizerBase {
   // Visualization tasks.
   void visualizeExecutedPath();
   void visualizeFrontiers();
+  void visualizeInactiveFrontiers();
+  void visualizeFrontierText();
   void visualizePlannedPath();
+  void visualizePathSearch();
   void visualizeGoalPoints();
+  void visualizeSkeletonSubmaps();
 
  private:
-  void visualizeFrontier(const Frontier& frontier, unsigned int* id);
+  std::string frontierTextFormat(FloatingPoint value) const;
+  bool getVertexPositionMsg(const GlobalVertexId& global_vertex_id,
+                            geometry_msgs::Point* position_msg);
 
  private:
   const Config config_;
@@ -54,15 +63,19 @@ class SkeletonVisualizer : public GlobalPlannerVisualizerBase {
   ros::Publisher frontier_pub_;
   ros::Publisher executed_path_pub_;
   ros::Publisher planned_path_pub_;
+  ros::Publisher path_search_pub_;
   ros::Publisher goals_pub_;
+  ros::Publisher frontier_text_pub_;
+  ros::Publisher inactive_frontiers_pub_;
+  ros::Publisher skeleton_submaps_pub_;
 
   // Tracking.
-  int frontier_msg_id_;
   int executed_path_id_ = 0;
 
   // Settings.
-  std::vector<voxblox::Color> color_list_;
   const std::string frame_id_ = "mission";
+  const int queue_size_ = 100;
+  const ros::Duration failed_timeout_ = ros::Duration(10.0);  // s
 };
 
 }  // namespace glocal_exploration

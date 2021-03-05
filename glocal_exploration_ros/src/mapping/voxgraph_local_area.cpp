@@ -1,42 +1,37 @@
 #include "glocal_exploration_ros/mapping/voxgraph_local_area.h"
 
-#include <algorithm>
-
 #include <pcl/conversions.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <voxblox/utils/evaluation_utils.h>
 #include <voxblox_ros/ptcloud_vis.h>
+
+#include <glocal_exploration/utils/set_utils.h>
 
 namespace glocal_exploration {
 
 void VoxgraphLocalArea::update(
     const voxgraph::VoxgraphSubmapCollection& submap_collection,
+    const VoxgraphSpatialHash& spatial_submap_id_hash,
     const voxblox::EsdfMap& local_map) {
-  // Get bounding box of local map
-  voxgraph::BoundingBox local_map_aabb;
-  voxblox::BlockIndexList local_map_blocks;
-  local_map.getEsdfLayer().getAllAllocatedBlocks(&local_map_blocks);
-  for (const voxblox::BlockIndex& block_index : local_map_blocks) {
-    local_map_aabb.min =
-        local_map_aabb.min.cwiseMin(local_area_layer_.block_size() *
-                                    block_index.cast<voxblox::FloatingPoint>());
-    local_map_aabb.max = local_map_aabb.max.cwiseMax(
-        local_area_layer_.block_size() *
-        (block_index.cast<voxblox::FloatingPoint>() + Point::Ones()));
+  // Update the transform from the odom to a fixed (non-robocentric) frame
+  if (submap_collection.empty()) {
+    return;
   }
+  fixed_frame_transformer_.update(
+      submap_collection.getSubmap(submap_collection.getFirstSubmapId())
+          .getPose());
 
   // Find the submaps that currently overlap with the local map
   SubmapIdSet current_neighboring_submaps;
-  for (const voxgraph::VoxgraphSubmap::ConstPtr& submap_in_global_map :
-       submap_collection.getSubmapConstPtrs()) {
-    const SubmapId submap_id = submap_in_global_map->getID();
-    if (submap_id == submap_collection.getActiveSubmapID()) {
-      // Exclude the active submap since its TSDF might not yet be finished
-      continue;
-    }
-    if (local_map_aabb.overlapsWith(
-            submap_in_global_map->getMissionFrameSubmapAabb())) {
-      current_neighboring_submaps.emplace(submap_id);
+  voxblox::BlockIndexList local_map_block_list;
+  local_map.getEsdfLayer().getAllAllocatedBlocks(&local_map_block_list);
+  for (const voxblox::BlockIndex& block_index : local_map_block_list) {
+    const voxblox::Point t_O_block = voxblox::getCenterPointFromGridIndex(
+        block_index, local_map.block_size());
+    for (const voxgraph::SubmapID submap_id :
+         spatial_submap_id_hash.getSubmapsAtPosition(t_O_block)) {
+      current_neighboring_submaps.insert(submap_id);
     }
   }
 
@@ -47,21 +42,24 @@ void VoxgraphLocalArea::update(
   }
 
   // Flag submaps that just started overlapping for integration
-  SubmapIdSet submaps_to_integrate =
-      setDifference(current_neighboring_submaps, old_neighboring_submaps);
+  SubmapIdSet submaps_to_integrate = set_utils::setDifference(
+      current_neighboring_submaps, old_neighboring_submaps);
 
   // Flag submaps that no longer overlap for deintegration
-  SubmapIdSet submaps_to_deintegrate =
-      setDifference(old_neighboring_submaps, current_neighboring_submaps);
+  SubmapIdSet submaps_to_deintegrate = set_utils::setDifference(
+      old_neighboring_submaps, current_neighboring_submaps);
 
   // Flag submaps that still overlap for reintegration if they moved
   {
-    SubmapIdSet potential_submaps_to_reintegrate =
-        setIntersection(old_neighboring_submaps, current_neighboring_submaps);
-    for (const SubmapId& submap_id : potential_submaps_to_reintegrate) {
-      Transformation new_submap_pose;
-      CHECK(submap_collection.getSubmapPose(submap_id, &new_submap_pose));
-      if (submapPoseChanged(submap_id, new_submap_pose)) {
+    SubmapIdSet potential_submaps_to_reintegrate = set_utils::setIntersection(
+        old_neighboring_submaps, current_neighboring_submaps);
+    for (const SubmapId submap_id : potential_submaps_to_reintegrate) {
+      Transformation T_O_submap_new;
+      CHECK(submap_collection.getSubmapPose(submap_id, &T_O_submap_new));
+      const Transformation T_F_submap_new =
+          fixed_frame_transformer_.transformFromOdomToFixedFrame(
+              T_O_submap_new);
+      if (submapPoseChanged(submap_id, T_F_submap_new)) {
         submaps_to_deintegrate.emplace(submap_id);
         submaps_to_integrate.emplace(submap_id);
       }
@@ -79,10 +77,12 @@ void VoxgraphLocalArea::update(
   for (const SubmapId& submap_id : submaps_to_integrate) {
     const voxgraph::VoxgraphSubmap& submap =
         submap_collection.getSubmap(submap_id);
-    const Transformation& submap_pose = submap.getPose();
+    const Transformation T_F_submap =
+        fixed_frame_transformer_.transformFromOdomToFixedFrame(
+            submap.getPose());
     const voxblox::Layer<TsdfVoxel>& submap_tsdf =
         submap.getTsdfMap().getTsdfLayer();
-    integrateSubmap(submap_id, submap_pose, submap_tsdf);
+    integrateSubmap(submap_id, T_F_submap, submap_tsdf);
   }
 }
 
@@ -113,9 +113,11 @@ void VoxgraphLocalArea::prune() {
 }
 
 VoxgraphLocalArea::VoxelState VoxgraphLocalArea::getVoxelStateAtPosition(
-    const Eigen::Vector3d& position) {
-  TsdfVoxel* voxel_ptr = local_area_layer_.getVoxelPtrByCoordinates(
-      position.cast<voxblox::FloatingPoint>());
+    const Point& position) {
+  const voxblox::Point t_F_position =
+      fixed_frame_transformer_.transformFromOdomToFixedFrame(position);
+  TsdfVoxel* voxel_ptr =
+      local_area_layer_.getVoxelPtrByCoordinates(t_F_position);
   if (voxel_ptr) {
     if (voxel_ptr->weight > kTsdfObservedWeight) {
       if (voxel_ptr->distance > local_area_layer_.voxel_size()) {
@@ -128,10 +130,19 @@ VoxgraphLocalArea::VoxelState VoxgraphLocalArea::getVoxelStateAtPosition(
   return VoxelState::kUnknown;
 }
 
+bool VoxgraphLocalArea::isObserved(const Point& position) {
+  const voxblox::Point t_F_position =
+      fixed_frame_transformer_.transformFromOdomToFixedFrame(position);
+  TsdfVoxel* voxel_ptr =
+      local_area_layer_.getVoxelPtrByCoordinates(t_F_position);
+  return voxel_ptr && voxblox::utils::isObservedVoxel(*voxel_ptr);
+}
+
 void VoxgraphLocalArea::publishLocalArea(ros::Publisher local_area_pub) {
   pcl::PointCloud<pcl::PointXYZI> local_area_pointcloud_msg;
   local_area_pointcloud_msg.header.stamp = ros::Time::now().toNSec() / 1000ull;
-  local_area_pointcloud_msg.header.frame_id = "odom";
+  local_area_pointcloud_msg.header.frame_id =
+      fixed_frame_transformer_.getFixedFrameId();
 
   voxblox::BlockIndexList block_indices;
   local_area_layer_.getAllAllocatedBlocks(&block_indices);
@@ -160,18 +171,22 @@ void VoxgraphLocalArea::publishLocalArea(ros::Publisher local_area_pub) {
 void VoxgraphLocalArea::deintegrateSubmap(
     const SubmapId submap_id, const voxblox::Layer<TsdfVoxel>& submap_tsdf) {
   const auto& submap_it = submaps_in_local_area_.find(submap_id);
-  CHECK(submap_it != submaps_in_local_area_.end());
-  const Transformation& submap_pose = submap_it->second;
-  integrateSubmap(submap_id, submap_pose, submap_tsdf, true);
+  CHECK(submap_it != submaps_in_local_area_.end())
+      << "Could not find submap with ID: " << submap_id;
+  const Transformation& T_F_submap_old = submap_it->second;
+  integrateSubmap(submap_id, T_F_submap_old, submap_tsdf, true);
 }
 
 void VoxgraphLocalArea::integrateSubmap(
     const SubmapId submap_id,
-    const VoxgraphLocalArea::Transformation& submap_pose,
+    const VoxgraphLocalArea::Transformation& T_F_submap,
     const voxblox::Layer<TsdfVoxel>& submap_tsdf, const bool deintegrate) {
+  LOG(INFO) << "Local area: " << (deintegrate ? "Deintegrating" : "Integrating")
+            << " submap " << submap_id;
+
   voxblox::Layer<TsdfVoxel> world_frame_submap_tsdf(
       submap_tsdf.voxel_size(), submap_tsdf.voxels_per_side());
-  voxblox::transformLayer(submap_tsdf, submap_pose, &world_frame_submap_tsdf);
+  voxblox::transformLayer(submap_tsdf, T_F_submap, &world_frame_submap_tsdf);
 
   voxblox::BlockIndexList submap_blocks;
   world_frame_submap_tsdf.getAllAllocatedBlocks(&submap_blocks);
@@ -215,51 +230,29 @@ void VoxgraphLocalArea::integrateSubmap(
   if (deintegrate) {
     submaps_in_local_area_.erase(submap_id);
   } else {
-    submaps_in_local_area_.emplace(submap_id, submap_pose);
+    submaps_in_local_area_.emplace(submap_id, T_F_submap);
   }
 }
 
 bool VoxgraphLocalArea::submapPoseChanged(
     const VoxgraphLocalArea::SubmapId submap_id,
-    const VoxgraphLocalArea::Transformation& new_submap_pose) {
+    const VoxgraphLocalArea::Transformation& T_F_submap_new) {
   const auto& submap_old_it = submaps_in_local_area_.find(submap_id);
   if (submap_old_it == submaps_in_local_area_.end()) {
     LOG(WARNING) << "Requested whether a submap moved even though it has not "
                     "yet been integrated. This should never happen.";
     return false;
   }
-  const Transformation& submap_pose_old = submap_old_it->second;
+  const Transformation& T_F_submap_old = submap_old_it->second;
 
-  const Transformation pose_delta = submap_pose_old.inverse() * new_submap_pose;
-  const voxblox::FloatingPoint angle_delta = pose_delta.log().tail<3>().norm();
-  const voxblox::FloatingPoint translation_delta =
-      pose_delta.log().head<3>().norm();
-  constexpr voxblox::FloatingPoint kAngleThresholdRad = 0.0523599;  // 3 degrees
-  const voxblox::FloatingPoint translation_threshold =
-      local_area_layer_.voxel_size();
+  const Transformation pose_delta = T_F_submap_old.inverse() * T_F_submap_new;
+  const FloatingPoint angle_delta = pose_delta.log().tail<3>().norm();
+  const FloatingPoint translation_delta = pose_delta.log().head<3>().norm();
+  constexpr FloatingPoint kAngleThresholdRad = 0.0523599f;  // 3 degrees
+  const FloatingPoint translation_threshold = local_area_layer_.voxel_size();
 
   return (translation_threshold < translation_delta ||
           kAngleThresholdRad < angle_delta);
-}
-
-VoxgraphLocalArea::SubmapIdSet VoxgraphLocalArea::setDifference(
-    const VoxgraphLocalArea::SubmapIdSet& positive_set,
-    const VoxgraphLocalArea::SubmapIdSet& negative_set) {
-  SubmapIdSet result_set;
-  std::set_difference(positive_set.begin(), positive_set.end(),
-                      negative_set.begin(), negative_set.end(),
-                      std::inserter(result_set, result_set.end()));
-  return result_set;
-}
-
-VoxgraphLocalArea::SubmapIdSet VoxgraphLocalArea::setIntersection(
-    const VoxgraphLocalArea::SubmapIdSet& first_set,
-    const VoxgraphLocalArea::SubmapIdSet& second_set) {
-  SubmapIdSet result_set;
-  std::set_intersection(first_set.begin(), first_set.end(), second_set.begin(),
-                        second_set.end(),
-                        std::inserter(result_set, result_set.end()));
-  return result_set;
 }
 
 }  // namespace glocal_exploration

@@ -47,7 +47,9 @@ RHRRTStarVisualizer::RHRRTStarVisualizer(
 
 void RHRRTStarVisualizer::visualize() {
   // Visualize only if a new waypoint was requested.
-  if (!comm_->newWayPointIsRequested()) {
+  if (!comm_->newWayPointIsRequested() &&
+      comm_->stateMachine()->currentState() ==
+          StateMachine::State::kLocalPlanning) {
     return;
   }
 
@@ -66,31 +68,26 @@ void RHRRTStarVisualizer::visualize() {
     msg.color.b = 0.8;
     msg.action = visualization_msgs::Marker::ADD;
     geometry_msgs::Point pt;
-    pt.x = comm_->getPreviousWayPoint().x;
-    pt.y = comm_->getPreviousWayPoint().y;
-    pt.z = comm_->getPreviousWayPoint().z;
+    tf::pointEigenToMsg(comm_->getPreviousWayPoint().position.cast<double>(),
+                        pt);
     msg.points.push_back(pt);
-    pt.x = comm_->getRequestedWayPoint().x;
-    pt.y = comm_->getRequestedWayPoint().y;
-    pt.z = comm_->getRequestedWayPoint().z;
+    tf::pointEigenToMsg(comm_->getRequestedWayPoint().position.cast<double>(),
+                        pt);
     msg.points.push_back(pt);
     path_pub_.publish(msg);
   }
 
   // initialize data
   auto& points = planner_->getTreeData().points;
-  if (points.empty()) {
-    return;
-  }
 
   // cached headers for all msgs
   timestamp_ = ros::Time::now();
 
   // Find min and max gain and value and other required data.
-  double max_value = std::numeric_limits<double>::min();
-  double min_value = std::numeric_limits<double>::max();
-  double max_gain = std::numeric_limits<double>::min();
-  double min_gain = std::numeric_limits<double>::max();
+  FloatingPoint max_value = std::numeric_limits<FloatingPoint>::min();
+  FloatingPoint min_value = std::numeric_limits<FloatingPoint>::max();
+  FloatingPoint max_gain = std::numeric_limits<FloatingPoint>::min();
+  FloatingPoint min_gain = std::numeric_limits<FloatingPoint>::max();
   for (const auto& point : points) {
     if (point->value >= max_value) {
       max_value = point->value;
@@ -179,8 +176,8 @@ void RHRRTStarVisualizer::visualize() {
 }
 
 void RHRRTStarVisualizer::visualizeValue(const RHRRTStar::ViewPoint& point,
-                                         double min_value, double max_value,
-                                         int id) {
+                                         FloatingPoint min_value,
+                                         FloatingPoint max_value, int id) {
   // Setup marker message
   auto msg = visualization_msgs::Marker();
   msg.header.frame_id = frame_id_;
@@ -195,7 +192,7 @@ void RHRRTStarVisualizer::visualizeValue(const RHRRTStar::ViewPoint& point,
   if (!point.is_root) {
     // Color according to relative value (blue when indifferent)
     if (max_value != min_value) {
-      double frac = (point.value - min_value) / (max_value - min_value);
+      FloatingPoint frac = (point.value - min_value) / (max_value - min_value);
       msg.color.r = std::min((0.5 - frac) * 2.0 + 1.0, 1.0);
       msg.color.g = std::min((frac - 0.5) * 2.0 + 1.0, 1.0);
       msg.color.b = 0.0;
@@ -207,16 +204,13 @@ void RHRRTStarVisualizer::visualizeValue(const RHRRTStar::ViewPoint& point,
 
     // points
     geometry_msgs::Point pt;
-    const Eigen::Vector3d& start = point.pose.position();
-    pt.x = start.x();
-    pt.y = start.y();
-    pt.z = start.z();
+    pt.x = point.pose.position.x();
+    pt.y = point.pose.position.y();
+    pt.z = point.pose.position.z();
     msg.points.push_back(pt);
-    RHRRTStar::ViewPoint* viewpoint_end =
-        point.getConnectedViewPoint(point.active_connection);
+    RHRRTStar::ViewPoint* viewpoint_end = point.getActiveViewPoint();
     if (viewpoint_end) {
-      const Eigen::Vector3d& end = viewpoint_end->pose.position();
-      tf::pointEigenToMsg(end, pt);
+      tf::pointEigenToMsg(viewpoint_end->pose.position.cast<double>(), pt);
     } else {
       LOG(WARNING) << "Tried to visualize a view point without valid "
                       "connected view point.";
@@ -231,8 +225,8 @@ void RHRRTStarVisualizer::visualizeValue(const RHRRTStar::ViewPoint& point,
 }
 
 void RHRRTStarVisualizer::visualizeGain(const RHRRTStar::ViewPoint& point,
-                                        double min_gain, double max_gain,
-                                        int id) {
+                                        FloatingPoint min_gain,
+                                        FloatingPoint max_gain, int id) {
   auto msg = visualization_msgs::Marker();
   msg.header.frame_id = frame_id_;
   msg.header.stamp = timestamp_;
@@ -242,9 +236,7 @@ void RHRRTStarVisualizer::visualizeGain(const RHRRTStar::ViewPoint& point,
   msg.scale.x = 0.2;
   msg.scale.y = 0.1;
   msg.scale.z = 0.1;
-  msg.pose.position.x = point.pose.x;
-  msg.pose.position.y = point.pose.y;
-  msg.pose.position.z = point.pose.z;
+  tf::pointEigenToMsg(point.pose.position.cast<double>(), msg.pose.position);
   tf2::Quaternion q;
   q.setRPY(0, 0, point.pose.yaw);
   msg.pose.orientation.w = q.w();
@@ -254,7 +246,7 @@ void RHRRTStarVisualizer::visualizeGain(const RHRRTStar::ViewPoint& point,
 
   // Color according to relative value (blue when indifferent)
   if (min_gain != max_gain) {
-    double frac = (point.gain - min_gain) / (max_gain - min_gain);
+    FloatingPoint frac = (point.gain - min_gain) / (max_gain - min_gain);
     msg.color.r = std::min((0.5 - frac) * 2.0 + 1.0, 1.0);
     msg.color.g = std::min((frac - 0.5) * 2.0 + 1.0, 1.0);
     msg.color.b = 0.0;
@@ -279,20 +271,18 @@ void RHRRTStarVisualizer::visualizeText(const RHRRTStar::ViewPoint& point,
   msg.color.g = 0.0f;
   msg.color.b = 0.0f;
   msg.color.a = 1.0;
-  msg.pose.position.x = point.pose.x;
-  msg.pose.position.y = point.pose.y;
-  msg.pose.position.z = point.pose.z;
-  double g = point.gain;
-  double c;
+  tf::pointEigenToMsg(point.pose.position.cast<double>(), msg.pose.position);
+  FloatingPoint g = point.gain;
+  FloatingPoint c;
   const RHRRTStar::Connection* active_connection = point.getActiveConnection();
   if (active_connection) {
     c = active_connection->cost;
   } else {
     LOG(WARNING) << "Tried to visualize a view point without valid "
                     "active connection.";
-    c = -1.0;
+    c = -1.f;
   }
-  double v = point.value;
+  FloatingPoint v = point.value;
   std::stringstream stream;
   stream << "g: " << std::fixed << std::setprecision(1)
          << (g > 1000 ? g / 1000 : g) << (g > 1000 ? "k" : "")
@@ -310,8 +300,8 @@ void RHRRTStarVisualizer::visualizeVisibleVoxels(
   // NOTE(schmluk): This could also be a single message of type cube array but
   // that won't display properly on my rviz.
   auto result = visualization_msgs::MarkerArray();
-  std::vector<Eigen::Vector3d> voxels, colors;
-  double scale;
+  std::vector<Point> voxels, colors;
+  FloatingPoint scale;
   planner_->visualizeGain(point.pose, &voxels, &colors, &scale);
 
   // add voxels

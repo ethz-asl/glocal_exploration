@@ -1,0 +1,35 @@
+<launch>
+    <!-- Source Data -->
+    <arg name="target_directory" default="/home/lukas/Documents/Glocal/Data"/>
+    <arg name="evaluation_config" default="evaluation/maze.yaml"/>
+    <arg name="method" default="recent"/>
+
+    <!-- What to evaluate -->
+    <arg name="series" default="false"/>
+    <arg name="evaluate" default="true"/>
+    <arg name="create_plots" default="true"/>
+    <arg name="clear_voxblox_maps"
+         default="false"/>    <!-- automatic irreversible(!) map removal to free disk space -->
+
+
+    <!-- Evaluation manager does the interactions, voxblox_code is wrapped inseparate node. -->
+    <node name="evaluation_manager" pkg="glocal_exploration_ros"
+          type="evaluation_manager.py" output="screen" required="true">
+        <rosparam command="load"
+                  file="$(find glocal_exploration_ros)/config/$(arg evaluation_config)"/>
+        <param name="target_directory" value="$(arg target_directory)"/>
+        <param name="method" value="$(arg method)"/>
+        <param name="ns_eval_voxblox_node" value="/voxblox_evaluation_node"/>
+        <param name="evaluate" value="$(arg evaluate)"/>
+        <param name="series" value="$(arg series)"/>
+        <param name="create_plots" value="$(arg create_plots)"/>
+        <param name="clear_voxblox_maps" value="$(arg clear_voxblox_maps)"/>
+    </node>
+
+    <node name="voxblox_evaluation_node" pkg="glocal_exploration_ros"
+          type="voxblox_evaluation_node" output="screen">
+        <rosparam command="load"
+                  file="$(find glocal_exploration_ros)/config/$(arg evaluation_config)"/>
+        <param name="evaluate" value="$(arg evaluate)"/>
+    </node>
+</launch>

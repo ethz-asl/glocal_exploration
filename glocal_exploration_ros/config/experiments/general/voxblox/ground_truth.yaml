@@ -1,0 +1,15 @@
+# Config for the voxblox node that evaluates the ground truth. These settings should be identical to the ones used in glocal.
+
+# Glocal (shared) parameters:
+tsdf_voxel_size: 0.2
+tsdf_voxels_per_side: 16
+truncation_distance: 0.6
+max_ray_length_m: 10
+
+# Voxblox independent params:
+use_tf_transforms: true
+world_frame: mission
+sensor_frame: airsim_drone/Lidar_ground_truth
+update_mesh_every_n_sec: 99999
+method: fast
+verbose: false

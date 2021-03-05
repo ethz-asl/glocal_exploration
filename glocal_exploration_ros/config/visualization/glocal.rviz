@@ -1,18 +1,20 @@
 Panels:
   - Class: rviz/Displays
-    Help Height: 78
+    Help Height: 0
     Name: Displays
     Property Tree Widget:
       Expanded:
         - /Sensors1/Lidar1
-        - /Voxblox1/Mesh1
         - /Voxgraph1
         - /Voxgraph1/Local1
         - /Voxgraph1/Global1
+        - /Voxgraph1/Global1/Mesh1
         - /Local planner1
         - /Global planner1
-      Splitter Ratio: 0.7823529243469238
-    Tree Height: 728
+        - /Global planner1/Submap skeletons1/Namespaces1
+        - /Simulation1/Place recognition1
+      Splitter Ratio: 0.779411792755127
+    Tree Height: 502
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -31,7 +33,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: Frontiers
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -40,7 +42,7 @@ Visualization Manager:
   Class: ""
   Displays:
     - Alpha: 0.5
-      Cell Size: 1
+      Cell Size: 10
       Class: rviz/Grid
       Color: 160; 160; 164
       Enabled: false
@@ -54,22 +56,43 @@ Visualization Manager:
         Y: 0
         Z: 0
       Plane: XY
-      Plane Cell Count: 10
+      Plane Cell Count: 100
       Reference Frame: <Fixed Frame>
+      Value: false
+    - Class: rviz/Axes
+      Enabled: false
+      Length: 0.5
+      Name: Drone GT
+      Radius: 0.15000000596046448
+      Reference Frame: airsim_drone_ground_truth
       Value: false
     - Class: rviz/Axes
       Enabled: true
       Length: 0.5
-      Name: Drone_gt
-      Radius: 0.15000000596046448
+      Name: Drone drifting
+      Radius: 0.30000001192092896
       Reference Frame: airsim_drone
       Value: true
+    - Class: rviz/Axes
+      Enabled: false
+      Length: 0.5
+      Name: LiDAR drifting
+      Radius: 0.30000001192092896
+      Reference Frame: airsim_drone/Lidar
+      Value: false
     - Class: rviz/Axes
       Enabled: true
       Length: 1
       Name: Origin
       Radius: 0.05000000074505806
       Reference Frame: <Fixed Frame>
+      Value: true
+    - Class: rviz/Axes
+      Enabled: true
+      Length: 1
+      Name: Initial pose
+      Radius: 0.05000000074505806
+      Reference Frame: initial_pose
       Value: true
     - Class: rviz/Group
       Displays:
@@ -110,10 +133,10 @@ Visualization Manager:
         - Class: voxblox_rviz_plugin/VoxbloxMesh
           Enabled: true
           Name: Mesh
-          Reset Mesh: false
           Topic: /glocal/glocal_system/mapping/mesh
           Unreliable: true
           Value: true
+          Visible: true
         - Class: rviz/MarkerArray
           Enabled: false
           Marker Topic: /planner/glocal_system/mapping/occupied_nodes
@@ -311,11 +334,11 @@ Visualization Manager:
             - Class: voxblox_rviz_plugin/VoxbloxMesh
               Enabled: true
               Name: Sliding window
-              Reset Mesh: false
               Topic: /glocal/glocal_system/mapping/mesh
               Unreliable: false
               Value: true
-            - Alpha: 0.5
+              Visible: true
+            - Alpha: 1
               Autocompute Intensity Bounds: true
               Autocompute Value Bounds:
                 Max Value: 10
@@ -330,16 +353,16 @@ Visualization Manager:
               Enabled: false
               Invert Rainbow: false
               Max Color: 255; 255; 255
-              Max Intensity: 3.726989269256592
+              Max Intensity: 3.6784610748291016
               Min Color: 0; 0; 0
-              Min Intensity: 1.399999976158142
+              Min Intensity: 1
               Name: Traversable
               Position Transformer: XYZ
               Queue Size: 10
               Selectable: true
-              Size (Pixels): 3
+              Size (Pixels): 8
               Size (m): 0.20000000298023224
-              Style: Points
+              Style: Boxes
               Topic: /glocal/glocal_system/mapping/traversable
               Unreliable: false
               Use Fixed Frame: true
@@ -375,7 +398,67 @@ Visualization Manager:
               Use Fixed Frame: true
               Use rainbow: true
               Value: false
-          Enabled: false
+            - Alpha: 0.5
+              Autocompute Intensity Bounds: false
+              Autocompute Value Bounds:
+                Max Value: 10
+                Min Value: -10
+                Value: true
+              Axis: Z
+              Channel Name: intensity
+              Class: rviz/PointCloud2
+              Color: 255; 255; 255
+              Color Transformer: Intensity
+              Decay Time: 0
+              Enabled: false
+              Invert Rainbow: false
+              Max Color: 255; 255; 255
+              Max Intensity: 2
+              Min Color: 0; 0; 0
+              Min Intensity: -2
+              Name: ESDF slice
+              Position Transformer: XYZ
+              Queue Size: 10
+              Selectable: true
+              Size (Pixels): 3
+              Size (m): 0.20000000298023224
+              Style: Boxes
+              Topic: /glocal/glocal_system/mapping/esdf_slice
+              Unreliable: false
+              Use Fixed Frame: true
+              Use rainbow: true
+              Value: false
+            - Alpha: 0.20000000298023224
+              Autocompute Intensity Bounds: false
+              Autocompute Value Bounds:
+                Max Value: 10
+                Min Value: -10
+                Value: true
+              Axis: Z
+              Channel Name: intensity
+              Class: rviz/PointCloud2
+              Color: 255; 255; 255
+              Color Transformer: Intensity
+              Decay Time: 0
+              Enabled: false
+              Invert Rainbow: false
+              Max Color: 255; 255; 255
+              Max Intensity: 1
+              Min Color: 0; 0; 0
+              Min Intensity: -1
+              Name: TSDF slice
+              Position Transformer: XYZ
+              Queue Size: 10
+              Selectable: true
+              Size (Pixels): 3
+              Size (m): 0.20000000298023224
+              Style: Boxes
+              Topic: /glocal/glocal_system/mapping/tsdf_slice
+              Unreliable: false
+              Use Fixed Frame: true
+              Use rainbow: true
+              Value: false
+          Enabled: true
           Name: Local
         - Class: rviz/Group
           Displays:
@@ -420,28 +503,62 @@ Visualization Manager:
               Value: false
             - Class: rviz/Group
               Displays:
-                - Class: rviz/Marker
+                - Class: voxblox_rviz_plugin/VoxbloxMultiMesh
                   Enabled: true
-                  Marker Topic: /glocal/glocal_system/mapping/combined_mesh
-                  Name: Merged submaps
-                  Namespaces:
-                    mesh: true
-                  Queue Size: 100
-                  Value: true
-                - Class: rviz/Marker
-                  Enabled: false
-                  Marker Topic: /glocal/glocal_system/mapping/separated_mesh
                   Name: Separate submaps
-                  Namespaces:
-                    {}
-                  Queue Size: 100
+                  Topic: /glocal/glocal_system/mapping/separated_mesh
+                  Unreliable: false
+                  Value: true
+                  Visible:
+                    Value: true
+                    submap_0: true
+                    submap_1: true
+                    submap_10: true
+                    submap_2: true
+                    submap_3: true
+                    submap_4: true
+                    submap_5: true
+                    submap_6: true
+                    submap_7: true
+                    submap_8: true
+                    submap_9: true
+                - Class: voxblox_rviz_plugin/VoxbloxMesh
+                  Enabled: false
+                  Name: Merged map
+                  Topic: /glocal/glocal_system/mapping/combined_mesh
+                  Unreliable: false
                   Value: false
+                  Visible: false
               Enabled: true
               Name: Mesh
+            - Class: rviz/MarkerArray
+              Enabled: false
+              Marker Topic: /glocal/glocal_system/mapping/spatial_hash
+              Name: Spatial hash
+              Namespaces:
+                {}
+              Queue Size: 100
+              Value: false
+            - Alpha: 1
+              Arrow Length: 0.30000001192092896
+              Axes Length: 0.30000001192092896
+              Axes Radius: 0.009999999776482582
+              Class: rviz/PoseArray
+              Color: 255; 25; 0
+              Enabled: false
+              Head Length: 0.07000000029802322
+              Head Radius: 0.029999999329447746
+              Name: Loop closure axes
+              Shaft Length: 0.23000000417232513
+              Shaft Radius: 0.009999999776482582
+              Shape: Arrow (Flat)
+              Topic: /glocal/glocal_system/mapping/loop_closure_axes_vis
+              Unreliable: false
+              Value: false
           Enabled: true
           Name: Global
-        - Alpha: 0.029999999329447746
-          Autocompute Intensity Bounds: true
+        - Alpha: 0.019999999552965164
+          Autocompute Intensity Bounds: false
           Autocompute Value Bounds:
             Max Value: 10
             Min Value: -10
@@ -455,9 +572,9 @@ Visualization Manager:
           Enabled: false
           Invert Rainbow: false
           Max Color: 0; 125; 255
-          Max Intensity: 0.600000262260437
+          Max Intensity: 1
           Min Color: 204; 0; 0
-          Min Intensity: -0.5999760627746582
+          Min Intensity: -1
           Name: Local area
           Position Transformer: XYZ
           Queue Size: 10
@@ -518,13 +635,35 @@ Visualization Manager:
       Name: Local planner
     - Class: rviz/Group
       Displays:
-        - Class: rviz/Marker
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 10
+            Min Value: -10
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/PointCloud2
+          Color: 255; 255; 255
+          Color Transformer: RGB8
+          Decay Time: 0
           Enabled: true
-          Marker Topic: /glocal/glocal_system/global_planner/frontiers
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 4096
+          Min Color: 0; 0; 0
+          Min Intensity: 0
           Name: Frontiers
-          Namespaces:
-            "": true
-          Queue Size: 100
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.20000000298023224
+          Style: Boxes
+          Topic: /glocal/glocal_system/global_planner/frontiers
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
           Value: true
         - Class: rviz/Marker
           Enabled: true
@@ -539,13 +678,21 @@ Visualization Manager:
           Marker Topic: /glocal/glocal_system/global_planner/planned_path
           Name: Planned path
           Namespaces:
-            "": true
+            {}
           Queue Size: 100
           Value: true
-        - Class: rviz/MarkerArray
+        - Class: rviz/Marker
           Enabled: false
-          Marker Topic: /glocal/glocal_system/global_planner/skeleton/local_graphs
-          Name: Skeleton
+          Marker Topic: /glocal/glocal_system/global_planner/frontier_text
+          Name: Text
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
+        - Class: rviz/Marker
+          Enabled: false
+          Marker Topic: /glocal/glocal_system/global_planner/path_search
+          Name: A star search
           Namespaces:
             {}
           Queue Size: 100
@@ -558,14 +705,46 @@ Visualization Manager:
             "": true
           Queue Size: 100
           Value: true
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /glocal/glocal_system/global_planner/skeleton_submaps
+          Name: Submap skeletons
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
       Enabled: true
       Name: Global planner
+    - Class: rviz/Group
+      Displays:
+        - Class: rviz/Group
+          Displays:
+            - Class: rviz/Marker
+              Enabled: true
+              Marker Topic: /place_recognition_simulator/loop_closure_vis
+              Name: Detected associations
+              Namespaces:
+                {}
+              Queue Size: 100
+              Value: true
+            - Class: rviz/MarkerArray
+              Enabled: true
+              Marker Topic: /place_recognition_simulator/recognizeable_areas
+              Name: Recognizeable areas
+              Namespaces:
+                {}
+              Queue Size: 100
+              Value: true
+          Enabled: true
+          Name: Place recognition
+      Enabled: false
+      Name: Simulation
   Enabled: true
   Global Options:
     Background Color: 255; 255; 255
     Default Light: true
     Fixed Frame: odom
-    Frame Rate: 30
+    Frame Rate: 60
   Name: root
   Tools:
     - Class: rviz/Interact
@@ -588,25 +767,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 55.44791793823242
+      Distance: 77.90044403076172
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 1.8011046648025513
-        Y: 3.4249536991119385
-        Z: -13.701264381408691
-      Focal Shape Fixed Size: true
+        X: 8.521649360656738
+        Y: 3.453498363494873
+        Z: -6.9376091957092285
+      Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
-      Near Clip Distance: 41
+      Near Clip Distance: 0.009999999776482582
       Pitch: 1.5697963237762451
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 2.305000066757202
+      Yaw: 4.688592910766602
     Saved: ~
 Window Geometry:
   Displays:
@@ -614,7 +793,7 @@ Window Geometry:
   Height: 1025
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd00000004000000000000015600000363fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003d00000363000000c900fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000363fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000003d00000363000000a400fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000007450000003efc0100000002fb0000000800540069006d0065010000000000000745000002eb00fffffffb0000000800540069006d00650100000000000004500000000000000000000004d40000036300000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd00000004000000000000015600000363fc0200000009fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003d00000233000000c900fffffffb0000000a0056006900650077007301000002760000012a000000a400fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f000004cbfc0200000002fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000007450000003efc0100000002fb0000000800540069006d0065010000000000000745000002eb00fffffffb0000000800540069006d00650100000000000004500000000000000000000005e90000036300000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:

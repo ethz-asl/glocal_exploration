@@ -31,9 +31,9 @@
 
   <depend>voxblox</depend>
   <depend>voxblox_ros</depend>
+  <depend>voxblox_skeleton</depend>
   <depend>voxgraph</depend>
   <depend>voxgraph_msgs</depend>
-  <depend>cblox_planning_global</depend>
 
   <depend>glocal_exploration</depend>
 

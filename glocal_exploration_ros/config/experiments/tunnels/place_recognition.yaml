@@ -1,0 +1,17 @@
+update_period: 1.0
+recognizeable_areas:
+  - center_position: [ 2, -1, 0 ]
+    detection_probability: 0.1
+    detection_radius: 7.5
+  - center_position: [ -5, -28, -6 ]
+    detection_probability: 0.1
+    detection_radius: 5.0
+  - center_position: [ 40, -20, -2.5 ]
+    detection_probability: 0.1
+    detection_radius: 5.0
+  - center_position: [ 65, -20, -2.5 ]
+    detection_probability: 0.1
+    detection_radius: 7.5
+  - center_position: [ 35, 41, 0 ]
+    detection_probability: 0.1
+    detection_radius: 5.0

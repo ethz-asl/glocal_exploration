@@ -1,0 +1,14 @@
+<launch>
+  <param name="/use_sim_time" value="true"/>
+
+  <arg name="data_directory" default="/home/victor/data/automated_tests" />
+  <arg name="bag_name" default="glocal/tunnels/drift_2/2020-10-15-05-18-16_940d51747c1d484419f2ab12156f3443a37078b9/20201015_075806/visualization.bag" />
+  <arg name="rate" default="5"/>
+	<arg name="rviz_file" default="$(find glocal_exploration_ros)/config/visualization/glocal.rviz" />
+
+
+	<!-- Play Rosbag and RVIZ (visualization) -->
+	<node pkg="rosbag" type="play" name="player" output="screen" args="-r $(arg rate) $(arg data_directory)/$(arg bag_name)"/>
+
+  <node type="rviz" name="rviz" pkg="rviz" args="-d $(arg rviz_file)"/>
+</launch>

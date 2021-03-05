@@ -3,11 +3,15 @@
 
 #include <limits>
 #include <set>
+#include <string>
 #include <unordered_map>
 
 #include <glocal_exploration/mapping/map_base.h>
+#include <glocal_exploration/utils/frame_transformer.h>
 #include <voxgraph/common.h>
 #include <voxgraph/frontend/submap_collection/voxgraph_submap_collection.h>
+
+#include "glocal_exploration_ros/mapping/voxgraph_spatial_hash.h"
 
 namespace glocal_exploration {
 class VoxgraphLocalArea {
@@ -20,36 +24,37 @@ class VoxgraphLocalArea {
   using SubmapIdSet = std::set<SubmapId>;
 
   explicit VoxgraphLocalArea(const voxblox::TsdfMap::Config& config)
-      : local_area_layer_(config.tsdf_voxel_size, config.tsdf_voxels_per_side) {
-  }
+      : local_area_layer_(config.tsdf_voxel_size, config.tsdf_voxels_per_side),
+        fixed_frame_transformer_("submap_0") {}
 
   void update(const voxgraph::VoxgraphSubmapCollection& submap_collection,
+              const VoxgraphSpatialHash& spatial_submap_id_hash,
               const voxblox::EsdfMap& local_map);
   void prune();
 
-  VoxelState getVoxelStateAtPosition(const Eigen::Vector3d& position);
+  VoxelState getVoxelStateAtPosition(const Point& position);
+  bool isObserved(const Point& position);
+  bool isValidAtPosition(const Point& position);
 
   void publishLocalArea(ros::Publisher local_area_pub);
 
  protected:
-  static constexpr voxblox::FloatingPoint kTsdfObservedWeight = 1e-3;
+  static constexpr FloatingPoint kTsdfObservedWeight = 1e-3;
+
   std::unordered_map<SubmapId, Transformation> submaps_in_local_area_;
   voxblox::Layer<TsdfVoxel> local_area_layer_;
+
+  FrameTransformer fixed_frame_transformer_;
 
   void deintegrateSubmap(const SubmapId submap_id,
                          const voxblox::Layer<TsdfVoxel>& submap_tsdf);
   void integrateSubmap(const SubmapId submap_id,
-                       const Transformation& submap_pose,
+                       const Transformation& T_F_submap,
                        const voxblox::Layer<TsdfVoxel>& submap_tsdf,
                        bool deintegrate = false);
 
   bool submapPoseChanged(const SubmapId submap_id,
-                         const Transformation& new_submap_pose);
-
-  static SubmapIdSet setDifference(const SubmapIdSet& positive_set,
-                                   const SubmapIdSet& negative_set);
-  static SubmapIdSet setIntersection(const SubmapIdSet& first_set,
-                                     const SubmapIdSet& second_set);
+                         const Transformation& T_F_submap_new);
 };
 }  // namespace glocal_exploration
 

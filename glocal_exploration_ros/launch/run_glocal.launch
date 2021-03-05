@@ -1,0 +1,124 @@
+<launch>
+    <!-- Arguments -->
+    <!-- General arguments -->
+    <arg name="debug_mode"
+         default="false"
+         doc="Run the mapper in debug mode."/>
+    <arg name="show_rviz"
+         default="true"
+         doc="Automatically launch Rviz."/>
+
+    <!-- Planner arguments -->
+    <arg name="planner_config" default="experiments/maze/planners/glocal.yaml"/>
+
+    <!-- Airsim arguments -->
+    <arg name="airsim_config" default="experiments/general/airsim.yaml"/>
+    <arg name="drift_config" default="experiments/general/drift/drift_moderate.yaml"/>
+    <arg name="use_airsim_time" default="true"/>
+    <arg name="mav_name" default="airsim_drone"/>
+
+    <!-- Experiment arguments -->
+    <arg name="record_data" default="false"/>
+    <arg name="record_visualization" default="false"/>
+    <arg name="data_path" default="/home/user/Glocal/Data"/>
+    <arg name="time_limit" default="30"/> <!-- min -->
+    <arg name="data_interval" default="30"/>  <!-- sec -->
+    <arg name="planner_node_name"
+         default="/glocal_system"/> <!-- Name of GLocal's ROS node -->
+    <arg name="place_recognition_simulator_config" default=""
+         doc="Path to place recognition simulator config. Leave blank to disable."/>
+
+    <!-- Automatically generated arguments -->
+    <arg unless="$(arg debug_mode)" name="launch_prefix" value=""/>
+    <arg if="$(arg debug_mode)" name="launch_prefix"
+         value="gdb -ex run --args"/>
+
+    <!-- Launch -->
+    <!-- Setup the experiment -->
+    <param name="/use_sim_time" value="true" if="$(arg use_airsim_time)"/>
+
+    <!-- tf -->
+    <node pkg="tf" type="static_transform_publisher"
+          name="static_tf_mission_odom"
+          args="0 0 0 0 0 0 1 /odom /mission 100"/>
+    <node pkg="tf" type="static_transform_publisher"
+          name="static_tf_mission_world"
+          args="0 0 0 0 0 0 1 /mission /world 100"/>
+
+    <!-- airsim client -->
+    <node name="airsim_simulator" pkg="unreal_airsim"
+          type="airsim_simulator_node" required="true" output="screen"
+          args="-alsologtostderr">
+        <rosparam
+                file="$(find glocal_exploration_ros)/config/$(arg airsim_config)"/>
+        <rosparam
+                file="$(find glocal_exploration_ros)/config/$(arg drift_config)"/>
+    </node>
+
+    <!-- Place recognition simulator (for voxgraph external loop closures) -->
+    <group ns="place_recognition_simulator" if="$(eval place_recognition_simulator_config != '')">
+        <node name="place_recognition_simulator" pkg="glocal_exploration_ros"
+              type="place_recognition_simulator.py">
+            <rosparam command="load"
+                      file="$(find glocal_exploration_ros)/config/$(arg place_recognition_simulator_config)"/>
+        </node>
+    </group>
+
+    <!-- Planner -->
+    <group ns="glocal">
+        <node name="glocal_system" pkg="glocal_exploration_ros"
+              type="glocal_system_node"
+              output="screen" launch-prefix="$(arg launch_prefix)">
+            <rosparam command="load"
+                      file="$(find glocal_exploration_ros)/config/$(arg planner_config)"/>
+            <remap from="~pointcloud" to="/$(arg mav_name)/Lidar"/>
+            <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry"/>
+            <remap from="command/pose" to="/$(arg mav_name)/command/pose"/>
+            <remap from="~/global_planner/submap_in"
+                   to="~/mapping/submap_esdfs"/>
+            <remap from="~/global_planner/submap_pose_in"
+                   to="~/mapping/submap_poses"/>
+        </node>
+    </group>
+
+
+    <!-- Experiment startup and Evaluation -->
+    <group ns="evaluation">
+        <!-- Manager -->
+        <node name="experiment_manager" pkg="glocal_exploration_ros"
+              type="experiment_manager.py" output="screen" required="true">
+            <remap from="collision" to="/$(arg mav_name)/collision"/>
+            <param name="ns_planner"
+                   value="/glocal/glocal_system/toggle_running"/>
+            <param name="ns_voxblox" value="voxblox_gt"/>
+            <param name="evaluate" value="$(arg record_data)"/>
+            <param name="eval_directory" value="$(arg data_path)"/>
+            <param name="time_limit" value="$(arg time_limit)"/>
+            <param name="eval_frequency" value="$(arg data_interval)"/>
+            <param name="planner_node_name" value="$(arg planner_node_name)"/>
+
+            <param name="startup_timeout" value="30.0"/>
+        </node>
+
+        <!-- Ground truth reconstruction -->
+        <node name="voxblox_gt" pkg="voxblox_ros" type="esdf_server"
+              if="$(arg record_data)">
+            <rosparam command="load"
+                      file="$(find glocal_exploration_ros)/config/experiments/general/voxblox/ground_truth.yaml"/>
+            <remap from="pointcloud" to="/$(arg mav_name)/Lidar"/>
+        </node>
+
+        <!-- Record visualization topics -->
+        <node pkg="rosbag" type="record" name="rosbag_vis_recorder"
+              args="record -o $(arg data_path)/tmp_bags/tmp_bag /clock /rosout /tf /tf_static /glocal/glocal_system/global_planner/executed_path /glocal/glocal_system/global_planner/frontiers /glocal/glocal_system/global_planner/goal_points /glocal/glocal_system/global_planner/planned_path /glocal/glocal_system/local_planner/executed_path /glocal/glocal_system/local_planner/tree /glocal/glocal_system/mapping/separated_mesh /glocal/glocal_system/mapping/mesh /place_recognition_simulator/loop_closure_vis /place_recognition_simulator/recognizeable_areas"
+              if="$(eval arg('record_data') and arg('record_visualization'))"/>
+    </group>
+
+
+    <!-- Visualization -->
+    <group if="$(arg show_rviz)">
+        <arg name="rviz_file"
+             default="$(find glocal_exploration_ros)/config/visualization/glocal.rviz"/>
+        <node type="rviz" name="rviz" pkg="rviz" args="-d $(arg rviz_file)"/>
+    </group>
+</launch>

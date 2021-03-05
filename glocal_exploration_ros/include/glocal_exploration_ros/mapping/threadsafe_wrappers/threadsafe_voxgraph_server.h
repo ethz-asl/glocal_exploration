@@ -10,6 +10,8 @@
 namespace glocal_exploration {
 class ThreadsafeVoxgraphServer : public voxgraph::VoxgraphMapper {
  public:
+  using Function = std::function<void()>;
+
   template <typename... Args>
   ThreadsafeVoxgraphServer(const ros::NodeHandle& nh,
                            const ros::NodeHandle& nh_private, Args&&... args)
@@ -22,7 +24,24 @@ class ThreadsafeVoxgraphServer : public voxgraph::VoxgraphMapper {
     spinner_.start();
   }
 
+  bool submapCallback(
+      const voxblox_msgs::LayerWithTrajectory& submap_msg) override {
+    const bool submap_added_successfully =
+        voxgraph::VoxgraphMapper::submapCallback(submap_msg);
+
+    // Call the external callback, if it has been set
+    if (submap_added_successfully && external_new_submap_callback_) {
+      external_new_submap_callback_();
+    }
+  }
+
+  void setExternalNewSubmapCallback(Function callback) {
+    external_new_submap_callback_ = std::move(callback);
+  }
+
  protected:
+  Function external_new_submap_callback_;
+
   ros::CallbackQueue callback_queue_;
   ros::AsyncSpinner spinner_;
 };

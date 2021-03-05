@@ -1,0 +1,7 @@
+# Bounding Box for relevant voxels to be counted. Bounds are in ground truth frame.
+x_min: -200
+x_max: 200
+y_min: -200
+y_max: 200
+z_min: -100
+z_max: 100

@@ -36,10 +36,10 @@ class RHRRTStarVisualizer : public LocalPlannerVisualizerBase {
   void visualize() override;
 
  private:
-  void visualizeValue(const RHRRTStar::ViewPoint& point, double min_value,
-                      double max_value, int id);
-  void visualizeGain(const RHRRTStar::ViewPoint& point, double min_gain,
-                     double max_gain, int id);
+  void visualizeValue(const RHRRTStar::ViewPoint& point,
+                      FloatingPoint min_value, FloatingPoint max_value, int id);
+  void visualizeGain(const RHRRTStar::ViewPoint& point, FloatingPoint min_gain,
+                     FloatingPoint max_gain, int id);
   void visualizeText(const RHRRTStar::ViewPoint& point, int id);
   void visualizeVisibleVoxels(const RHRRTStar::ViewPoint& point);
 
