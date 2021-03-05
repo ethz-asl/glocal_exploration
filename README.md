@@ -11,6 +11,7 @@
 **GLocal** is a modular system for efficient *Global* and *Local* exploration planning and mapping in large scale environments, accounting for past pose corrections due to state estimation drift. 
 In a submap-based approach, multiple layers of both mapping and planning are combined to achieve robustness to drift while maintaining efficiency in large scale environments.
 
+![output](https://user-images.githubusercontent.com/6238939/110027306-17703b00-7d32-11eb-8454-dcf9421c2349.gif)
 
 # Table of Contents
 **Credits**
@@ -24,7 +25,7 @@ In a submap-based approach, multiple layers of both mapping and planning are com
 **Examples**
 * [Exploring the Maze](#Exploring-the-Maze)
 
-# Paper and Video
+# Papers
 If you find this package useful for your research, please consider citing our paper:
 
 * **NOTE:** Our paper was accepted for publication in IEEE RA-L, the information below will be updated upon publication. To read the paper please refer to ArXiv at the moment.
