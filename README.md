@@ -1,10 +1,11 @@
 # TODO
 - [x] Clean up code
-- [ ] Example to run the maze (maybe also tunnels)
+- [x] Example to run the maze (maybe also tunnels)
 - [ ] Update the maze environment in the data rep. (maybe also add tunnels).
 - [x] Add the reference for the paper
-- [ ] Add the logo
-- [ ] Update repo description + Readme
+- [x] Add the logo
+- [x] Update repo description + Readme
+- [ ] update the rosinstalls
 
 
 # glocal\_exploration
@@ -12,14 +13,14 @@
 In a submap-based approach, multiple layers of both mapping and planning are combined to achieve robustness to drift while maintaining efficiency in large scale environments.
 
 ![output](https://user-images.githubusercontent.com/6238939/110027306-17703b00-7d32-11eb-8454-dcf9421c2349.gif)
-
+Modules of GLocal (left) and large scale exploration subject to odometry drift (right).
 # Table of Contents
 **Credits**
-* [Paper and Video](#Paper-and-Video)
+* [Papers](#Papers)
 
 **Setup**
 * [Installation](#Installation)
-* [Simulation Environment](#Simulation-Environment)
+* [Simulation Setup](#Simulation-Setup)
 * [Data Repository](#Data-Repository)
 
 **Examples**
