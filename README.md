@@ -3,7 +3,7 @@
 In a submap-based approach, multiple layers of both mapping and planning are combined to achieve robustness to drift while maintaining efficiency in large scale environments.
 
 ![output](https://user-images.githubusercontent.com/6238939/110027306-17703b00-7d32-11eb-8454-dcf9421c2349.gif)
-Modules of GLocal (left) and large scale exploration subject to odometry drift (right).
+Different modules of GLocal (left) and GLocal in action for large scale exploration subject to odometry drift (right).
 # Table of Contents
 **Credits**
 * [Papers](#Papers)
@@ -19,7 +19,7 @@ Modules of GLocal (left) and large scale exploration subject to odometry drift (
 # Papers
 If you find this package useful for your research, please consider citing our paper:
 
-* **NOTE:** Our paper was accepted for publication in IEEE RA-L, the information below will be updated upon publication. To read the paper please refer to ArXiv at the moment.
+* **Note:** Our paper was accepted for publication in IEEE RA-L, the information below will be updated upon publication. To read the paper please refer to ArXiv at the moment.
 
 * Lukas Schmid, Victor Reijgwart, Lionel Ott, Juan Nieto, Roland Siegwart, and Cesar Cadena, "**A Unified Approach for Autonomous Volumetric Exploration of Large Scale Environments under Severe Odometry Drift**", in *IEEE Robotics and Automation Letters*, 2021 \[IEEE | [ArXiv](https://arxiv.org/abs/1909.09548) | Video\]
   ```bibtex
@@ -141,7 +141,7 @@ If you intend to use another simulation framework the simulation setup can be sk
     
       (Recommended if you wish to modify or create simulation worlds.)
       
-    **NOTE:** We are aware of the binary not running on certain systems due to graphics drivers issues. We recommend using the editor in this case.
+    **Note:** We are aware of the binary not running on certain systems due to graphics drivers issues. We recommend using the editor in this case.
     
 
 2. Install AirSim and the unreal_airsim simulator by following [these instructions](https://github.com/ethz-asl/unreal_airsim#Instalation).
