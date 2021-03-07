@@ -112,10 +112,20 @@ void GlocalSystem::mainLoop() {
   run_srv_ = nh_private_.advertiseService("toggle_running",
                                           &GlocalSystem::runSrvCallback, this);
 
+  // Limit the maximum update frequency.
+  // NOTE: This is mainly intended to avoid spinning at unlimited rates in case
+  //       a loopIteration() returns immediately. For example, when the global
+  //       planner is idling while waiting for the next waypoint to be reached.
+  ros::Rate max_rate(100 /*Hz*/);
+
+  // Spin.
   while (ros::ok() && comm_->stateMachine()->currentState() !=
                           StateMachine::State::kFinished) {
     loopIteration();
     ros::spinOnce();
+
+    // Sleep only if the maximum rate would otherwise be exceeded.
+    max_rate.sleep();
   }
   LOG_IF(INFO, config_.verbosity >= 1)
       << "Glocal Exploration Planner finished planning.";
