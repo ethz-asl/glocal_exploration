@@ -730,19 +730,19 @@ bool SkeletonPlanner::computePathToFrontier(
 
 bool SkeletonPlanner::isFrontierPointObservableFromPosition(
     const Point& frontier_point, const Point& skeleton_vertex_point) {
-  // Check for occlusions.
-  if (comm_->map()->lineIntersectsSurfaceInGlobalMap(skeleton_vertex_point,
-                                                     frontier_point)) {
-    return false;
-  }
-
   // Check if the frontier point is within the LiDAR's FoV.
   const FloatingPoint vertical_offset =
       frontier_point.z() - skeleton_vertex_point.z();
   const FloatingPoint horizontal_offset =
       (frontier_point - skeleton_vertex_point).head<2>().norm();
-  return std::abs(std::atan2(vertical_offset, horizontal_offset)) <
-         config_.sensor_vertical_fov_rad / 2.f;
+  if (config_.sensor_vertical_fov_rad / 2.f <
+      std::abs(std::atan2(vertical_offset, horizontal_offset))) {
+    return false;
+  }
+
+  // Check for occlusions.
+  return !comm_->map()->lineIntersectsSurfaceInGlobalMap(skeleton_vertex_point,
+                                                         frontier_point);
 }
 
 }  // namespace glocal_exploration
