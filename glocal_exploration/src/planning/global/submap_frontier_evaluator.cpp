@@ -39,8 +39,8 @@ void SubmapFrontierEvaluator::Config::printFields() const {
 
 SubmapFrontierEvaluator::SubmapFrontierEvaluator(
     const Config& config, std::shared_ptr<Communicator> communicator)
-    : config_(config.checkValid()),
-      GlobalPlannerBase(std::move(communicator)) {}
+    : GlobalPlannerBase(std::move(communicator)),
+      config_(config.checkValid()) {}
 
 void SubmapFrontierEvaluator::computeFrontiersForSubmap(
     const MapBase::SubmapData& data, const Point& initial_point) {
@@ -247,6 +247,10 @@ void SubmapFrontierEvaluator::computeFrontierCandidates(
           result.push_back(centerPointFromIndex(candidate, voxel_size));
           break;
         }
+        case MapBase::VoxelState::kOccupied:
+        default:
+          // We hit an obstacle.
+          break;
       }
     }
   }

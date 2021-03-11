@@ -31,7 +31,7 @@ void SkeletonVisualizer::Config::fromRosParam() {
 
 SkeletonVisualizer::SkeletonVisualizer(
     const Config& config, const std::shared_ptr<Communicator>& communicator)
-    : config_(config.checkValid()), GlobalPlannerVisualizerBase(communicator) {
+    : GlobalPlannerVisualizerBase(communicator), config_(config.checkValid()) {
   // Reference planner.
   planner_ = std::dynamic_pointer_cast<SkeletonPlanner>(comm_->globalPlanner());
   if (!planner_) {
