@@ -102,7 +102,7 @@ Installation instructions for Linux.
 
 3. Install system dependencies:
     ```shell script
-    sudo apt-get install python-wstool python-catkin-tools TODO
+    sudo apt-get install python-wstool python-catkin-tools
     ```
    
 4. Download and install package dependencies using SSH or HTTPS ros install:
