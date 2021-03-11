@@ -16,6 +16,8 @@ void GlocalSystem::Config::checkParams() const {
   checkParamGT(replan_position_threshold, 0.f, "replan_position_threshold");
   checkParamGT(replan_yaw_threshold, 0.f, "replan_yaw_threshold");
   checkParamGT(collision_check_period_s, 0.f, "collision_check_period_s");
+  checkParamGT(max_planner_update_frequency, 0.f,
+               "max_planner_update_frequency");
 }
 
 void GlocalSystem::Config::fromRosParam() {
@@ -25,6 +27,7 @@ void GlocalSystem::Config::fromRosParam() {
   rosParam("replan_timeout_constant", &replan_timeout_constant);
   rosParam("replan_timeout_velocity", &replan_timeout_velocity);
   rosParam("collision_check_period_s", &collision_check_period_s);
+  rosParam("max_planner_update_frequency", &max_planner_update_frequency);
 }
 
 void GlocalSystem::Config::printFields() const {
@@ -34,6 +37,7 @@ void GlocalSystem::Config::printFields() const {
   printField("replan_timeout_constant", replan_timeout_constant);
   printField("replan_timeout_velocity", replan_timeout_velocity);
   printField("collision_check_period_s", collision_check_period_s);
+  printField("max_planner_update_frequency", max_planner_update_frequency);
 }
 
 GlocalSystem::GlocalSystem(const ros::NodeHandle& nh,
@@ -116,7 +120,7 @@ void GlocalSystem::mainLoop() {
   // NOTE: This is mainly intended to avoid spinning at unlimited rates in case
   //       a loopIteration() returns immediately. For example, when the global
   //       planner is idling while waiting for the next waypoint to be reached.
-  ros::Rate max_rate(100 /*Hz*/);
+  ros::Rate max_rate(config_.max_planner_update_frequency);
 
   // Spin.
   while (ros::ok() && comm_->stateMachine()->currentState() !=
@@ -124,8 +128,16 @@ void GlocalSystem::mainLoop() {
     loopIteration();
     ros::spinOnce();
 
-    // Sleep only if the maximum rate would otherwise be exceeded.
-    max_rate.sleep();
+    // Limit the maximum planner update frequency
+    // NOTE: The local planner is exempt from this rate limit since fast
+    //       restarts are useful when paths become infeasible.
+    //       Furthermore, collision avoidance is not affected since it runs
+    //       in a separate thread.
+    if (comm_->stateMachine()->currentState() !=
+        StateMachine::State::kLocalPlanning) {
+      // Sleep only if the maximum rate would otherwise be exceeded
+      max_rate.sleep();
+    }
   }
   LOG_IF(INFO, config_.verbosity >= 1)
       << "Glocal Exploration Planner finished planning.";
