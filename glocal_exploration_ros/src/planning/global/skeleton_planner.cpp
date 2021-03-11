@@ -643,6 +643,8 @@ bool SkeletonPlanner::searchSkeletonStartVertices(
       return false;
     }
   }
+
+  return true;
 }
 
 bool SkeletonPlanner::computePathToFrontier(

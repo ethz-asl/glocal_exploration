@@ -33,6 +33,8 @@ class ThreadsafeVoxgraphServer : public voxgraph::VoxgraphMapper {
     if (submap_added_successfully && external_new_submap_callback_) {
       external_new_submap_callback_();
     }
+
+    return submap_added_successfully;
   }
 
   void setExternalNewSubmapCallback(Function callback) {
