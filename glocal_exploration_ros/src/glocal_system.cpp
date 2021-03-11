@@ -128,8 +128,16 @@ void GlocalSystem::mainLoop() {
     loopIteration();
     ros::spinOnce();
 
-    // Sleep only if the maximum rate would otherwise be exceeded.
-    max_rate.sleep();
+    // Limit the maximum planner update frequency
+    // NOTE: The local planner is exempt from this rate limit since fast
+    //       restarts are useful when paths become infeasible.
+    //       Furthermore, collision avoidance is not affected since it runs
+    //       in a separate thread.
+    if (comm_->stateMachine()->currentState() !=
+        StateMachine::State::kLocalPlanning) {
+      // Sleep only if the maximum rate would otherwise be exceeded
+      max_rate.sleep();
+    }
   }
   LOG_IF(INFO, config_.verbosity >= 1)
       << "Glocal Exploration Planner finished planning.";

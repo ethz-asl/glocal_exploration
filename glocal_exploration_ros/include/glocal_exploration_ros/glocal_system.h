@@ -27,8 +27,9 @@ class GlocalSystem {
     // rate at which to check for imminent collisions
     FloatingPoint collision_check_period_s = 0.1f;
     // maximum rate at which the planner are updated
-    // NOTE: This is mainly used to avoid excessively fast updates
-    //       when planners are idling while waiting to reach the next waypoint.
+    // NOTE: This is mainly used to avoid excessively fast updates when planners
+    //       are idling while waiting to reach the next waypoint.
+    //       The local planner is not affected by this setting.
     FloatingPoint max_planner_update_frequency = 100.f;  // hz
 
     Config();
