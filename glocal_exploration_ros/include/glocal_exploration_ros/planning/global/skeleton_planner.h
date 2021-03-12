@@ -36,7 +36,8 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
     // Maximum number of times the system can replan to the currently chosen
     // frontier before returning to local planning (or choosing a new frontier).
     int max_replan_attempts_to_chosen_frontier = 3;
-    FloatingPoint sensor_vertical_fov_rad = 0.5;
+    FloatingPoint frontier_visibility_vertical_fov = 0.75f;  // rad
+    FloatingPoint frontier_visibility_max_distance = 6.f;    // m
 
     FloatingPoint backtracking_distance_m = 10.f;  // Set to -1 to disable.
 
@@ -119,8 +120,8 @@ class SkeletonPlanner : public SubmapFrontierEvaluator {
       const Point& frontier_centroid, const std::vector<Point>& frontier_points,
       std::vector<RelativeWayPoint>* way_points,
       bool* frontier_is_observable = nullptr);
-  bool isFrontierPointObservableFromPosition(
-      const Point& frontier_point, const Point& skeleton_vertex_point);
+  bool isFrontierPointInFovAtPosition(const Point& frontier_point,
+                                      const Point& skeleton_vertex_point) const;
   void clusterFrontiers();
   bool verifyNextWayPoints();
 
