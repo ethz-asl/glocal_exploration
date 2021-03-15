@@ -202,10 +202,10 @@ bool SkeletonAStar::getPathBetweenVertices(
 
     const voxblox::Point t_odom_current_vertex =
         current_submap.getPose() * current_vertex.point;
+    const FloatingPoint h_score = (goal_point - t_odom_current_vertex).norm();
     g_score_map[current_vertex_id] =
         (t_odom_current_vertex - start_point).norm();
-    f_score_map[current_vertex_id] =
-        (goal_point - t_odom_current_vertex).norm();
+    f_score_map[current_vertex_id] = h_score;
     open_set.insert(current_vertex_id);
   }
 
@@ -264,7 +264,7 @@ bool SkeletonAStar::getPathBetweenVertices(
           g_score_map[current_vertex_id] +
           (goal_point - current_vertex.point).norm();
       if (g_score_map.count(kGoalVertexId) == 0 ||
-          g_score_map[kGoalVertexId] < tentative_g_score) {
+          tentative_g_score < g_score_map[kGoalVertexId]) {
         g_score_map[kGoalVertexId] = tentative_g_score;
         f_score_map[kGoalVertexId] = tentative_g_score;
         parent_map[kGoalVertexId] = current_vertex_id;
@@ -333,11 +333,12 @@ bool SkeletonAStar::getPathBetweenVertices(
                   g_score_map[current_vertex_id] +
                   (t_odom_nearby_vertex - t_odom_current_vertex).norm();
               if (g_score_map.count(nearby_vertex_global_id) == 0 ||
-                  g_score_map[nearby_vertex_global_id] < tentative_g_score) {
+                  tentative_g_score < g_score_map[nearby_vertex_global_id]) {
+                const FloatingPoint h_score =
+                    (goal_point - t_odom_nearby_vertex).norm();
                 g_score_map[nearby_vertex_global_id] = tentative_g_score;
                 f_score_map[nearby_vertex_global_id] =
-                    tentative_g_score +
-                    (goal_point - t_odom_nearby_vertex).norm();
+                    tentative_g_score + h_score;
                 parent_map[nearby_vertex_global_id] = current_vertex_id;
               }
             } else {
@@ -389,10 +390,11 @@ bool SkeletonAStar::getPathBetweenVertices(
       // NOTE: Since the vertex and its neighbor are already in the same
       //       (submap) frame, we can directly compute their distance above
       if (g_score_map.count(neighbor_vertex_id) == 0 ||
-          g_score_map[neighbor_vertex_id] < tentative_g_score) {
+          tentative_g_score < g_score_map[neighbor_vertex_id]) {
+        const FloatingPoint h_score =
+            (goal_point - t_odom_neighbor_vertex).norm();
         g_score_map[neighbor_vertex_id] = tentative_g_score;
-        f_score_map[neighbor_vertex_id] =
-            tentative_g_score + (goal_point - t_odom_neighbor_vertex).norm();
+        f_score_map[neighbor_vertex_id] = tentative_g_score + h_score;
         parent_map[neighbor_vertex_id] = current_vertex_id;
       }
     }
