@@ -1,19 +1,9 @@
-# TODO
-- [x] Clean up code
-- [x] Example to run the maze (maybe also tunnels)
-- [ ] Update the maze environment in the data rep. (maybe also add tunnels).
-- [x] Add the reference for the paper
-- [x] Add the logo
-- [x] Update repo description + Readme
-- [ ] update the rosinstalls
-
-
 # glocal\_exploration
 **GLocal** is a modular system for efficient *Global* and *Local* exploration planning and mapping in large scale environments, accounting for past pose corrections due to state estimation drift. 
 In a submap-based approach, multiple layers of both mapping and planning are combined to achieve robustness to drift while maintaining efficiency in large scale environments.
 
 ![output](https://user-images.githubusercontent.com/6238939/110027306-17703b00-7d32-11eb-8454-dcf9421c2349.gif)
-Modules of GLocal (left) and large scale exploration subject to odometry drift (right).
+Different modules of GLocal (left) and GLocal in action for large scale exploration subject to odometry drift (right).
 # Table of Contents
 **Credits**
 * [Papers](#Papers)
@@ -29,7 +19,7 @@ Modules of GLocal (left) and large scale exploration subject to odometry drift (
 # Papers
 If you find this package useful for your research, please consider citing our paper:
 
-* **NOTE:** Our paper was accepted for publication in IEEE RA-L, the information below will be updated upon publication. To read the paper please refer to ArXiv at the moment.
+* **Note:** Our paper was accepted for publication in IEEE RA-L, the information below will be updated upon publication. To read the paper please refer to ArXiv at the moment.
 
 * Lukas Schmid, Victor Reijgwart, Lionel Ott, Juan Nieto, Roland Siegwart, and Cesar Cadena, "**A Unified Approach for Autonomous Volumetric Exploration of Large Scale Environments under Severe Odometry Drift**", in *IEEE Robotics and Automation Letters*, 2021 \[IEEE | [ArXiv](https://arxiv.org/abs/1909.09548) | Video\]
   ```bibtex
@@ -112,7 +102,7 @@ Installation instructions for Linux.
 
 3. Install system dependencies:
     ```shell script
-    sudo apt-get install python-wstool python-catkin-tools TODO
+    sudo apt-get install python-wstool python-catkin-tools
     ```
    
 4. Download and install package dependencies using SSH or HTTPS ros install:
@@ -144,12 +134,14 @@ If you intend to use another simulation framework the simulation setup can be sk
 
 1. The demo can be run using a **binary** or using the UE4 **editor**:
     * If you want to run the binary step 1 can be skipped.
-      
+    
       (Recommended if you just want to run the demo.)
     
     * If you want to use the editor, follow the steps described [here](https://docs.unrealengine.com/en-US/SharingAndReleasing/Linux/BeginnerLinuxDeveloper/SettingUpAnUnrealWorkflow/index.html) to install Unreal Engine.
-
+    
       (Recommended if you wish to modify or create simulation worlds.)
+      
+    **Note:** We are aware of the binary not running on certain systems due to graphics drivers issues. We recommend using the editor in this case.
     
 
 2. Install AirSim and the unreal_airsim simulator by following [these instructions](https://github.com/ethz-asl/unreal_airsim#Instalation).
