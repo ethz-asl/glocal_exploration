@@ -10,12 +10,12 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <ros/ros.h>
 
+#include <glocal_exploration/3rd_party/config_utilities.hpp>
+#include <glocal_exploration/planning/global/skeleton/relative_waypoint.h>
 #include <glocal_exploration/planning/global/skeleton/skeleton_a_star.h>
 #include <glocal_exploration/planning/global/skeleton/skeleton_submap_collection.h>
 #include <glocal_exploration/planning/global/submap_frontier_evaluator.h>
 #include <glocal_exploration/state/communicator.h>
-#include <glocal_exploration/3rd_party/config_utilities.hpp>
-#include "glocal_exploration/planning/global/skeleton/relative_waypoint.h"
 
 namespace glocal_exploration {
 /**
