@@ -118,21 +118,21 @@ Installation instructions for Linux.
 4. Download and install package dependencies using SSH or HTTPS ros install:
     * If you created a new workspace.
     ```shell script
-    wstool init . ./glocal_exploration/glocal_exploration_ssh.rosinstall # SSH
-    wstool init . ./glocal_exploration/glocal_exploration_https.rosinstall # HTTPS
+    wstool init . ./glocal_exploration/glocal_ssh.rosinstall # SSH
+    wstool init . ./glocal_exploration/glocal_https.rosinstall # HTTPS
     wstool update
     ```
 
     * If you use an existing workspace. Notice that some dependencies require specific branches that will be checked out.
     ```shell script
-    wstool merge -t . ./glocal_exploration/glocal_exploration_ssh.rosinstall # SSH
-    wstool merge -t . ./glocal_exploration/glocal_exploration_https.rosinstall # HTTPS
+    wstool merge -t . ./glocal_exploration/glocal_ssh.rosinstall # SSH
+    wstool merge -t . ./glocal_exploration/glocal_https.rosinstall # HTTPS
     wstool update
     ```
 
 5. Compile and source:
-    ```shell script
-    catkin build glocal_exploration_ros
+    ```shell 
+    catkin build glocal_exploration_ros  
     source ../devel/setup.bash
     ```
 
