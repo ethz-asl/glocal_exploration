@@ -21,4 +21,3 @@
 - git: {local-name: yaml_cpp_catkin, uri: 'git@github.com:ethz-asl/yaml_cpp_catkin.git'}
 
 
-

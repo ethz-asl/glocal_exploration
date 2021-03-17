@@ -6,10 +6,11 @@
 #include <string>
 #include <unordered_map>
 
-#include <glocal_exploration/mapping/map_base.h>
-#include <glocal_exploration/utils/frame_transformer.h>
 #include <voxgraph/common.h>
 #include <voxgraph/frontend/submap_collection/voxgraph_submap_collection.h>
+
+#include <glocal_exploration/mapping/map_base.h>
+#include <glocal_exploration/utils/frame_transformer.h>
 
 #include "glocal_exploration_ros/mapping/voxgraph_spatial_hash.h"
 

@@ -10,7 +10,6 @@
 
 #include <ros/ros.h>
 #include <std_srvs/Empty.h>
-
 #include <voxblox/core/tsdf_map.h>
 #include <voxblox/io/layer_io.h>
 

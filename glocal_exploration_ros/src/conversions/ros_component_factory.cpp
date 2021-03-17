@@ -3,9 +3,9 @@
 #include <memory>
 #include <string>
 
+#include <glocal_exploration/3rd_party/config_utilities.hpp>
 #include <glocal_exploration/planning/local/rh_rrt_star.h>
 #include <glocal_exploration/state/region_of_interest.h>
-#include <glocal_exploration/3rd_party/config_utilities.hpp>
 
 #include "glocal_exploration_ros/mapping/voxblox_map.h"
 #include "glocal_exploration_ros/mapping/voxgraph_map.h"
