@@ -6,7 +6,8 @@
 #include "glocal_exploration/common.h"
 
 namespace glocal_exploration {
-using VertexIdElement = typeof(voxblox::SkeletonVertex::vertex_id);
+// NOTE: The VertexIdElement type must match voxblox::SkeletonVertex::vertex_id
+using VertexIdElement = int64_t;
 
 struct GlobalVertexId {
   SubmapId submap_id = -1;

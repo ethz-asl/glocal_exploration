@@ -710,14 +710,14 @@ RHRRTStar::Connection* RHRRTStar::ViewPoint::addConnection(ViewPoint* target,
 }
 
 RHRRTStar::Connection* RHRRTStar::ViewPoint::getActiveConnection() {
-  if (active_connection < 0 || active_connection >= connections.size()) {
+  if (connections.size() <= active_connection) {
     return nullptr;
   }
   return connections[active_connection].second.get();
 }
 
 const RHRRTStar::Connection* RHRRTStar::ViewPoint::getActiveConnection() const {
-  if (active_connection < 0 || active_connection >= connections.size()) {
+  if (connections.size() <= active_connection) {
     return nullptr;
   }
   return connections[active_connection].second.get();

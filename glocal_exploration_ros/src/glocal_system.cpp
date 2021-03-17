@@ -164,6 +164,9 @@ void GlocalSystem::loopIteration() {
       global_planner_visualizer_->visualize();
       break;
     }
+    default:
+      // No need to do anything.
+      break;
   }
 
   // Move requests.

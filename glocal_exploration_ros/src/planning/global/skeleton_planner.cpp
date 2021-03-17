@@ -61,10 +61,10 @@ void SkeletonPlanner::Config::printFields() const {
 SkeletonPlanner::SkeletonPlanner(
     const Config& config, const SkeletonAStar::Config& skeleton_a_star_config,
     std::shared_ptr<Communicator> communicator)
-    : config_(config.checkValid()),
-      SubmapFrontierEvaluator(config.submap_frontier_config, communicator),
+    : SubmapFrontierEvaluator(config.submap_frontier_config, communicator),
       num_replan_attempts_to_chosen_frontier_(0),
       is_backtracking_(false),
+      config_(config.checkValid()),
       skeleton_a_star_(skeleton_a_star_config, communicator) {
   LOG_IF(INFO, config_.verbosity >= 1) << "\n" << config_.toString();
 

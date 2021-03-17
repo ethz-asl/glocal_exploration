@@ -155,12 +155,14 @@ SkeletonAStar::searchClosestReachableSkeletonVertices(
       reachable_skeleton_vertices.emplace_back(
           candidate_start_vertex.global_vertex_id);
       if (n_closest <= reachable_skeleton_vertices.size()) {
-        return reachable_skeleton_vertices;
+        break;
       }
     } else {
       ++num_candidates_unreachable;
     }
   }
+
+  return reachable_skeleton_vertices;
 }
 
 bool SkeletonAStar::getPathBetweenVertices(
