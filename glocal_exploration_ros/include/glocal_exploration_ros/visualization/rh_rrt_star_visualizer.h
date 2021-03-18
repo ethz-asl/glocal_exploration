@@ -8,8 +8,8 @@
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 
-#include <glocal_exploration/planning/local/rh_rrt_star.h>
 #include <glocal_exploration/3rd_party/config_utilities.hpp>
+#include <glocal_exploration/planning/local/rh_rrt_star.h>
 
 #include "glocal_exploration_ros/visualization/local_planner_visualizer_base.h"
 
