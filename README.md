@@ -21,7 +21,7 @@ If you find this package useful for your research, please consider citing our pa
 
 * **Note:** Our paper was accepted for publication in IEEE RA-L, the information below will be updated upon publication. To read the paper please refer to ArXiv at the moment.
 
-* Lukas Schmid, Victor Reijgwart, Lionel Ott, Juan Nieto, Roland Siegwart, and Cesar Cadena, "**A Unified Approach for Autonomous Volumetric Exploration of Large Scale Environments under Severe Odometry Drift**", in *IEEE Robotics and Automation Letters*, 2021 \[IEEE | [ArXiv](https://arxiv.org/abs/2010.09859) | Video\]
+* Lukas Schmid, Victor Reijgwart, Lionel Ott, Juan Nieto, Roland Siegwart, and Cesar Cadena, "**A Unified Approach for Autonomous Volumetric Exploration of Large Scale Environments under Severe Odometry Drift**", in *IEEE Robotics and Automation Letters*, 2021 \[[IEEE](https://ieeexplore.ieee.org/document/9387110) | [ArXiv](https://arxiv.org/abs/2010.09859) | Video\]
   ```bibtex
   @ARTICLE{schmid2021glocal,
     author={L. {Schmid} and V. {Reijgwart} and L. {Ott} and J. {Nieto} and R. {Siegwart} and C. {Cadena}},
@@ -31,7 +31,7 @@ If you find this package useful for your research, please consider citing our pa
     volume={?},
     number={?},
     pages={?},
-    doi={?},
+    doi={10.1109/LRA.2021.3068954},
     month={?},
   }
   ```
