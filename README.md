@@ -19,8 +19,6 @@ Different modules of GLocal (left) and GLocal in action for large scale explorat
 # Papers
 If you find this package useful for your research, please consider citing our paper:
 
-* **Note:** Our paper was accepted for publication in IEEE RA-L, the information below will be updated upon publication. To read the paper please refer to ArXiv at the moment.
-
 * Lukas Schmid, Victor Reijgwart, Lionel Ott, Juan Nieto, Roland Siegwart, and Cesar Cadena, "**A Unified Approach for Autonomous Volumetric Exploration of Large Scale Environments under Severe Odometry Drift**", in *IEEE Robotics and Automation Letters*, 2021 \[[IEEE](https://ieeexplore.ieee.org/document/9387110) | [ArXiv](https://arxiv.org/abs/2010.09859) | Video\]
   ```bibtex
   @ARTICLE{schmid2021glocal,
@@ -28,11 +26,11 @@ If you find this package useful for your research, please consider citing our pa
     journal={IEEE Robotics and Automation Letters},
     title={A Unified Approach for Autonomous Volumetric Exploration of Large Scale Environments under Severe Odometry Drift},
     year={2021},
-    volume={?},
-    number={?},
-    pages={?},
+    volume={6},
+    number={3},
+    pages={4504-4511},
     doi={10.1109/LRA.2021.3068954},
-    month={?},
+    month={July},
   }
   ```
 
