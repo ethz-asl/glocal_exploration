@@ -78,7 +78,7 @@
             <param name="update_mesh_every_n_sec" value="0.0"/>
             <param name="publish_traversable" value="false"/>
 
-            <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry"/>
+            <remap from="odometry" to="/$(arg mav_name)/simulated/odometry"/>
             <param name="verbose" value="true"/>
             <param name="visualize" value="true"/>
             <param name="log_performance" value="false"/>

@@ -72,7 +72,7 @@
             <rosparam command="load"
                       file="$(find glocal_exploration_ros)/config/$(arg planner_config)"/>
             <remap from="~pointcloud" to="/$(arg mav_name)/Lidar"/>
-            <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry"/>
+            <remap from="odometry" to="/$(arg mav_name)/simulated/odometry"/>
             <remap from="command/pose" to="/$(arg mav_name)/command/pose"/>
             <remap from="~/global_planner/submap_in"
                    to="~/mapping/submap_esdfs"/>
