@@ -185,7 +185,7 @@ global_planner:
   goal_search_step_size: 1.0
   backtracking_distance_m: 15.0  # Set to -1 to disable
   max_replan_attempts_to_chosen_frontier: 10
-  max_closest_frontier_search_time_sec: 30
+  max_closest_frontier_search_time_sec: 15
   frontier_visibility_max_distance: 8
   frontier_visibility_vertical_fov_rad: 0.6
   
