@@ -36,6 +36,7 @@ mapping:
 
   # VOXBLOX sliding window
   # Grid settings
+  world_frame: "odom"
   tsdf_voxel_size: *voxel_size
   tsdf_voxels_per_side: *voxels_per_side
   max_block_distance_from_body: 20
@@ -80,6 +81,7 @@ mapping:
   # VOXGRAPH
   debug: false
   submap_topic: "/glocal/glocal_system/mapping/tsdf_map_out"
+  full_pose_graph_optimization_period_s: 12.0
   submap_creation_interval: 6
   loop_closure_topic_queue_length: 1000
   submap_topic_queue_length: 10
@@ -132,7 +134,7 @@ local_planner:
   verbosity: 4
   
   # RH-RRT-Star params
-  sampling_range: 7 # m
+  sampling_range: 9 # m
   min_path_length: 1.0 # m
   min_sampling_distance: 1.0 # m
   max_path_length: 3.0  # m
@@ -181,9 +183,11 @@ global_planner:
   path_verification_min_distance: 1.0
   goal_search_steps: 5.0
   goal_search_step_size: 1.0
-  backtracking_distance_m: 25.0  # Set to -1 to disable
+  backtracking_distance_m: 15.0  # Set to -1 to disable
   max_replan_attempts_to_chosen_frontier: 10
   max_closest_frontier_search_time_sec: 30
+  frontier_visibility_max_distance: 8
+  frontier_visibility_vertical_fov_rad: 0.6
   
   # Submap Frontiers Evaluator
   min_frontier_size: 200
@@ -200,10 +204,10 @@ global_planner:
   # A star search along linked sparse skeleton graph submaps
   skeleton_a_star:
     traversability_radius: *traversability_radius_global_planner
-    max_num_a_star_iterations: 10000
+    max_num_a_star_iterations: 14000
     max_num_start_vertex_candidates: 5
-    max_num_end_vertex_candidates: 5
+    max_num_end_vertex_candidates: 10
     linking_num_nearest_neighbors: 3
-    linking_max_num_submaps: 20
-    linking_max_num_links: 40
+    linking_max_num_submaps: 10
+    linking_max_num_links: 20
     linking_max_distance: 3.0

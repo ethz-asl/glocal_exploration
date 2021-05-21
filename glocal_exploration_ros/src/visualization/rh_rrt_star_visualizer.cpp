@@ -299,6 +299,16 @@ void RHRRTStarVisualizer::visualizeVisibleVoxels(
     const RHRRTStar::ViewPoint& point) {
   // NOTE(schmluk): This could also be a single message of type cube array but
   // that won't display properly on my rviz.
+
+  // Clear the previous visualization.
+	auto marker_msg = visualization_msgs::Marker();
+	marker_msg.action = visualization_msgs::Marker::DELETEALL;
+	marker_msg.header.frame_id = frame_id_;
+	marker_msg.header.stamp = timestamp_;
+	auto array_msg = visualization_msgs::MarkerArray();
+	array_msg.markers.push_back(marker_msg);
+	voxel_pub_.publish(array_msg);
+
   auto result = visualization_msgs::MarkerArray();
   std::vector<Point> voxels, colors;
   FloatingPoint scale;
