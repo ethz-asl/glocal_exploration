@@ -4,9 +4,11 @@ In a submap-based approach, multiple layers of both mapping and planning are com
 
 ![output](https://user-images.githubusercontent.com/6238939/110027306-17703b00-7d32-11eb-8454-dcf9421c2349.gif)
 Different modules of GLocal (left) and GLocal in action for large scale exploration subject to odometry drift (right).
+
 # Table of Contents
 **Credits**
 * [Papers](#Papers)
+* [Video](#Video)
 
 **Setup**
 * [Installation](#Installation)
@@ -16,10 +18,11 @@ Different modules of GLocal (left) and GLocal in action for large scale explorat
 **Examples**
 * [Exploring the Maze](#Exploring-the-Maze)
 
+
 # Papers
 If you find this package useful for your research, please consider citing our paper:
 
-* Lukas Schmid, Victor Reijgwart, Lionel Ott, Juan Nieto, Roland Siegwart, and Cesar Cadena, "**A Unified Approach for Autonomous Volumetric Exploration of Large Scale Environments under Severe Odometry Drift**", in *IEEE Robotics and Automation Letters*, vol. 6, no. 3, pp. 4504-4511, July 2021 \[[IEEE](https://ieeexplore.ieee.org/document/9387110) | [ArXiv](https://arxiv.org/abs/2010.09859) | Video\]
+* Lukas Schmid, Victor Reijgwart, Lionel Ott, Juan Nieto, Roland Siegwart, and Cesar Cadena, "**A Unified Approach for Autonomous Volumetric Exploration of Large Scale Environments under Severe Odometry Drift**", in *IEEE Robotics and Automation Letters*, vol. 6, no. 3, pp. 4504-4511, July 2021 \[[IEEE](https://ieeexplore.ieee.org/document/9387110) | [ArXiv](https://arxiv.org/abs/2010.09859) | [Video](https://www.youtube.com/watch?v=WInjZvoCDCM)\]
   ```bibtex
   @ARTICLE{schmid2021glocal,
     author={L. {Schmid} and V. {Reijgwart} and L. {Ott} and J. {Nieto} and R. {Siegwart} and C. {Cadena}},
@@ -65,6 +68,11 @@ The global mapping is largely based on [voxgraph](https://github.com/ethz-asl/vo
     month={January},
   }
   ```
+  
+# Video
+For a short overview of the system check out our video on youtube:
+
+[<img src="https://user-images.githubusercontent.com/36043993/122600300-db0de400-d06f-11eb-838b-1a505b430f60.jpg" alt="youtube video">](https://www.youtube.com/watch?v=WInjZvoCDCM)
 
 # Installation
 Installation instructions for Linux.
