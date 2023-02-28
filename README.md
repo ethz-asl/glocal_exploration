@@ -172,7 +172,7 @@ To make other UE4 projects compatible with the unreal_airsim simulator,
 
 
 ## Data Repository
-Related resources, such as experiment scenarios, can be downloaded from [here](https://www.polybox.ethz.ch/index.php/s/6vhPDINcISbEogg).
+Related resources, such as experiment scenarios, can be downloaded from [here](https://drive.google.com/drive/folders/1wIjnqXlGjrCOQdkQn31Ksep88d18O2u7?usp=sharing).
 
   
 # Examples
